@@ -472,28 +472,4 @@ function initTSN(config) {
 	module.exports = TSN;
 
 	tag = require(pathRoot + 'tags.js');
-
-	console.time('timer2');
-	var template = new TSN('tsn.html');
-	console.timeEnd('timer2');
-
-	var counter = 0;
-	console.time('timer');
-	console.log(template.render({
-		js: {
-			file1: 'name1.js',
-			file2: 'name2.js',
-			file3: 'name3.js'
-		},
-		css: 'base.css',
-		testWhile: function() {
-			if (++counter < 5) {
-				return true;
-			} else {
-				counter = 0;
-				return false;
-			}
-		}
-	}));
-	console.timeEnd('timer');
 }
