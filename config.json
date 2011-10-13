@@ -1,0 +1,7 @@
+{
+	"namespace": "tsn",
+	"type": "xml",
+	"templatePath": "/home/amxhost.ru/templates",
+	"encoding": "utf-8",
+	"parseIncluded": true
+}

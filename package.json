@@ -1,0 +1,8 @@
+{
+	"name": "TSN",
+	"description": "Templateting System Node.JS",
+	"version" : "1.0",
+	"homepage": "",
+	"author" : "Владислав Куркин, Email: b-vladi@cs-console.ru",
+	"main" : "tsn.js"
+}

@@ -1,0 +1,56 @@
+<!ELEMENT tsn:root ANY>
+<!ATTLIST tsn:root
+	xmlns:tsn CDATA #FIXED 'TSN'
+	>
+
+<!ELEMENT tsn:value EMPTY>
+<!ATTLIST tsn:value
+	expr CDATA #IMPLIED
+	var CDATA #IMPLIED
+	>
+
+<!ELEMENT tsn:var ANY>
+<!ATTLIST tsn:var
+	name CDATA #REQUIRED
+	value CDATA #IMPLIED
+	>
+
+<!ELEMENT tsn:if ANY>
+<!ATTLIST tsn:if
+	expr CDATA #REQUIRED
+	>
+
+<!ELEMENT tsn:for ANY>
+<!ATTLIST tsn:for
+	expr CDATA #REQUIRED
+	key CDATA #IMPLIED
+	value CDATA #IMPLIED
+	>
+
+<!ELEMENT tsn:while ANY>
+<!ATTLIST tsn:while
+	expr CDATA #REQUIRED
+	>
+
+<!ELEMENT tsn:include ANY>
+<!ATTLIST tsn:include
+	data CDATA #IMPLIED
+	name CDATA #IMPLIED
+	src CDATA #IMPLIED
+	>
+
+<!ELEMENT tsn:template ANY>
+<!ATTLIST tsn:template
+	name CDATA #REQUIRED
+	>
+
+<!ELEMENT tsn:anchor ANY>
+<!ATTLIST tsn:anchor
+	name CDATA #REQUIRED
+	>
+
+<!ELEMENT tsn:set-anchor ANY>
+<!ATTLIST tsn:set-anchor
+	name CDATA #REQUIRED
+	value CDATA #IMPLIED
+	>
