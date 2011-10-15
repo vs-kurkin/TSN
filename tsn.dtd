@@ -3,8 +3,8 @@
 	xmlns:tsn CDATA #FIXED 'TSN'
 	>
 
-<!ELEMENT tsn:value EMPTY>
-<!ATTLIST tsn:value
+<!ELEMENT tsn:echo EMPTY>
+<!ATTLIST tsn:echo
 	expr CDATA #IMPLIED
 	var CDATA #IMPLIED
 	>
