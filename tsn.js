@@ -48,7 +48,7 @@ function getErrorData(result, index, text) {
  * @trows <i>Invalid path type</i> - Ошибка, возникающая в том случае, если параметр @param path не соответствует типу String.
  * @return {Object} Возвращает объект шаблона.
  */
-function TSN(path, isInline) {
+module.exports = function(path, isInline) {
 	var tagStart = '(?:&' + TSN.config
 		.namespace + '.([a-z0-9-_]+);)|(?:<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:(?:\\r|\\n[^\\S\\r\\n]*)?<\\/\\s*' + TSN
 		.config.namespace + ':([a-z\\-_]+)\\s*>)',
@@ -211,7 +211,9 @@ function TSN(path, isInline) {
 	}
 
 	this.text += path.substring(lastIndex);
-}
+};
+
+var TSN = module.exports;
 
 /**
  * Кеш. Содержит все созданные объекты шаблона, загруженные из файла.
@@ -235,7 +237,7 @@ TSN.load = function(path) {
 };
 
 TSN.prototype.toString = function() {
-	return '"text":"' + + this.text + '",' + '"children":' + JSON.stringify(this.children) + '';
+	return '{"text":"' + this.text.replace(/"/g, '\\\\"').replace(/\n/g, '\\\\n').replace(/\r/g, '\\\\r') + '",' + '"children":' + JSON.stringify(this.children) + '}';
 };
 
 /**
@@ -431,8 +433,6 @@ TSN.prototype.save = function(path) {
 	var text = this.toString();
 
 };
-
-module.exports = TSN;
 
 LIB.fileSystem.readFile(pathRoot + 'config.json', 'utf-8', function(err, data) {
 	if (err) {
