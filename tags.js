@@ -14,7 +14,7 @@ this['echo'] = {
 		if (node.attribute.hasOwnProperty('expr')) {
 			node.text = String(this.expression(node.attribute.expr));
 		} else if (node.attribute.hasOwnProperty('var')) {
-			node.text = String(this['var'][node.attribute['var']]);
+			node.text = this['var'][node.attribute['var']];
 		} else {
 			node.text = '';
 		}
@@ -26,8 +26,8 @@ this['var'] = {
 		return node.attribute.hasOwnProperty('name') && !node.attribute.hasOwnProperty('value');
 	},
 	'out': function(node) {
-		this['var'][node.attribute.name] = node.attribute.hasOwnProperty('value') ? String(this.expression(node.attribute
-			.value)) : node.text;
+		this['var'][node.attribute.name] = node.attribute.hasOwnProperty('expr') ? String(this.expression(node.attribute
+			.expr)) : node.text;
 		node.text = '';
 	},
 	startRender: function() {

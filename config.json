@@ -1,6 +1,5 @@
 {
 	"namespace": "tsn",
-	"type": "xml",
 	"templatePath": "",
 	"encoding": "utf-8",
 	"parseIncluded": true
