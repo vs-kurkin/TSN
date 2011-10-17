@@ -49,7 +49,6 @@ function getErrorData(result, index, text) {
 
 /*
 todo: Доделать метод toString
-todo: Оптимизировать метод expresson
 todo: Реализовать клиентскую часть
 todo: Доделать информацию о ошибках парсинга
 * */
