@@ -141,55 +141,6 @@ this['while'] = {
 	}
 };
 
-this['include'] = {
-	parse: function(node) {
-		if (TSN.config.parseIncluded === true && node.attribute.hasOwnProperty('src')) {
-			new TSN(node.attribute.src);
-		}
-	},
-	'in': function(node) {
-		var tmplName = node.attribute.name;
-
-		if (this.template.hasOwnProperty(tmplName)) {
-			node.template = this.template[tmplName];
-
-			if (!(node.template instanceof TSN)) {
-				node.template.isIncluded = true;
-				node.children = [node.template];
-			}
-		} else {
-			return false;
-		}
-	},
-	'out': function(node) {
-		var template;
-		if (node.hasOwnProperty('template')) {
-			template = node.template;
-
-			if (template instanceof TSN) {
-				template.parent = this;
-				node.text = template.render(node.attribute.hasOwnProperty('data') ? this.expression(node.attribute.data) : this
-					.data);
-				delete template.parent;
-			} else {
-				delete template.realParent;
-				delete node.template;
-				delete node.children;
-			}
-		} else if (node.attribute.hasOwnProperty('src')) {
-			template = new TSN(node.attribute.src);
-			if (template instanceof TSN) {
-				template.parent = this;
-				node.text = template.render(node.attribute.hasOwnProperty('data') ? this.expression(node.attribute.data) : this
-					.data);
-				delete template.parent;
-			} else {
-				node.text = '';
-			}
-		}
-	}
-};
-
 this['template'] = {
 	startRender: function() {
 		this.template = {};
@@ -208,6 +159,59 @@ this['template'] = {
 		}
 
 		return isIncluded;
+	}
+};
+
+this['include'] = {
+	parse: function(node) {
+		if (TSN.config.parseIncluded === true && node.attribute.hasOwnProperty('src')) {
+			new TSN(node.attribute.src);
+		}
+	},
+	'in': function(node) {
+		var tmplName = node.attribute.name;
+
+		if (this.template.hasOwnProperty(tmplName)) {
+			node.template = this.template[tmplName];
+
+			if (!(node.template instanceof TSN)) {
+				node.template.isIncluded = true;
+				node.template.realParent = node.template.parent;
+				node.template.parent = node.parent;
+				node.children = [node.template];
+			}
+		} else {
+			return false;
+		}
+	},
+	'out': function(node) {
+		var template;
+		if (node.hasOwnProperty('template')) {
+			template = node.template;
+			delete node.template;
+
+			if (template instanceof TSN) {
+				template.parent = this;
+				node.text = template.render(node.attribute.hasOwnProperty('data') ? this.expression(node.attribute.data) : this
+					.data);
+				delete template.parent;
+			} else {
+				template.parent = template.realParent;
+				delete template.realParent;
+				delete node.template;
+				delete node.children;
+			}
+		} else if (node.attribute.hasOwnProperty('src')) {
+			template = new TSN(node.attribute.src);
+			if (template instanceof TSN) {
+				template.parent = this;
+				node.text = template.render(node.attribute.hasOwnProperty('data') ? this.expression(node.attribute.data) : this
+					.data);
+				delete template.parent;
+			} else {
+				node.text = '';
+			}
+		}
 	}
 };
 
@@ -248,10 +252,9 @@ this['anchor'] = (function(){
 
 			return result;
 		},
-		'in': function(node, stack){
+		'in': function(node){
 			var name = node.attribute.name,
 				parent,
-				length,
 				anchor;
 
 			if(name){
@@ -266,9 +269,10 @@ this['anchor'] = (function(){
 				}
 
 				anchor.pos = this.text.length;
-				length = stack.length;
-				while(length--){
-					anchor.pos += stack[length].text.length;
+				parent = this.parent;
+				while(parent){
+					anchor.pos += parent.text.length;
+					parent = parent.parent;
 				}
 
 				this.anchor[name] = anchor;

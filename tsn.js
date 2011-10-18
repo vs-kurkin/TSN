@@ -18,14 +18,14 @@ var pathRoot = module.filename.replace(/(.*)\/.*$/, '$1/');
  * <b>namespace</b> - Постранство имен тегов.
  * <b>templatePath</b> - Полный путь к папке шаблонов без слеша на конце.
  * <b>encoding</b> - Кодировка файлов шаблона.
- * <b>parseIncluded</b> - Флаг, указывающий на необходимость парсинга шаблонов, вставленных тегом include.
+ * <b>parseIncluded</b> - Флаг, указывающий на необходимость парсинга шаблонов, вставленных тегом include или template.
  */
 var defaultConfig = {
 	namespace: 'tsn',
 	templatePath: '',
 	encoding: 'utf-8',
 	parseIncluded: true,
-	saveComments: false
+	saveComments: true
 };
 
 var tag;
@@ -49,12 +49,10 @@ function getErrorData(result, index, text) {
  */
 
 /*
- todo: Доделать метод toString
- todo: Реализовать клиентскую часть
  todo: Доделать информацию о ошибках парсинга
  * */
 
-module.exports = (function() {
+var TSN = module.exports = (function() {
 	var currentTmplChild,
 		currentTemplate,
 		regExpTag;
@@ -105,11 +103,11 @@ module.exports = (function() {
 		this.namespace = TSN.config.namespace;
 
 		var space = '(?:\\r|\\n[^\\S\\r\\n]*)?',
-			tagStart = '(?:&' + TSN.config
-			.namespace + '.([a-z0-9-_]+);)|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + TSN
-			.config.namespace + ':([a-z\\-_]+)\\s*>)',
+			tagStart = '(?:&' + this
+				.namespace + '.([a-z0-9-_]+);)|(?:' + space + '(<!--[\\s\\S]*?-->))|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this
+				.namespace + ':([a-z\\-_]+)\\s*>)',
 			regExp = {
-				tag: new RegExp(tagStart + '|(?:' + space + '<\\s*' + TSN.config
+				tag: new RegExp(tagStart + '|(?:' + space + '<\\s*' + this
 					.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi'),
 				attr: /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:"([^"]*)")|(?:'[^']*')))?/gi,
 				xml: /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*/i,
@@ -161,7 +159,6 @@ module.exports = (function() {
 
 		this.children = [];
 		this.text = '';
-		this.namespace = TSN.config.namespace;
 		currentTemplate = TSN.cache[fullPath] = current = this;
 		regExpTag = regExp.entity;
 
@@ -191,7 +188,8 @@ module.exports = (function() {
 					},
 					start: index - resultLength,
 					end: index - resultLength,
-					index: current.children.length
+					index: current.children.length,
+					parent: current
 				};
 
 				current.children.push(node);
@@ -203,7 +201,8 @@ module.exports = (function() {
 						name: openTagName,
 						attribute: {},
 						start: index - resultLength,
-						index: current.children.length
+						index: current.children.length,
+						parent: current
 					};
 
 					current.children.push(node);
@@ -250,8 +249,8 @@ module.exports = (function() {
 
 				resultLength += currentResultLength;
 			} else if (comment) {
-				if(TSN.config.saveComments === true){
-					this.text += comment;
+				if (TSN.config.saveComments === true) {
+					this.text += result;
 				} else {
 					resultLength += currentResultLength;
 				}
@@ -274,8 +273,6 @@ module.exports = (function() {
 	};
 })();
 
-var TSN = module.exports;
-
 /**
  * Кеш. Содержит все созданные объекты шаблона, загруженные из файла.
  * Именами свойств являются полные пути к соответствующим шаблонам.
@@ -291,15 +288,6 @@ TSN.extend = function(name, data) {
 	if (typeof name == 'string' && data && (typeof data['in'] == 'function' || typeof data['out'] == 'function')) {
 		tag[name] = data;
 	}
-};
-
-TSN.load = function(path) {
-
-};
-
-TSN.prototype.toString = function() {
-	return '{"text":"' + this.text.replace(/"/g, '\\\\"').replace(/\n/g, '\\\\n')
-		.replace(/\r/g, '\\\\r') + '",' + '"children":' + JSON.stringify(this.children) + '}';
 };
 
 /**
@@ -335,8 +323,7 @@ TSN.prototype.render = function(data) {
 		tagName,
 		newResult,
 		listener,
-		parent,
-		stack = [];
+		parent;
 
 	this.data = data;
 
@@ -376,7 +363,7 @@ TSN.prototype.render = function(data) {
 			switch (typeof listener) {
 				case 'boolean': isParse = listener;
 					break;
-				case 'function': isParse = listener.call(this, currentChild, stack);
+				case 'function': isParse = listener.call(this, currentChild);
 					break;
 			}
 
@@ -384,7 +371,7 @@ TSN.prototype.render = function(data) {
 				currentChild.text = '';
 				tagData = tag[currentChild.name]['out'];
 				if (typeof tagData == 'function') {
-					tagData.call(this, currentChild, stack);
+					tagData.call(this, currentChild);
 				}
 
 				currentNode.text += currentChild.text;
@@ -395,7 +382,6 @@ TSN.prototype.render = function(data) {
 				currentChild = currentNode.children[currentChild.index + 1];
 			} else {
 				if (currentChild.hasOwnProperty('children')) {
-					stack.push(currentNode);
 					currentChild.text = '';
 					currentNode = currentChild;
 					currentChild = currentNode.children[0];
@@ -424,12 +410,12 @@ TSN.prototype.render = function(data) {
 
 			currentNode.text += templateText.slice(lastIndex, currentNode.end);
 
-			parent = stack.pop();
+			parent = currentNode.parent;
 			lastIndex = currentNode.isIncluded === true ? parent.end : currentNode.end;
 
 			tagData = tag[currentNode.name]['out'];
 			if (typeof tagData == 'function') {
-				tagData.call(this, currentNode, stack);
+				tagData.call(this, currentNode);
 			}
 
 			parent.text += currentNode.text;
@@ -480,11 +466,6 @@ TSN.prototype.reload = function(newPath) {
 	}
 
 	return TSN.call(this, newPath, false);
-};
-
-TSN.prototype.save = function(path) {
-	var text = this.toString();
-
 };
 
 LIB.fileSystem.readFile(pathRoot + 'config.json', 'utf-8', function(err, data) {
