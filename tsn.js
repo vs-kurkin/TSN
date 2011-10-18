@@ -24,7 +24,8 @@ var defaultConfig = {
 	namespace: 'tsn',
 	templatePath: '',
 	encoding: 'utf-8',
-	parseIncluded: true
+	parseIncluded: true,
+	saveComments: false
 };
 
 var tag;
@@ -48,23 +49,23 @@ function getErrorData(result, index, text) {
  */
 
 /*
-todo: Доделать метод toString
-todo: Реализовать клиентскую часть
-todo: Доделать информацию о ошибках парсинга
-* */
+ todo: Доделать метод toString
+ todo: Реализовать клиентскую часть
+ todo: Доделать информацию о ошибках парсинга
+ * */
 
-module.exports = (function(){
+module.exports = (function() {
 	var currentTmplChild,
 		currentTemplate,
 		regExpTag;
 
-	function toString(){
+	function toString() {
 		var length = this.length,
 			vars = this.template['var'],
 			value = this.value,
 			result = value[--length];
 
-		while(length){
+		while (length) {
 			result = vars[value[--length]] + result;
 			result = value[--length] + result;
 		}
@@ -103,9 +104,13 @@ module.exports = (function(){
 	return function(path, isInline) {
 		this.namespace = TSN.config.namespace;
 
-		var tagStart = '(?:&' + TSN.config.namespace + '.([a-z0-9-_]+);)|(?:<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:(?:\\r|\\n[^\\S\\r\\n]*)?<\\/\\s*' + TSN.config.namespace + ':([a-z\\-_]+)\\s*>)',
+		var space = '(?:\\r|\\n[^\\S\\r\\n]*)?',
+			tagStart = '(?:&' + TSN.config
+			.namespace + '.([a-z0-9-_]+);)|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + TSN
+			.config.namespace + ':([a-z\\-_]+)\\s*>)',
 			regExp = {
-				tag: new RegExp(tagStart + '|(?:(?:\\r|\\n[^\\S\\r\\n]*)?<\\s*' + TSN.config.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi'),
+				tag: new RegExp(tagStart + '|(?:' + space + '<\\s*' + TSN.config
+					.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi'),
 				attr: /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:"([^"]*)")|(?:'[^']*')))?/gi,
 				xml: /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*/i,
 				entity: new RegExp('&' + this.namespace + '.([a-z0-9]+);', 'gi')
@@ -118,6 +123,7 @@ module.exports = (function(){
 			xmlDeclaration = '',
 			result,
 			currentResultLength,
+			comment,
 			value,
 			closeTagName,
 			openTagName,
@@ -168,10 +174,11 @@ module.exports = (function(){
 			result = match[0];
 			currentResultLength = result.length;
 			value = match[1];
-			closeTagName = match[2];
-			openTagName = match[3];
-			attributes = match[4];
-			emptyTag = match[5];
+			comment = match[2];
+			closeTagName = match[3];
+			openTagName = match[4];
+			attributes = match[5];
+			emptyTag = match[6];
 			index = match.index;
 
 			this.text += path.substring(lastIndex, index);
@@ -219,7 +226,7 @@ module.exports = (function(){
 					}
 				} else {
 					this.errors
-						.push('Unknown name tag opening \'' + openTagName + '\'\n' + getErrorData(xmlDeclaration + result, index, path));
+						.push((emptyTag ? 'Unknown tag \'' : 'Unknown tag opening\'') + openTagName + '\'\n' + getErrorData(xmlDeclaration + result, index, path));
 				}
 
 				resultLength += currentResultLength;
@@ -238,10 +245,16 @@ module.exports = (function(){
 					}
 				} else {
 					this.errors
-						.push('Unknown name tag closing \'' + closeTagName + '\'\n' + getErrorData(xmlDeclaration + result, index, path));
+						.push('Unknown tag closing \'' + closeTagName + '\'\n' + getErrorData(xmlDeclaration + result, index, path));
 				}
 
 				resultLength += currentResultLength;
+			} else if (comment) {
+				if(TSN.config.saveComments === true){
+					this.text += comment;
+				} else {
+					resultLength += currentResultLength;
+				}
 			} else {
 				this.text += result;
 			}
@@ -285,7 +298,8 @@ TSN.load = function(path) {
 };
 
 TSN.prototype.toString = function() {
-	return '{"text":"' + this.text.replace(/"/g, '\\\\"').replace(/\n/g, '\\\\n').replace(/\r/g, '\\\\r') + '",' + '"children":' + JSON.stringify(this.children) + '}';
+	return '{"text":"' + this.text.replace(/"/g, '\\\\"').replace(/\n/g, '\\\\n')
+		.replace(/\r/g, '\\\\r') + '",' + '"children":' + JSON.stringify(this.children) + '}';
 };
 
 /**
@@ -295,7 +309,7 @@ TSN.prototype.toString = function() {
  * @return Резальтат выполнения выражения или ошибку.
  */
 TSN.prototype.expression = function(expr) {
-	this.exprParams.splice(this.exprArgs.length, 1, 'return ' + expr);
+	this.exprParams.splice(this.argsLength, 1, 'return ' + expr);
 	try {
 		return Function.apply(null, this.exprParams).apply(this.data, this.exprArgs);
 	} catch(e) {
@@ -341,6 +355,8 @@ TSN.prototype.render = function(data) {
 			this.exprParams.push(property);
 		}
 	}
+
+	this.argsLength = this.exprArgs.length;
 
 	currentNode.text = '';
 
@@ -429,6 +445,7 @@ TSN.prototype.render = function(data) {
 
 	delete this.exprArgs;
 	delete this.exprParams;
+	delete this.argsLength;
 	delete this.data;
 
 	for (tagName in tag) {
@@ -439,6 +456,7 @@ TSN.prototype.render = function(data) {
 			}
 		}
 	}
+
 	return result;
 };
 
