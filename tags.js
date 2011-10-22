@@ -8,26 +8,54 @@ var TSN = module.parent.exports;
 
 this['root'] = {};
 
-this['echo'] = {
-	'in': false,
-	'out': function(node) {
-		if (node.attribute.hasOwnProperty('expr')) {
-			node.text = String(this.expression(node.attribute.expr));
-		} else if (node.attribute.hasOwnProperty('var')) {
-			node.text = this['var'][node.attribute['var']];
-		} else {
-			node.text = '';
+this['context'] = {
+	'in': function(node) {
+		if (node.hasOwnProperty('data')) {
+			node.context = this.context[node.attribute.data];
 		}
+	}
+};
+
+this['echo'] = {
+	'in': function(node) {
+		if (node.attribute.hasOwnProperty('data')) {
+			node.result = this.context[node.attribute.data];
+		} else if (node.attribute.hasOwnProperty('var')) {
+			node.result = this['var'][node.attribute['var']];
+		} else {
+			node.result = '';
+		}
+		return false;
+	},
+	'out': function(node) {
+		node.text = node.result;
+		delete node.result;
 	}
 };
 
 this['var'] = {
 	'in': function(node) {
-		return node.attribute.hasOwnProperty('name') && !node.attribute.hasOwnProperty('value');
+		if (node.attribute.hasOwnProperty('name')) {
+			if (node.attribute.hasOwnProperty('value')) {
+				this['var'][node.attribute.name] = node.attribute.value;
+				return false;
+			} else if (node.attribute.hasOwnProperty('data')) {
+				this['var'][node.attribute.name] = this.context[node.attribute.data];
+				return false;
+			} else if (node.attribute.hasOwnProperty('context')) {
+				node.context = this['var'][node.attribute.context];
+			}
+
+			node.result = false;
+		} else {
+			return false;
+		}
 	},
 	'out': function(node) {
-		this['var'][node.attribute.name] = node.attribute.hasOwnProperty('expr') ? String(this.expression(node.attribute
-			.expr)) : node.text;
+		if (node.result === false) {
+			this['var'][node.attribute.name] = node.text;
+			delete node.result;
+		}
 		node.text = '';
 	},
 	startRender: function() {
@@ -40,7 +68,11 @@ this['var'] = {
 
 this['if'] = {
 	'in': function(node) {
-		return node.isExpr = this.expression(node.attribute.expr);
+		if (node.attribute.hasOwnProperty('context')) {
+			node.context = this['var'][node.attribute.context];
+		}
+
+		return !!(node.isExpr = node.attribute.hasOwnProperty('data') ? this.context[node.attribute.data] : false);
 	},
 	out: function(node) {
 		if (!node.isExpr) {
@@ -59,7 +91,7 @@ this['for'] = {
 			var property, hasProperty;
 
 			if (!node.hasOwnProperty('currentProperty')) {
-				node.result = this.expression(node.attribute.expr);
+				node.result = this.context[node.attribute.data];
 				node.property = [];
 
 				switch (toString.call(node.result)) {
@@ -78,10 +110,11 @@ this['for'] = {
 						break;
 				}
 
-
 				if (node.resultLength) {
 					node.currentIndex = 0;
 					node.index--;
+					node.hasKeyAttr = node.attribute.hasOwnProperty('key');
+					node.hasValueAttr = node.attribute.hasOwnProperty('value');
 				} else {
 					delete node.resiltIsArray;
 					delete node.currentIndex;
@@ -89,17 +122,23 @@ this['for'] = {
 					delete node.result;
 					delete node.property;
 					delete node.currentProperty;
+					delete node.hasKeyAttr;
+					delete node.hasValueAttr;
 				}
 			}
 
 			hasProperty = node.hasOwnProperty('currentProperty');
 			if (hasProperty) {
-				if (node.attribute.hasOwnProperty('key')) {
+				if (node.hasKeyAttr) {
 					this['var'][node.attribute.key] = node.currentProperty;
 				}
 
-				if (node.attribute.hasOwnProperty('value')) {
+				if (node.hasValueAttr) {
 					this['var'][node.attribute.value] = node.result[node.currentProperty];
+				}
+
+				if (node.attribute.context) {
+					node.context = this['var'][node.attribute.context];
 				}
 			}
 
@@ -117,27 +156,12 @@ this['for'] = {
 			delete node.result;
 			delete node.property;
 			delete node.currentProperty;
+			delete node.hasKeyAttr;
+			delete node.hasValueAttr;
+
+			delete this['var'][node.attribute.key];
+			delete this['var'][node.attribute.value];
 		}
-
-		delete this['var'][node.attribute.key];
-		delete this['var'][node.attribute.value];
-	}
-};
-
-this['while'] = {
-	'in': function(node) {
-		var result = node.attribute.hasOwnProperty('expr') ? this.expression(node.attribute.expr) : false;
-		if (node.hasOwnProperty('result')) {
-			if (!result) {
-				node.index++;
-				delete node.result;
-			}
-		} else if (result) {
-			node.index--;
-			node.result = result;
-		}
-
-		return result;
 	}
 };
 
@@ -150,12 +174,14 @@ this['template'] = {
 	},
 	'in': function(node) {
 		var isIncluded = node.isIncluded === true,
-			name = node.attribute.name,
-			template;
+			name = node.attribute.name;
 
-		if (!isIncluded && typeof name == 'string' && name.length) {
-			template = node.attribute.hasOwnProperty('src') && new TSN(node.attribute.src);
-			this.template[name] = template instanceof TSN ? template : node;
+		if (isIncluded) {
+			if (node.attribute.hasOwnProperty('context')) {
+				node.context = this['var'][node.attribute.context];
+			}
+		} else if (typeof name == 'string' && name.length) {
+			this.template[name] = node.attribute.hasOwnProperty('src') ? new TSN(node.attribute.src) : node;
 		}
 
 		return isIncluded;
@@ -179,6 +205,10 @@ this['include'] = {
 				node.template.realParent = node.template.parent;
 				node.template.parent = node.parent;
 				node.children = [node.template];
+
+				if (node.attribute.hasOwnProperty('context')) {
+					node.context = this['var'][node.attribute.context];
+				}
 			}
 		} else {
 			return false;
@@ -192,8 +222,8 @@ this['include'] = {
 
 			if (template instanceof TSN) {
 				template.parent = this;
-				node.text = template.render(node.attribute.hasOwnProperty('data') ? this.expression(node.attribute.data) : this
-					.data);
+				node.text = template.render(node.attribute.hasOwnProperty('context') ? this['var'][node.attribute
+					.context] : this.context);
 				delete template.parent;
 			} else {
 				template.parent = template.realParent;
@@ -205,8 +235,8 @@ this['include'] = {
 			template = new TSN(node.attribute.src);
 			if (template instanceof TSN) {
 				template.parent = this;
-				node.text = template.render(node.attribute.hasOwnProperty('data') ? this.expression(node.attribute.data) : this
-					.data);
+				node.text = template.render(node.attribute.hasOwnProperty('context') ? this['var'][node.attribute
+					.context] : this.context);
 				delete template.parent;
 			} else {
 				node.text = '';
@@ -215,30 +245,30 @@ this['include'] = {
 	}
 };
 
-this['anchor'] = (function(){
+this['anchor'] = (function() {
 	var push = [].constructor.prototype.push;
 	return {
-		startRender: function(){
+		startRender: function() {
 			this.anchor = [];
 			this.tempAnchor = {};
 		},
-		endRender: function(result){
+		endRender: function(result) {
 			var index = 0,
 				anchor;
 
-			while(anchor = this.anchor.pop()){
+			while (anchor = this.anchor.pop()) {
 				var text = anchor.data.join('');
 				result = result.substr(0, anchor.pos) + text + result.substr(anchor.pos);
 				index += text.length;
 			}
 
-			if(this.parent){
-				for(var name in this.tempAnchor){
-					if(this.tempAnchor.hasOwnProperty(name)){
+			if (this.parent) {
+				for (var name in this.tempAnchor) {
+					if (this.tempAnchor.hasOwnProperty(name)) {
 						anchor = this.tempAnchor[name];
-						if(this.parent.anchor.hasOwnProperty(name)){
+						if (this.parent.anchor.hasOwnProperty(name)) {
 							push.apply(this.parent.anchor[name].data, anchor.data);
-						} else if(this.parent.tempAnchor.hasOwnProperty(name)){
+						} else if (this.parent.tempAnchor.hasOwnProperty(name)) {
 							push.apply(this.parent.tempAnchor[name].data, anchor.data);
 						} else {
 							this.parent.tempAnchor[anchor.name] = anchor;
@@ -252,13 +282,13 @@ this['anchor'] = (function(){
 
 			return result;
 		},
-		'in': function(node){
+		'in': function(node) {
 			var name = node.attribute.name,
 				parent,
 				anchor;
 
-			if(name){
-				if(this.tempAnchor.hasOwnProperty(name)){
+			if (name) {
+				if (this.tempAnchor.hasOwnProperty(name)) {
 					anchor = this.tempAnchor[name];
 					delete this.tempAnchor[name];
 				} else {
@@ -270,7 +300,7 @@ this['anchor'] = (function(){
 
 				anchor.pos = this.text.length;
 				parent = this.parent;
-				while(parent){
+				while (parent) {
 					anchor.pos += parent.text.length;
 					parent = parent.parent;
 				}
@@ -285,13 +315,25 @@ this['anchor'] = (function(){
 })();
 
 this['set-anchor'] = {
+	'in': function(node) {
+		if (node.attribute.hasOwnProperty('data')) {
+			node.result = this.context[node.attribute.data];
+			return false;
+		}
+
+		if (node.attribute.hasOwnProperty('context')) {
+			node.context = this['var'][node.attribute.context];
+		}
+	},
 	'out': function(node) {
 		var name = node.attribute.name,
-			anchorData = node.attribute.hasOwnProperty('value') ? String(this.expression(node.attribute.value)) : node.text;
+			anchorData = node.hasOwnProperty('result') ? node.result : node.text;
+
+		delete node.result;
 
 		if (this.anchor.hasOwnProperty(name)) {
 			this.anchor[name].data.push(anchorData);
-		} else if(this.tempAnchor.hasOwnProperty(name)) {
+		} else if (this.tempAnchor.hasOwnProperty(name)) {
 			this.tempAnchor[name].data.push(anchorData);
 		} else {
 			this.tempAnchor[name] = {

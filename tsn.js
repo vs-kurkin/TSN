@@ -16,13 +16,13 @@ var pathRoot = module.filename.replace(/(.*)\/.*$/, '$1/');
 /**
  * Стандартные настройки шаблонизатора.
  * <b>namespace</b> - Постранство имен тегов.
- * <b>templatePath</b> - Полный путь к папке шаблонов без слеша на конце.
+ * <b>templateRoot</b> - Полный путь к папке шаблонов без слеша на конце.
  * <b>encoding</b> - Кодировка файлов шаблона.
  * <b>parseIncluded</b> - Флаг, указывающий на необходимость парсинга шаблонов, вставленных тегом include или template.
  */
 var defaultConfig = {
 	namespace: 'tsn',
-	templatePath: '',
+	templateRoot: '',
 	encoding: 'utf-8',
 	parseIncluded: true,
 	saveComments: true
@@ -42,7 +42,7 @@ function getErrorData(result, index, text) {
 /**
  * Конструктор создания шаблонов.
  * @constructor
- * @param path {String} Относительный путь к файлу шаблона или код шаблона. Полный путь выглядет как config.templatePath + '/' + path.
+ * @param path {String} Относительный путь к файлу шаблона или код шаблона. Полный путь выглядет как config.templateRoot + '/' + path.
  * @param isInline {Boolean} Флаг, указывающий на то что, в параметре @param path передан код шаблона.
  * @trows <i>Invalid path type</i> - Ошибка, возникающая в том случае, если параметр @param path не соответствует типу String.
  * @return {Object} Возвращает объект шаблона.
@@ -104,7 +104,7 @@ var TSN = module.exports = (function() {
 
 		var space = '(?:\\r|\\n[^\\S\\r\\n]*)?',
 			tagStart = '(?:&' + this
-				.namespace + '.([a-z0-9-_]+);)|(?:' + space + '(<!--[\\s\\S]*?-->))|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this
+				.namespace + '.([a-z0-9-_]+);)|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this
 				.namespace + ':([a-z\\-_]+)\\s*>)',
 			regExp = {
 				tag: new RegExp(tagStart + '|(?:' + space + '<\\s*' + this
@@ -136,7 +136,7 @@ var TSN = module.exports = (function() {
 			throw new Error('Invalid path type');
 		}
 
-		fullPath = TSN.config.templatePath + '/' + path;
+		fullPath = TSN.config.templateRoot + '/' + path;
 		if (TSN.cache.hasOwnProperty(fullPath)) {
 			return TSN.cache[fullPath];
 		}
@@ -291,21 +291,6 @@ TSN.extend = function(name, data) {
 };
 
 /**
- * Выполняет переданное выражение из шаблона. Используется в объектах описания тега.
- * @param expr {String} JavaScript - выражение.
- * @this {Object} Объект шаблона.
- * @return Резальтат выполнения выражения или ошибку.
- */
-TSN.prototype.expression = function(expr) {
-	this.exprParams.splice(this.argsLength, 1, 'return ' + expr);
-	try {
-		return Function.apply(null, this.exprParams).apply(this.data, this.exprArgs);
-	} catch(e) {
-		return e;
-	}
-};
-
-/**
  * Рендеринг шаблона на основе переданных данных.
  * @param data {Object} Объект данных, на основе которых генерируется результат.
  * @this {Object} Объект шаблона.
@@ -323,27 +308,16 @@ TSN.prototype.render = function(data) {
 		tagName,
 		newResult,
 		listener,
-		parent;
+		parent,
+		contexts = [];
 
-	this.data = data;
+	this.data = this.context = data;
 
 	for (tagName in tag) {
 		if (tag.hasOwnProperty(tagName) && typeof tag[tagName].startRender == 'function') {
 			tag[tagName].startRender.call(this);
 		}
 	}
-
-	this.exprArgs = [];
-	this.exprParams = [];
-
-	for (var property in data) {
-		if (data.hasOwnProperty(property)) {
-			this.exprArgs.push(data[property]);
-			this.exprParams.push(property);
-		}
-	}
-
-	this.argsLength = this.exprArgs.length;
 
 	currentNode.text = '';
 
@@ -361,11 +335,17 @@ TSN.prototype.render = function(data) {
 			listener = tag[currentChild.name]['in'];
 
 			switch (typeof listener) {
-				case 'boolean': isParse = listener;
+				case 'boolean':
+					isParse = listener;
 					break;
-				case 'function': isParse = listener.call(this, currentChild);
+				case 'function':
+					isParse = listener.call(this, currentChild);
 					break;
 			}
+
+			contexts.push(this.context);
+			this.context = currentChild.context || this.context;
+			delete currentChild.context;
 
 			if (isParse === false) {
 				currentChild.text = '';
@@ -374,6 +354,7 @@ TSN.prototype.render = function(data) {
 					tagData.call(this, currentChild);
 				}
 
+				this.context = contexts.pop();
 				currentNode.text += currentChild.text;
 				delete currentChild.isIncluded;
 				delete currentChild.text;
@@ -395,6 +376,8 @@ TSN.prototype.render = function(data) {
 						tagData.call(this, currentChild);
 					}
 
+					this.context = contexts.pop();
+
 					currentNode.text += currentChild.text;
 					delete currentChild.isIncluded;
 					delete currentChild.text;
@@ -405,6 +388,7 @@ TSN.prototype.render = function(data) {
 		} else {
 			if (currentNode == this) {
 				result = currentNode.text + templateText.slice(lastIndex);
+				this.text = templateText;
 				break;
 			}
 
@@ -418,6 +402,8 @@ TSN.prototype.render = function(data) {
 				tagData.call(this, currentNode);
 			}
 
+			this.context = contexts.pop();
+
 			parent.text += currentNode.text;
 			delete currentNode.isIncluded;
 			delete currentNode.text;
@@ -427,12 +413,8 @@ TSN.prototype.render = function(data) {
 		}
 	}
 
-	this.text = templateText;
-
-	delete this.exprArgs;
-	delete this.exprParams;
-	delete this.argsLength;
 	delete this.data;
+	delete this.context;
 
 	for (tagName in tag) {
 		if (tag.hasOwnProperty(tagName) && typeof tag[tagName].endRender == 'function') {
@@ -453,7 +435,7 @@ TSN.prototype.render = function(data) {
  * @return {Object} Объект шаблона или ошибку доступа к файлу.
  */
 TSN.prototype.reload = function(newPath) {
-	var path = TSN.config.templatePath + '/' + (typeof newPath == 'string' ? newPath : this.path);
+	var path = TSN.config.templateRoot + '/' + (typeof newPath == 'string' ? newPath : this.path);
 
 	try {
 		path = LIB.fileSystem.realpathSync(path);
@@ -488,8 +470,8 @@ LIB.fileSystem.readFile(pathRoot + 'config.json', 'utf-8', function(err, data) {
 			config.namespace = defaultConfig.namespace;
 		}
 
-		LIB.fileSystem.realpath(config.templatePath, function(err, path) {
-			config.templatePath = err ? defaultConfig.templatePath : path;
+		LIB.fileSystem.realpath(config.templateRoot, function(err, path) {
+			config.templateRoot = err ? defaultConfig.templateRoot : path;
 			TSN.config = config;
 		});
 	}

@@ -1,6 +1,6 @@
 {
 	"namespace": "tsn",
-	"templatePath": "",
+	"templateRoot": "",
 	"encoding": "utf-8",
 	"parseIncluded": true
 }
