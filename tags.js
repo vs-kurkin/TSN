@@ -19,31 +19,29 @@ this['context'] = {
 this['echo'] = {
 	'in': function(node) {
 		if (node.attribute.hasOwnProperty('data')) {
-			node.result = this.context[node.attribute.data];
+			node.text = this.context[node.attribute.data];
 		} else if (node.attribute.hasOwnProperty('var')) {
-			node.result = this['var'][node.attribute['var']];
+			node.text = this['var'][node.attribute['var']];
 		} else {
-			node.result = '';
+			node.text = '';
 		}
+
 		return false;
-	},
-	'out': function(node) {
-		node.text = node.result;
-		delete node.result;
 	}
 };
 
 this['var'] = {
 	'in': function(node) {
-		if (node.attribute.hasOwnProperty('name')) {
-			if (node.attribute.hasOwnProperty('value')) {
-				this['var'][node.attribute.name] = node.attribute.value;
+		var attribute = node.attribute;
+		if (attribute.hasOwnProperty('name')) {
+			if (attribute.hasOwnProperty('value')) {
+				this['var'][attribute.name] = attribute.value;
 				return false;
-			} else if (node.attribute.hasOwnProperty('data')) {
-				this['var'][node.attribute.name] = this.context[node.attribute.data];
+			} else if (attribute.hasOwnProperty('data')) {
+				this['var'][attribute.name] = this.context[attribute.data];
 				return false;
-			} else if (node.attribute.hasOwnProperty('context')) {
-				node.context = this['var'][node.attribute.context];
+			} else if (attribute.hasOwnProperty('context')) {
+				node.context = this['var'][attribute.context];
 			}
 
 			node.result = false;
@@ -68,11 +66,12 @@ this['var'] = {
 
 this['if'] = {
 	'in': function(node) {
-		if (node.attribute.hasOwnProperty('context')) {
-			node.context = this['var'][node.attribute.context];
+		var attribute = node.attribute;
+		if (attribute.hasOwnProperty('context')) {
+			node.context = this['var'][attribute.context];
 		}
 
-		return !!(node.isExpr = node.attribute.hasOwnProperty('data') ? this.context[node.attribute.data] : false);
+		return !!(node.isExpr = attribute.hasOwnProperty('data') && this.context[attribute.data]);
 	},
 	out: function(node) {
 		if (!node.isExpr) {
@@ -88,10 +87,12 @@ this['for'] = {
 		var toString = {}.constructor.prototype.toString;
 
 		return function(node) {
-			var property, hasProperty;
+			var property,
+				hasProperty,
+				attribute = node.attribute;
 
 			if (!node.hasOwnProperty('currentProperty')) {
-				node.result = this.context[node.attribute.data];
+				node.result = this.context[attribute.data];
 				node.property = [];
 
 				switch (toString.call(node.result)) {
@@ -113,8 +114,7 @@ this['for'] = {
 				if (node.resultLength) {
 					node.currentIndex = 0;
 					node.index--;
-					node.hasKeyAttr = node.attribute.hasOwnProperty('key');
-					node.hasValueAttr = node.attribute.hasOwnProperty('value');
+					node.hasValueAttr = attribute.hasOwnProperty('value');
 				} else {
 					delete node.resiltIsArray;
 					delete node.currentIndex;
@@ -122,23 +122,20 @@ this['for'] = {
 					delete node.result;
 					delete node.property;
 					delete node.currentProperty;
-					delete node.hasKeyAttr;
-					delete node.hasValueAttr;
 				}
 			}
 
-			hasProperty = node.hasOwnProperty('currentProperty');
-			if (hasProperty) {
-				if (node.hasKeyAttr) {
-					this['var'][node.attribute.key] = node.currentProperty;
+			if (hasProperty = node.hasOwnProperty('currentProperty')) {
+				if (attribute.hasOwnProperty('key')) {
+					this['var'][attribute.key] = node.currentProperty;
 				}
 
-				if (node.hasValueAttr) {
-					this['var'][node.attribute.value] = node.result[node.currentProperty];
+				if (attribute.hasOwnProperty('value')) {
+					this['var'][attribute.value] = node.result[node.currentProperty];
 				}
 
-				if (node.attribute.context) {
-					node.context = this['var'][node.attribute.context];
+				if (attribute.hasOwnProperty('context')) {
+					node.context = this['var'][attribute.context];
 				}
 			}
 
@@ -156,8 +153,6 @@ this['for'] = {
 			delete node.result;
 			delete node.property;
 			delete node.currentProperty;
-			delete node.hasKeyAttr;
-			delete node.hasValueAttr;
 
 			delete this['var'][node.attribute.key];
 			delete this['var'][node.attribute.value];
@@ -174,14 +169,15 @@ this['template'] = {
 	},
 	'in': function(node) {
 		var isIncluded = node.isIncluded === true,
-			name = node.attribute.name;
+			attribute = node.attribute,
+			name = attribute.name;
 
 		if (isIncluded) {
-			if (node.attribute.hasOwnProperty('context')) {
-				node.context = this['var'][node.attribute.context];
+			if (attribute.hasOwnProperty('context')) {
+				node.context = this['var'][attribute.context];
 			}
 		} else if (typeof name == 'string' && name.length) {
-			this.template[name] = node.attribute.hasOwnProperty('src') ? new TSN(node.attribute.src) : node;
+			this.template[name] = attribute.hasOwnProperty('src') ? new TSN(attribute.src) : node;
 		}
 
 		return isIncluded;
@@ -215,15 +211,16 @@ this['include'] = {
 		}
 	},
 	'out': function(node) {
-		var template;
+		var template,
+			attribute = node.attribute;
+		
 		if (node.hasOwnProperty('template')) {
 			template = node.template;
 			delete node.template;
 
 			if (template instanceof TSN) {
 				template.parent = this;
-				node.text = template.render(node.attribute.hasOwnProperty('context') ? this['var'][node.attribute
-					.context] : this.context);
+				node.text = template.render(attribute.hasOwnProperty('context') ? this['var'][attribute.context] : this.context);
 				delete template.parent;
 			} else {
 				template.parent = template.realParent;
@@ -231,12 +228,11 @@ this['include'] = {
 				delete node.template;
 				delete node.children;
 			}
-		} else if (node.attribute.hasOwnProperty('src')) {
-			template = new TSN(node.attribute.src);
+		} else if (attribute.hasOwnProperty('src')) {
+			template = new TSN(attribute.src);
 			if (template instanceof TSN) {
 				template.parent = this;
-				node.text = template.render(node.attribute.hasOwnProperty('context') ? this['var'][node.attribute
-					.context] : this.context);
+				node.text = template.render(attribute.hasOwnProperty('context') ? this['var'][attribute.context] : this.context);
 				delete template.parent;
 			} else {
 				node.text = '';

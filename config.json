@@ -2,5 +2,6 @@
 	"namespace": "tsn",
 	"templateRoot": "",
 	"encoding": "utf-8",
-	"parseIncluded": true
+	"parseIncluded": true,
+	"saveComments": true
 }

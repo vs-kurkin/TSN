@@ -100,7 +100,44 @@ var TSN = module.exports = (function() {
 	}
 
 	return function(path, isInline) {
-		this.namespace = TSN.config.namespace;
+		if (!(this instanceof TSN)) {
+			return new TSN(path, isInline);
+		}
+
+		if (typeof path != 'string') {
+			throw new Error('Invalid path type');
+		}
+
+		if (typeof TSN.config.namespace != 'string' || !TSN.config.namespace.length || !(/[a-z0-9-_]+/i).test(TSN.config.namespace)) {
+			this.namespace = defaultConfig.namespace;
+		} else {
+			this.namespace = TSN.config.namespace;
+		}
+
+		try {
+			LIB.fileSystem.realpathSync(TSN.config.templateRoot);
+		} catch (error) {
+			return error;
+		}
+
+		fullPath = TSN.config.templateRoot + '/' + path;
+		if (TSN.cache.hasOwnProperty(fullPath)) {
+			return TSN.cache[fullPath];
+		}
+
+		if (isInline !== true) {
+			try {
+				path = LIB.fileSystem.readFileSync(fullPath, TSN.config.encoding);
+			} catch (error) {
+				return error;
+			}
+
+			this.path = fullPath;
+		}
+
+		this.errors = [];
+		this.children = [];
+		this.text = '';
 
 		var space = '(?:\\r|\\n[^\\S\\r\\n]*)?',
 			tagStart = '(?:&' + this
@@ -114,7 +151,7 @@ var TSN = module.exports = (function() {
 				entity: new RegExp('&' + this.namespace + '.([a-z0-9]+);', 'gi')
 			},
 			match,
-			current,
+			current = this,
 			node,
 			stack = [],
 			resultLength = 0,
@@ -132,34 +169,7 @@ var TSN = module.exports = (function() {
 			fullPath,
 			tagData;
 
-		if (typeof path != 'string') {
-			throw new Error('Invalid path type');
-		}
-
-		fullPath = TSN.config.templateRoot + '/' + path;
-		if (TSN.cache.hasOwnProperty(fullPath)) {
-			return TSN.cache[fullPath];
-		}
-
-		if (!(this instanceof TSN)) {
-			return new TSN(path, isInline);
-		}
-
-		this.errors = [];
-
-		if (isInline !== true) {
-			try {
-				path = LIB.fileSystem.readFileSync(fullPath, TSN.config.encoding);
-			} catch (error) {
-				return error;
-			}
-
-			this.path = fullPath;
-		}
-
-		this.children = [];
-		this.text = '';
-		currentTemplate = TSN.cache[fullPath] = current = this;
+		currentTemplate = TSN.cache[fullPath] = this;
 		regExpTag = regExp.entity;
 
 		path = path.replace(regExp.xml, function (result) {
@@ -348,14 +358,13 @@ TSN.prototype.render = function(data) {
 			delete currentChild.context;
 
 			if (isParse === false) {
-				currentChild.text = '';
 				tagData = tag[currentChild.name]['out'];
 				if (typeof tagData == 'function') {
 					tagData.call(this, currentChild);
 				}
 
 				this.context = contexts.pop();
-				currentNode.text += currentChild.text;
+				currentNode.text += currentChild.text || '';
 				delete currentChild.isIncluded;
 				delete currentChild.text;
 
@@ -466,14 +475,7 @@ LIB.fileSystem.readFile(pathRoot + 'config.json', 'utf-8', function(err, data) {
 			}
 		}
 
-		if (typeof config.namespace != 'string' || !config.namespace.length || !(/[a-z0-9-_]+/i).test(config.namespace)) {
-			config.namespace = defaultConfig.namespace;
-		}
-
-		LIB.fileSystem.realpath(config.templateRoot, function(err, path) {
-			config.templateRoot = err ? defaultConfig.templateRoot : path;
-			TSN.config = config;
-		});
+		TSN.config = config;
 	}
 });
 
