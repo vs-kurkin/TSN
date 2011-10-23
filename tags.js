@@ -12,7 +12,7 @@ this['context'] = {
 	'in': function(node) {
 		var attribute = node.attribute;
 		if (attribute.hasOwnProperty('data')) {
-			this.context = this.context[attribute.data];
+			attribute.context = attribute.data;
 		} else if (attribute.hasOwnProperty('var')) {
 			this.context = this['var'][attribute['var']];
 		}
