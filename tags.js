@@ -37,10 +37,7 @@ this['var'] = {
 	'in': function(node) {
 		var attribute = node.attribute;
 		if (attribute.hasOwnProperty('name')) {
-			if (attribute.hasOwnProperty('value')) {
-				this['var'][attribute.name] = attribute.value;
-				return false;
-			} else if (attribute.hasOwnProperty('data')) {
+			if (attribute.hasOwnProperty('data')) {
 				this['var'][attribute.name] = this.context[attribute.data];
 				return false;
 			}
@@ -111,7 +108,6 @@ this['for'] = {
 				if (node.resultLength) {
 					node.currentIndex = 0;
 					node.index--;
-					node.hasValueAttr = attribute.hasOwnProperty('value');
 				} else {
 					delete node.resiltIsArray;
 					delete node.currentIndex;
