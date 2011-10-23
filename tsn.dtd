@@ -4,6 +4,13 @@
 	context CDATA #IMPLIED
 	>
 
+<!ELEMENT tsn:context EMPTY>
+<!ATTLIST tsn:context
+	data CDATA #IMPLIED
+	var CDATA #IMPLIED
+	context CDATA #IMPLIED
+	>
+
 <!ELEMENT tsn:echo EMPTY>
 <!ATTLIST tsn:echo
 	data CDATA #IMPLIED
