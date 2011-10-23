@@ -1,35 +1,42 @@
 <!ELEMENT tsn:root ANY>
 <!ATTLIST tsn:root
 	xmlns:tsn CDATA #FIXED 'TSN'
+	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:echo EMPTY>
 <!ATTLIST tsn:echo
-	expr CDATA #IMPLIED
+	data CDATA #IMPLIED
 	var CDATA #IMPLIED
+	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:var ANY>
 <!ATTLIST tsn:var
 	name CDATA #REQUIRED
-	value CDATA #IMPLIED
+	data CDATA #IMPLIED
+	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:if ANY>
 <!ATTLIST tsn:if
-	expr CDATA #REQUIRED
+	data CDATA #IMPLIED
+	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:for ANY>
 <!ATTLIST tsn:for
-	expr CDATA #REQUIRED
+	data CDATA #IMPLIED
 	key CDATA #IMPLIED
 	value CDATA #IMPLIED
+	context CDATA #IMPLIED
 	>
 
-<!ELEMENT tsn:while ANY>
-<!ATTLIST tsn:while
-	expr CDATA #REQUIRED
+<!ELEMENT tsn:template ANY>
+<!ATTLIST tsn:template
+	name CDATA #REQUIRED
+	src CDATA #IMPLIED
+	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:include ANY>
@@ -37,11 +44,7 @@
 	data CDATA #IMPLIED
 	name CDATA #IMPLIED
 	src CDATA #IMPLIED
-	>
-
-<!ELEMENT tsn:template ANY>
-<!ATTLIST tsn:template
-	name CDATA #REQUIRED
+	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:anchor ANY>
@@ -52,5 +55,6 @@
 <!ELEMENT tsn:set-anchor ANY>
 <!ATTLIST tsn:set-anchor
 	name CDATA #REQUIRED
-	value CDATA #IMPLIED
+	data CDATA #IMPLIED
+	context CDATA #IMPLIED
 	>
