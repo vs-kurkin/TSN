@@ -4,7 +4,7 @@
 	context CDATA #IMPLIED
 	>
 
-<!ELEMENT tsn:context EMPTY>
+<!ELEMENT tsn:context ANY>
 <!ATTLIST tsn:context
 	data CDATA #IMPLIED
 	var CDATA #IMPLIED
@@ -65,3 +65,8 @@
 	data CDATA #IMPLIED
 	context CDATA #IMPLIED
 	>
+
+<!-- include DTD XHTML1.1 -->
+<!ENTITY % Block.extra "| tsn:root | tsn:context | tsn:var | tsn:if | tsn:for | tsn:template | include | tsn:anchor | tsn:set-anchor">
+<!ENTITY % xhtml11.dtd PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
+%xhtml11.dtd;
