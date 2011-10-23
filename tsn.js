@@ -456,12 +456,6 @@ TSN.prototype.render = function(data) {
 TSN.prototype.reload = function(newPath) {
 	var path = TSN.config.templateRoot + '/' + (typeof newPath == 'string' ? newPath : this.path);
 
-	try {
-		path = LIB.fileSystem.realpathSync(path);
-	} catch (e) {
-		return e;
-	}
-
 	if (TSN.cache.hasOwnProperty(path)) {
 		delete TSN.cache[path];
 	}
