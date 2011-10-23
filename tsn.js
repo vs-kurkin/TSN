@@ -58,17 +58,21 @@ var TSN = module.exports = (function() {
 		regExpTag;
 
 	function toString() {
-		var length = this.length,
-			vars = this.template['var'],
-			value = this.value,
-			result = value[--length];
+		if(this.hasOwnProperty('name')){
+			return this.template['var'][this.name];
+		} else {
+			var length = this.length,
+				vars = this.template['var'],
+				value = this.value,
+				result = value[--length];
 
-		while (length) {
-			result = vars[value[--length]] + result;
-			result = value[--length] + result;
+			while (length) {
+				result = vars[value[--length]] + result;
+				result = value[--length] + result;
+			}
+
+			return result;
 		}
-
-		return result;
 	}
 
 	function attribute(result, name, value) {
@@ -86,12 +90,20 @@ var TSN = module.exports = (function() {
 
 		if (lastIndex) {
 			data.push(value.slice(lastIndex));
-			attribute = {
-				value: data,
-				toString: toString,
-				length: data.length,
-				template: currentTemplate
-			};
+			if (data.length == 3 && data[0] == '' && data[2] == '') {
+				attribute = {
+					name: data[1],
+					toString: toString,
+					template: currentTemplate
+				};
+			} else {
+				attribute = {
+					value: data,
+					toString: toString,
+					length: data.length,
+					template: currentTemplate
+				};
+			}
 		} else {
 			attribute = value;
 		}
@@ -353,17 +365,12 @@ TSN.prototype.render = function(data) {
 					break;
 			}
 
-			contexts.push(this.context);
-			this.context = currentChild.context || this.context;
-			delete currentChild.context;
-
 			if (isParse === false) {
 				tagData = tag[currentChild.name]['out'];
 				if (typeof tagData == 'function') {
 					tagData.call(this, currentChild);
 				}
 
-				this.context = contexts.pop();
 				currentNode.text += currentChild.text || '';
 				delete currentChild.isIncluded;
 				delete currentChild.text;
@@ -372,6 +379,11 @@ TSN.prototype.render = function(data) {
 				currentChild = currentNode.children[currentChild.index + 1];
 			} else {
 				if (currentChild.hasOwnProperty('children')) {
+					contexts.push(this.context);
+					if (currentChild.attribute.hasOwnProperty('context')) {
+						this.context = this.context[currentChild.attribute.context];
+					}
+
 					currentChild.text = '';
 					currentNode = currentChild;
 					currentChild = currentNode.children[0];
@@ -384,8 +396,6 @@ TSN.prototype.render = function(data) {
 					if (typeof tagData == 'function') {
 						tagData.call(this, currentChild);
 					}
-
-					this.context = contexts.pop();
 
 					currentNode.text += currentChild.text;
 					delete currentChild.isIncluded;
