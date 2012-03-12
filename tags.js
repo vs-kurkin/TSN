@@ -1,7 +1,7 @@
 /**
- * @author Влад Куркин (b-vladi@cs-console.ru)
- * @version 1.0 beta
- * @title Описание тегов шаблонизатора TSN.
+ * @fileOverview Описание тегов шаблонизатора TSN.
+ * @author <a href="mailto:b-vladi@cs-console.ru">Влад Куркин</a>
+ * @version 1.1 beta
  */
 
 var TSN = module.parent.exports;
