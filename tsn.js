@@ -1,312 +1,387 @@
 /**
- * @author Влад Куркин, Email: b-vladi@cs-console.ru
- * @version 1.0 beta
- * @title Templating System Node.JS
- *
- * Dependents:
- * Стандартный модуль fs, для работы с файловой системой.
+ * @fileOverview Templateting System for Node.JS.
+ * @author <a href="mailto:b-vladi@cs-console.ru">Влад Куркин</a>
+ * @version 2.0 beta
  */
 
+/**
+ * @ignore
+ */
 var LIB = {
-	fileSystem: require('fs')
-};
-
-var pathRoot = module.filename.replace(/(.*)\/.*$/, '$1/');
-
-/**
- * Стандартные настройки шаблонизатора.
- * <b>namespace</b> - Постранство имен тегов.
- * <b>templateRoot</b> - Полный путь к папке шаблонов без слеша на конце.
- * <b>encoding</b> - Кодировка файлов шаблона.
- * <b>parseIncluded</b> - Флаг, указывающий на необходимость парсинга шаблонов, вставленных тегом include или template.
- */
-var defaultConfig = {
-	namespace: 'tsn',
-	templateRoot: '',
-	encoding: 'utf-8',
-	parseIncluded: true,
-	saveComments: true
-};
-
-var tag;
-
-function getErrorData(result, index, text) {
-	text = text.substr(0, index) + result;
-	var n = text.lastIndexOf('\n');
-	var r = text.lastIndexOf('\r');
-
-	return 'Line: ' + (text.replace(/[^\n\r]+/g, '').length + 1) + ', Char: ' + text.substring((n > r) ? n : r)
-		.lastIndexOf(result.replace(/^\s+/, ''));
-}
+	fileSystem: require('fs'),
+	path: require('path'),
+	event: require('events')
+},
+	configPath = LIB.path.join(__dirname, 'config.json'),
+	tag,
+	currentTmplChild,
+	currentTemplate,
+	regExpTag;
 
 /**
- * Конструктор создания шаблонов.
- * @constructor
- * @param path {String} Относительный путь к файлу шаблона или код шаблона. Полный путь выглядет как config.templateRoot + '/' + path.
- * @param isInline {Boolean} Флаг, указывающий на то что, в параметре @param path передан код шаблона.
- * @trows <i>Invalid path type</i> - Ошибка, возникающая в том случае, если параметр @param path не соответствует типу String.
- * @return {Object} Возвращает объект шаблона.
+ * @ignore
+ * todo: Доделать информацию о ошибках парсинга
  */
+var createError = (function () {
+	var regExpN = /[^\n]+/g;
+	var regExpR = /[^\r]+/g;
 
-/*
- todo: Доделать информацию о ошибках парсинга
- * */
+	return function (index, result, content, declaration) {
+		var n,
+			r,
+			error = new Error();
 
-var TSN = module.exports = (function() {
-	var currentTmplChild,
-		currentTemplate,
-		regExpTag;
+		content = (declaration + content).substr(0, index + declaration.length) + result;
 
-	function toString() {
-		if(this.hasOwnProperty('name')){
-			return this.template['var'][this.name];
-		} else {
-			var length = this.length,
-				vars = this.template['var'],
-				value = this.value,
-				result = value[--length];
+		n = content.lastIndexOf('\n');
+		r = content.lastIndexOf('\r');
 
-			while (length) {
-				result = vars[value[--length]] + result;
-				result = value[--length] + result;
-			}
+		error.line = content.replace((n > r) ? regExpN : regExpR, '').length + 1;
+		error.char = content.substring((n > r) ? n : r).lastIndexOf(result.replace(/^\s+/, ''));
 
-			return result;
-		}
-	}
-
-	function attribute(result, name, value) {
-		var match,
-			index,
-			lastIndex = 0,
-			attribute,
-			data = [];
-
-		while (match = regExpTag.exec(value)) {
-			index = match.index;
-			data.push(value.slice(lastIndex, index), match[1]);
-			lastIndex = index + match[0].length;
-		}
-
-		if (lastIndex) {
-			data.push(value.slice(lastIndex));
-			if (data.length == 3 && data[0] == '' && data[2] == '') {
-				attribute = {
-					name: data[1],
-					toString: toString,
-					template: currentTemplate
-				};
-			} else {
-				attribute = {
-					value: data,
-					toString: toString,
-					length: data.length,
-					template: currentTemplate
-				};
-			}
-		} else {
-			attribute = value;
-		}
-
-		currentTmplChild.attribute[name] = attribute;
-	}
-
-	return function(path, isInline) {
-		if (!(this instanceof TSN)) {
-			return new TSN(path, isInline);
-		}
-
-		if (typeof path != 'string') {
-			throw new Error('Invalid path type');
-		}
-
-		if (typeof TSN.config.namespace != 'string' || !TSN.config.namespace.length || !(/[a-z0-9-_]+/i).test(TSN.config.namespace)) {
-			this.namespace = defaultConfig.namespace;
-		} else {
-			this.namespace = TSN.config.namespace;
-		}
-
-		try {
-			LIB.fileSystem.realpathSync(TSN.config.templateRoot);
-		} catch (error) {
-			return error;
-		}
-
-		fullPath = TSN.config.templateRoot + '/' + path;
-		if (TSN.cache.hasOwnProperty(fullPath)) {
-			return TSN.cache[fullPath];
-		}
-
-		if (isInline !== true) {
-			try {
-				path = LIB.fileSystem.readFileSync(fullPath, TSN.config.encoding);
-			} catch (error) {
-				return error;
-			}
-
-			this.path = fullPath;
-		}
-
-		this.errors = [];
-		this.children = [];
-		this.text = '';
-
-		var space = '(?:\\r|\\n[^\\S\\r\\n]*)?',
-			tagStart = '(?:&' + this
-				.namespace + '.([a-z0-9-_]+);)|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this
-				.namespace + ':([a-z\\-_]+)\\s*>)',
-			regExp = {
-				tag: new RegExp(tagStart + '|(?:' + space + '<\\s*' + this
-					.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi'),
-				attr: /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:"([^"]*)")|(?:'[^']*')))?/gi,
-				xml: /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*(<!DOCTYPE\s+[a-z\-_]+(?::[a-z\-_]+)?(?:\s+PUBLIC\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:\[[\s\S]*?\])?)?\s*>)?/i,
-				entity: new RegExp('&' + this.namespace + '.([a-z0-9]+);', 'gi')
-			},
-			match,
-			current = this,
-			node,
-			stack = [],
-			resultLength = 0,
-			xmlDeclaration = '',
-			result,
-			currentResultLength,
-			comment,
-			value,
-			closeTagName,
-			openTagName,
-			attributes,
-			emptyTag,
-			index,
-			lastIndex = 0,
-			fullPath,
-			tagData;
-
-		currentTemplate = TSN.cache[fullPath] = this;
-		regExpTag = regExp.entity;
-
-		path = path.replace(regExp.xml, function (result) {
-			xmlDeclaration = result;
-			return '';
-		});
-
-		while (match = regExp.tag.exec(path)) {
-			result = match[0];
-			currentResultLength = result.length;
-			value = match[1];
-			comment = match[2];
-			closeTagName = match[3];
-			openTagName = match[4];
-			attributes = match[5];
-			emptyTag = match[6];
-			index = match.index;
-
-			this.text += path.substring(lastIndex, index);
-
-			if (value) {
-				node = {
-					name: 'echo',
-					attribute: {
-						'var': value
-					},
-					start: index - resultLength,
-					end: index - resultLength,
-					index: current.children.length,
-					parent: current
-				};
-
-				current.children.push(node);
-
-				resultLength += currentResultLength;
-			} else if (openTagName) {
-				if (tag.hasOwnProperty(openTagName)) {
-					node = {
-						name: openTagName,
-						attribute: {},
-						start: index - resultLength,
-						index: current.children.length,
-						parent: current
-					};
-
-					current.children.push(node);
-
-					if (emptyTag) {
-						node.end = node.start;
-					} else {
-						node.children = [];
-						stack.push(current);
-						current = node;
-					}
-
-					if (attributes) {
-						currentTmplChild = node;
-						attributes.replace(regExp.attr, attribute);
-					}
-
-					if (tag[openTagName].hasOwnProperty('parse') && typeof tag[openTagName].parse == 'function') {
-						tag[openTagName].parse.call(this, node);
-					}
-				} else {
-					this.errors
-						.push((emptyTag ? 'Unknown tag \'' : 'Unknown tag opening\'') + openTagName + '\'\n' + getErrorData(xmlDeclaration + result, index, path));
-				}
-
-				resultLength += currentResultLength;
-			} else if (closeTagName) {
-				if (tag.hasOwnProperty(closeTagName)) {
-					if (current.name == closeTagName) {
-						if (!current.children.length) {
-							delete current.children;
-						}
-
-						current.end = index - resultLength;
-						current = stack.pop();
-					} else {
-						this.errors
-							.push('Missing start tag \'' + closeTagName + '\'\n' + getErrorData(xmlDeclaration + result, index, path));
-					}
-				} else {
-					this.errors
-						.push('Unknown tag closing \'' + closeTagName + '\'\n' + getErrorData(xmlDeclaration + result, index, path));
-				}
-
-				resultLength += currentResultLength;
-			} else if (comment) {
-				if (TSN.config.saveComments === true) {
-					this.text += result;
-				} else {
-					resultLength += currentResultLength;
-				}
-			} else {
-				this.text += result;
-			}
-
-			lastIndex = index + currentResultLength;
-		}
-
-		while (tagData = stack.pop()) {
-			tagData.end = tagData.start;
-			this.errors.push('Tag is not closed \'' + tagData.name + '\'\n' + getErrorData(xmlDeclaration + result, tagData
-				.start, path));
-		}
-
-		currentTemplate = currentTmplChild = regExpTag = null;
-
-		this.text += path.substring(lastIndex);
+		return error;
 	};
 })();
 
 /**
+ * @ignore
+ */
+function normalize (node) {
+	var children = node.children,
+		child,
+		oldType,
+		type,
+		newChildren = [];
+
+	while ((child = children.shift()) != undefined) {
+		type = typeof child;
+
+		if (type == 'string' && type == oldType) {
+			newChildren.push(newChildren.pop() + child);
+		} else {
+			child.index = newChildren.length;
+			newChildren.push(child);
+		}
+
+		oldType = type;
+	}
+
+	node.children.push.apply(node.children, newChildren);
+}
+
+/**
+ * @ignore
+ */
+function toString() {
+	if (this.hasOwnProperty('name')) {
+		return this.template['var'][this.name];
+	} else {
+		var length = this.length,
+			vars = this.template['var'],
+			value = this.value,
+			result = value[--length];
+
+		while (length) {
+			result = vars[value[--length]] + result;
+			result = value[--length] + result;
+		}
+
+		return result;
+	}
+}
+
+/**
+ * @ignore
+ */
+function parseAttribute(result, name, value) {
+	var match,
+		index,
+		lastIndex = 0,
+		attribute,
+		data = [];
+
+	while (match = regExpTag.exec(value)) {
+		index = match.index;
+		data.push(value.slice(lastIndex, index), match[1]);
+		lastIndex = index + match[0].length;
+	}
+
+	if (lastIndex) {
+		data.push(value.slice(lastIndex));
+		if (data.length == 3 && data[0] == '' && data[2] == '') {
+			attribute = {
+				name: data[1],
+				toString: toString,
+				template: currentTemplate
+			};
+		} else {
+			attribute = {
+				value: data,
+				toString: toString,
+				length: data.length,
+				template: currentTemplate
+			};
+		}
+	} else {
+		attribute = value;
+	}
+
+	currentTmplChild.attribute[name] = attribute;
+}
+
+/**
+ * @name TSN
+ * @constructor
+ * @description Конструктор создания шаблонов.
+ * @param {String} path Относительный путь к файлу шаблона или код шаблона. Полный путь выглядет как <i>config.templateRoot</i> ({@link TSN#config}) + '/' + <i>path</i>.
+ * @param {Boolean} [isInline] Флаг, указывающий на то что, в параметре path передан код шаблона.
+ * @return {Object} Объект шаблона.
+ */
+function TSN(path, isInline) {
+	if (!(this instanceof TSN)) {
+		throw 'TSN should be called as a constructor';
+	}
+
+	if (typeof path.toString == 'function') {
+		path = path.toString();
+	}
+
+	if (typeof path != 'string') {
+		throw 'Invalid path type';
+	}
+
+	if (TSN.config.hasOwnProperty('namespace') && (/[a-z0-9-_]+/i).test(TSN.config.namespace)) {
+		this.namespace = TSN.config.namespace;
+	} else {
+		TSN.emit('error', new Error('Invalid namespace.'));
+	}
+
+	this.errors = [];
+	this.children = [];
+
+	LIB.fileSystem.realpathSync(TSN.config.templateRoot);
+
+	fullPath = LIB.path.join(TSN.config.templateRoot, path);
+	if (TSN.cache.hasOwnProperty(fullPath)) {
+		return TSN.cache[fullPath];
+	}
+
+	var content;
+	if (isInline !== true) {
+		content = LIB.fileSystem.readFileSync(fullPath, TSN.config.encoding);
+
+		this.path = fullPath;
+	} else {
+		content = path;
+	}
+
+	var space = '(?:\\r|\\n[^\\S\\r\\n]*)?',
+		entity = '&' + this.namespace + '.([a-z0-9]+);',
+		tagStart = '(?:' + space + entity + ')|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>)',
+		regExp = {
+			tag: new RegExp(tagStart + '|(?:' + space + '<\\s*' + this.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi'),
+			attr: /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:"([^"]*)")|(?:'[^']*')))?/gi,
+			xml: /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*(<!DOCTYPE\s+[a-z\-_]+(?::[a-z\-_]+)?(?:\s+PUBLIC\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:\[[\s\S]*?\])?)?\s*>)?/i,
+			entity: new RegExp(entity, 'gi')
+		},
+		match,
+		current = this,
+		node,
+		stack = [],
+		xmlDeclaration = '',
+		result,
+		comment,
+		value,
+		closeTagName,
+		openTagName,
+		attributes,
+		emptyTag,
+		index,
+		lastIndex = 0,
+		fullPath,
+		parseResult,
+		error,
+		onParse;
+
+	TSN.cache[fullPath] = this;
+
+	content = content.replace(regExp.xml, function (result) {
+		xmlDeclaration = result;
+		return '';
+	});
+
+	while (match = regExp.tag.exec(content)) {
+		result = match[0];
+		value = match[1];
+		comment = match[2];
+		closeTagName = match[3];
+		openTagName = match[4];
+		attributes = match[5];
+		emptyTag = match[6];
+		index = match.index;
+
+		current.children.push(content.substring(lastIndex, index));
+
+		if (value) {
+			node = {
+				name: 'echo',
+				attribute: {
+					'data': value
+				},
+				'in': tag.echo['in'],
+				out: tag.echo['out']
+			};
+
+			if (typeof tag.echo.parse == 'function') {
+				parseResult = tag.echo.parse.call(node, this);
+			} else {
+				parseResult = true;
+			}
+
+			if (typeof parseResult == 'string') {
+				current.children.push(parseResult);
+			} else if (parseResult.constructor = Error) {
+				error = createError(index, result, content, xmlDeclaration);
+				error.message = parseResult.message;
+				error.tagName = 'echo';
+
+				this.errors.push(error);
+			} else {
+				current.children.push(node);
+			}
+
+		} else if (openTagName) {
+			if (tag.hasOwnProperty(openTagName)) {
+				node = {
+					name: openTagName,
+					attribute: {},
+					start: index,
+					'in': tag[openTagName]['in'],
+					out: tag[openTagName]['out'],
+					children: []
+				};
+
+				if (attributes) {
+					currentTmplChild = node;
+					currentTemplate = this;
+					regExpTag = regExp.entity;
+					attributes.replace(regExp.attr, parseAttribute);
+				}
+
+				onParse = tag[openTagName].parse;
+				parseResult = typeof onParse == 'function' ? onParse.call(node, this) : true;
+
+				if (typeof parseResult == 'string') {
+					current.children.push(parseResult);
+				} else if (parseResult && parseResult.constructor == Error) {
+					error = createError(index, result, content, xmlDeclaration);
+					error.message = parseResult.message;
+					error.tagName = openTagName;
+
+					this.errors.push(error);
+				} else {
+					current.children.push(node);
+				}
+
+				if (emptyTag) {
+					delete node.start;
+				} else {
+					stack.push(current);
+					current = node;
+				}
+			} else {
+				error = createError(index, result, content, xmlDeclaration);
+				error.message = emptyTag ? 'Unknown tag.' : 'Unknown tag opening.';
+				error.tagName = openTagName;
+
+				this.errors.push(error);
+			}
+
+		} else if (closeTagName) {
+			if (tag.hasOwnProperty(closeTagName)) {
+				if (current.name == closeTagName) {
+					delete current.start;
+
+					if (current.hasOwnProperty('children') && current.children.length) {
+						normalize(current);
+					}
+
+					current = stack.pop();
+				} else {
+					error = createError(index, result, content, xmlDeclaration);
+					error.message = 'Missing start tag.';
+					error.tagName = closeTagName;
+
+					this.errors.push(error);
+				}
+			} else {
+				error = createError(index, result, content, xmlDeclaration);
+				error.message = 'Unknown tag closing.';
+				error.tagName = closeTagName;
+
+				this.errors.push(error);
+			}
+
+		} else if (comment) {
+			if (TSN.config.saveComments === true) {
+				current.children.push(result);
+			}
+		} else { // CDATA
+			current.children.push(result);
+		}
+
+		lastIndex = index + result.length;
+	}
+
+	while (current = stack.pop()) {
+		error = createError(index, result, content, xmlDeclaration);
+		error.message = 'Tag is not closed.';
+		error.tagName = current.name;
+
+		this.errors.push(error);
+
+		delete current.start;
+	}
+
+	this.children.push(content.substring(lastIndex));
+
+	normalize(this);
+
+	currentTemplate = currentTmplChild = regExpTag = null;
+
+	return this;
+}
+
+/**
+ * @ignore
+ */
+var eventPrototype = LIB.event.EventEmitter.prototype;
+for (var property in eventPrototype) {
+	if (eventPrototype.hasOwnProperty(property)) {
+		TSN[property] = eventPrototype[property];
+	}
+}
+
+/**
+ * Стандартные настройки шаблонизатора.
+ * @static
+ */
+TSN.config = {};
+
+/**
  * Кеш. Содержит все созданные объекты шаблона, загруженные из файла.
  * Именами свойств являются полные пути к соответствующим шаблонам.
+ * @static
  */
 TSN.cache = {};
 
 /**
  * Метод расширения набора тегов шаблонизатора.
- * @param name {String} Локальное имя тега.
- * @param data {Object} Объектное описание тега.
+ * @static
+ * @param {String} name Локальное имя тега.
+ * @param {Object} data Объектное описание тега.
  */
-TSN.extend = function(name, data) {
+TSN.extend = function (name, data) {
 	if (typeof name == 'string' && data && (typeof data['in'] == 'function' || typeof data['out'] == 'function')) {
 		tag[name] = data;
 	}
@@ -314,23 +389,20 @@ TSN.extend = function(name, data) {
 
 /**
  * Рендеринг шаблона на основе переданных данных.
- * @param data {Object} Объект данных, на основе которых генерируется результат.
- * @this {Object} Объект шаблона.
- * @return {Text} Результат рендеринга.
+ * @param {Object} data Объект данных, на основе которых генерируется результат.
+ * @return {String} Результат рендеринга.
+ * @function
  */
-TSN.prototype.render = function(data) {
+TSN.prototype.render = function (data) {
 	var currentNode = this,
-		currentChild = currentNode.children ? currentNode.children[0] : false,
+		currentIndex = 0,
+		currentChild = currentNode.children[currentIndex],
 		result = '',
 		isParse,
-		lastIndex = 0,
-		isInline,
-		templateText = this.text,
-		tagData,
 		tagName,
 		newResult,
-		listener,
 		parent,
+		stack = [],
 		contexts = [];
 
 	this.data = this.context = data;
@@ -345,89 +417,69 @@ TSN.prototype.render = function(data) {
 
 	while (true) {
 		if (currentChild) {
-			isInline = currentChild.isIncluded !== true;
+			if (typeof currentChild == 'string') {
+				currentNode.text += currentChild;
+				currentChild = currentNode.children[++currentIndex];
+			} else {
+				currentChild.text = '';
 
-			if (isInline) {
-				currentNode.text += templateText.slice(lastIndex, currentChild.start);
-			}
-
-			lastIndex = currentChild.start;
-
-			isParse = true;
-			listener = tag[currentChild.name]['in'];
-
-			switch (typeof listener) {
-				case 'boolean':
-					isParse = listener;
-					break;
-				case 'function':
-					isParse = listener.call(this, currentChild);
-					break;
-			}
-
-			if (isParse === false) {
-				tagData = tag[currentChild.name]['out'];
-				if (typeof tagData == 'function') {
-					tagData.call(this, currentChild);
+				switch (typeof currentChild['in']) {
+					case 'boolean':
+						isParse = currentChild['in'];
+						break;
+					case 'function':
+						isParse = currentChild['in'](this);
+						break;
+					default:
+						isParse = true;
 				}
 
-				currentNode.text += currentChild.text || '';
-				delete currentChild.isIncluded;
-				delete currentChild.text;
+				if (isParse === false) {
+					if (typeof currentChild['out'] == 'function') {
+						currentChild['out'](this);
+					}
 
-				lastIndex = currentChild.end;
-				currentChild = currentNode.children[currentChild.index + 1];
-			} else {
-				if (currentChild.hasOwnProperty('children')) {
+					currentNode.text += currentChild.text || '';
+					delete currentChild.text;
+
+					currentIndex = currentChild.index + 1;
+					currentChild = currentNode.children[currentIndex];
+				} else {
 					contexts.push(this.context);
+					stack.push(currentNode);
+
 					if (currentChild.attribute.hasOwnProperty('context')) {
 						this.context = this.context[currentChild.attribute.context];
 					}
 
 					currentChild.text = '';
 					currentNode = currentChild;
-					currentChild = currentNode.children[0];
-				} else {
-					currentChild.text = templateText.slice(lastIndex, currentChild.end);
-
-					lastIndex = isInline ? currentChild.end : currentNode.end;
-
-					tagData = tag[currentChild.name]['out'];
-					if (typeof tagData == 'function') {
-						tagData.call(this, currentChild);
-					}
-
-					currentNode.text += currentChild.text;
-					delete currentChild.isIncluded;
-					delete currentChild.text;
-
-					currentChild = currentNode.children[currentChild.index + 1];
+					currentIndex = 0;
+					currentChild = currentNode.children[currentIndex];
 				}
 			}
+
+
 		} else {
 			if (currentNode == this) {
-				result = currentNode.text + templateText.slice(lastIndex);
-				this.text = templateText;
+				result = currentNode.text;
+				delete currentNode.text;
 				break;
 			}
 
-			currentNode.text += templateText.slice(lastIndex, currentNode.end);
+			parent = stack.pop();
 
-			parent = currentNode.parent;
-			lastIndex = currentNode.isIncluded === true ? parent.end : currentNode.end;
-
-			tagData = tag[currentNode.name]['out'];
-			if (typeof tagData == 'function') {
-				tagData.call(this, currentNode);
+			if (typeof currentNode['out'] == 'function') {
+				currentNode['out'](this);
 			}
 
 			this.context = contexts.pop();
 
 			parent.text += currentNode.text;
-			delete currentNode.isIncluded;
 			delete currentNode.text;
 
-			currentChild = parent.children[currentNode.index + 1];
+			currentIndex = currentNode.index + 1;
+			currentChild = parent.children[currentIndex];
 			currentNode = parent;
 		}
 	}
@@ -437,8 +489,8 @@ TSN.prototype.render = function(data) {
 
 	for (tagName in tag) {
 		if (tag.hasOwnProperty(tagName) && typeof tag[tagName].endRender == 'function') {
-			newResult = tag[tagName].endRender.call(this, result);
-			if (typeof newResult == 'string') {
+			newResult = String(tag[tagName].endRender.call(this, result));
+			if (newResult != 'undefined') {
 				result = newResult;
 			}
 		}
@@ -449,38 +501,94 @@ TSN.prototype.render = function(data) {
 
 /**
  * Повторный парсинг шаблона, загруженного из файла.
- * @param newPath {String} Необязательный параметр, сответствующий новому относительному пути к файлу шаблона.
- * @this {Object}
+ * @param {String} [newPath] Новый оносительный пути к файлу шаблона.
  * @return {Object} Объект шаблона или ошибку доступа к файлу.
+ * @function
  */
-TSN.prototype.reload = function(newPath) {
-	var path = TSN.config.templateRoot + '/' + (typeof newPath == 'string' ? newPath : this.path);
-
-	if (TSN.cache.hasOwnProperty(path)) {
-		delete TSN.cache[path];
-	}
-
-	return TSN.call(this, newPath, false);
+TSN.prototype.reload = function (newPath) {
+	delete TSN.cache[this.path];
+	return TSN.call(this, typeof newPath == 'string' ? newPath : this.path.substr(this.config.templateRoot.length), false);
 };
 
-LIB.fileSystem.readFile(pathRoot + 'config.json', 'utf-8', function(err, data) {
-	if (err) {
-		TSN.config = defaultConfig;
+LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
+	if (e) {
+		e.message = 'Can not read configuration file "' + configPath + '"';
+		TSN.emit('error', e);
 	} else {
 		try {
 			var config = JSON.parse(data);
-		} catch(e) {
-			throw new Error('Format error in configuration file \'' + pathRoot + 'config.json\'');
-		}
 
-		for (var property in defaultConfig) {
-			if (defaultConfig.hasOwnProperty(property) && !config.hasOwnProperty(property)) {
-				config[property] = defaultConfig[property];
+			for (var property in config) {
+				if (config.hasOwnProperty(property)) {
+					TSN.config[property] = config[property];
+				}
 			}
+		} catch (e) {
+			e.message = 'Format error in configuration file "' + configPath + '"';
+			TSN.emit('error', e);
 		}
-
-		TSN.config = config;
 	}
+
+	tag = require(LIB.path.join(__dirname, 'tags.js'));
+
+	TSN.emit('ready');
 });
 
-tag = require(pathRoot + 'tags.js');
+TSN.on('ready', function () {
+	function dataFromContext(template) {
+		this.text = template.context[this.attribute.data];
+		return false;
+	}
+
+	function fromContext(template) {
+		this.text = template.context;
+		return false;
+	}
+
+	function fromVar(template) {
+		this.text = template['var'][this.attribute['var']];
+		return false;
+	}
+
+	function dataFromVar(template) {
+		var attribute = this.attribute;
+		this.text = template['var'][attribute['var']][attribute.data];
+		return false;
+	}
+
+	TSN.extend('echo', {
+		parse: function () {
+			var attribute = this.attribute;
+
+			if (attribute.hasOwnProperty('data')) {
+				if (attribute.hasOwnProperty('var')) {
+					this['in'] = dataFromVar;
+				} else {
+					this['in'] = dataFromContext;
+				}
+			} else if (attribute.hasOwnProperty('var')) {
+				this['in'] = fromVar;
+			}
+
+			this.children.length = 0;
+		},
+		'in': fromContext
+	});
+});
+
+module.exports = TSN;
+
+/**
+ * @name TSN#ready
+ * @event
+ * @param {Object} event
+ * @description Модуль инициализирован и готов к использованию.
+ */
+
+/**
+ * @name TSN#error
+ * @event
+ * @param {string} message
+ * @param {Object} event
+ * @description Ошибка инициализации модуля.
+ */

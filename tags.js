@@ -8,248 +8,268 @@ var TSN = module.parent.exports;
 
 this['root'] = {};
 
-this['context'] = {
-	'in': function(node) {
-		var attribute = node.attribute;
-		if (attribute.hasOwnProperty('data')) {
-			attribute.context = attribute.data;
-		} else if (attribute.hasOwnProperty('var')) {
-			this.context = this['var'][attribute['var']];
+this['context'] = (function () {
+	function fromData() {
+		this.attribute.context = this.attribute.data;
+	}
+
+	function fromVar(template) {
+		template.context = template['var'][this.attribute['var']];
+	}
+
+	return {
+		parse: function () {
+			if (this.attribute.hasOwnProperty('data')) {
+				this['in'] = fromData;
+			} else if (this.attribute.hasOwnProperty('var')) {
+				this['in'] = fromVar;
+			} else {
+				return new Error('Attribute "data" or "var" is not defined.');
+			}
+		}
+	};
+})();
+
+this['var'] = (function () {
+	function fromData(template) {
+		template['var'][this.attribute.name] = template.context[this.attribute.data];
+		return false;
+	}
+
+	function fromText(template) {
+		template['var'][this.attribute.name] = this.text;
+		this.text = '';
+	}
+
+	return {
+		parse: function () {
+			var attribute = this.attribute;
+			if (!attribute.hasOwnProperty('name') || !attribute.name.length) {
+				this['in'] = false;
+			} else if (attribute.hasOwnProperty('data')) {
+				this['in'] = fromData;
+			} else {
+				this['out'] = fromText;
+			}
+		},
+		startRender: function () {
+			this['var'] = {};
+		},
+		endRender: function () {
+			delete this['var'];
+		}
+	};
+})();
+
+this['if'] = (function () {
+	function fromData() {
+		return this.result = template.context[this.attribute.data];
+	}
+
+	function fromContext() {
+		return this.result = template.context;
+	}
+
+	return {
+		parse: function () {
+			this['in'] = this.attribute.hasOwnProperty('data') ? fromData : fromContext;
+		},
+		'out': function () {
+			if (!this.result) {
+				this.text = '';
+			}
+
+			delete this.result;
+		}
+	};
+})();
+
+this['for'] = (function () {
+	var toString = {}.constructor.prototype.toString,
+		fncRegExp = /^function\s+[a-z]*\([^\)]*?\)\s*\{(?:\n|\r)?\s*([\s\S]*?)\}$/i;
+
+	var getProperty = (function () {
+		this.currentProperty = this.resultIsArray ? this.currentIndex : this.property[this.currentIndex];
+	}).toString().replace(fncRegExp, '$1');
+
+	var setKey = (function (template) {
+		template['var'][this.attribute.key] = this.currentProperty;
+	}).toString().replace(fncRegExp, '$1');
+
+	var setValue = (function (template) {
+		template['var'][this.attribute.value] = this.result[this.currentProperty];
+	}).toString().replace(fncRegExp, '$1');
+
+	var setContext = (function (template) {
+		template.context = this.result[this.currentProperty];
+	}).toString().replace(fncRegExp, '$1');
+
+	var inListenerBase = (function () {
+		if (++this.currentIndex == this.resultLength) {
+			this['out'] = this.outListener;
+		}
+		return true;
+	}).toString().replace(fncRegExp, '$1');
+
+	function inListener(template) {
+		var property;
+
+		this.result = this.attribute.hasOwnProperty('data') ? template.context[this.attribute.data] : template.context;
+		this.property = [];
+
+		switch (toString.call(this.result)) {
+			case '[object Array]':
+				this.resultIsArray = true;
+				this.resultLength = this.result.length;
+				break;
+			case '[object Object]':
+				for (property in this.result) {
+					this.property.push(property);
+				}
+				this.resultLength = this.property.length;
+				break;
+		}
+
+		if (this.resultLength) {
+			this.currentIndex = 0;
+			this.index--;
+			this['in'] = this.inListener;
+			delete this['out'];
+			this.inListener(template);
+			return true;
+		} else {
+			delete this.resultIsArray;
+			delete this.resultLength;
+			delete this.result;
+			delete this.property;
+			return false;
 		}
 	}
-};
 
-this['echo'] = {
-	'in': function(node) {
-		if (node.attribute.hasOwnProperty('data')) {
-			node.text = this.context[node.attribute.data];
-		} else if (node.attribute.hasOwnProperty('var')) {
-			node.text = this['var'][node.attribute['var']];
-		} else {
-			node.text = '';
+	function outListener(template) {
+		this.index++;
+		delete this.resultIsArray;
+		delete this.currentIndex;
+		delete this.resultLength;
+		delete this.result;
+		delete this.property;
+		delete this.currentProperty;
+
+		delete template['var'][this.attribute.key];
+		delete template['var'][this.attribute.value];
+
+		this['in'] = inListener;
+		delete this['out'];
+	}
+
+	return {
+		parse: function () {
+			this.outListener = outListener;
+			var codeListener = getProperty;
+
+			if (this.attribute.hasOwnProperty('key')) {
+				codeListener += setKey;
+			}
+
+			if (!this.attribute.hasOwnProperty('context')) {
+				codeListener += this.attribute.hasOwnProperty('value') ? 'template.context = ' + setValue : setContext;
+			} else if (this.attribute.hasOwnProperty('value')) {
+				codeListener += setValue;
+			}
+
+			this.inListener = new Function('template', codeListener += inListenerBase);
+		},
+		'in': inListener
+	};
+})();
+
+this['template'] = {
+	parse: function (template) {
+		var attribute = this.attribute;
+
+		if (!template.hasOwnProperty('template')) {
+			template.template = {};
 		}
 
+		if (attribute.hasOwnProperty('name')) {
+			if (typeof attribute.name == 'string') {
+				if (attribute.name.length) {
+					template.template[attribute.name] = this.children;
+					return '';
+				}
+			}
+		} else {
+			return new Error('Attribute "name" is not defined.');
+		}
+	},
+	'in': function (template) {
+		template.template[this.attribute.name] = this.children;
+		this.text = '';
 		return false;
 	}
 };
 
-this['var'] = {
-	'in': function(node) {
-		var attribute = node.attribute;
-		if (attribute.hasOwnProperty('name')) {
-			if (attribute.hasOwnProperty('data')) {
-				this['var'][attribute.name] = this.context[attribute.data];
-				return false;
-			}
-
-			node.result = false;
+this['include'] = (function () {
+	function fromInlineTemplate (template) {
+		var name = String(this.attribute.name);
+		if (template.template.hasOwnProperty(name)) {
+			this.children = template.template[name];
+			return true;
 		} else {
 			return false;
 		}
-	},
-	'out': function(node) {
-		if (node.result === false) {
-			this['var'][node.attribute.name] = node.text;
-			delete node.result;
-		}
-		node.text = '';
-	},
-	startRender: function() {
-		this['var'] = {};
-	},
-	endRender: function() {
-		delete this['var'];
 	}
-};
 
-this['if'] = {
-	'in': function(node) {
-		var attribute = node.attribute;
-		return !!(node.isExpr = attribute.hasOwnProperty('data') ? this.context[attribute.data] : this.context);
-	},
-	out: function(node) {
-		if (!node.isExpr) {
-			node.text = '';
-		}
-
-		delete node.isExpr;
+	function fromFile() {
+		this.children = new TSN(this.attribute.src).children;
 	}
-};
 
-this['for'] = {
-	'in': (function() {
-		var toString = {}.constructor.prototype.toString;
+	return {
+		parse: function (template) {
+			var attribute = this.attribute;
 
-		return function(node) {
-			var property,
-				hasProperty,
-				attribute = node.attribute;
+			if (attribute.hasOwnProperty('name')) {
+				var name = attribute.name;
 
-			if (!node.hasOwnProperty('currentProperty')) {
-				node.result = attribute.hasOwnProperty('data') ? this.context[attribute.data] : this.context;
-				node.property = [];
-
-				switch (toString.call(node.result)) {
-					case '[object Array]':
-						node.resiltIsArray = true;
-						node.resultLength = node.result.length;
-						node.currentProperty = 0;
-						break;
-					case '[object Object]':
-						for (property in node.result) {
-							node.property.push(property);
-						}
-
-						node.resultLength = node.property.length;
-						node.currentProperty = node.property[0];
-						break;
-				}
-
-				if (node.resultLength) {
-					node.currentIndex = 0;
-					node.index--;
+				if (template.template.hasOwnProperty(name)) {
+					if (typeof name == 'string') {
+						this.children = template.template[name];
+					} else {
+						this['in'] = fromInlineTemplate;
+					}
 				} else {
-					delete node.resiltIsArray;
-					delete node.currentIndex;
-					delete node.resultLength;
-					delete node.result;
-					delete node.property;
-					delete node.currentProperty;
+					return new Error('Template with the name "' + name + '" is not defined.')
 				}
-			}
-
-			if (hasProperty = node.hasOwnProperty('currentProperty')) {
-				if (attribute.hasOwnProperty('key')) {
-					this['var'][attribute.key] = node.currentProperty;
-				}
-
-				if (attribute.hasOwnProperty('value')) {
-					this['var'][attribute.value] = node.result[node.currentProperty];
-				}
-			}
-
-			return hasProperty;
-		}
-	})(),
-	'out': function(node) {
-		if (node.resultLength && ++node.currentIndex != node.resultLength) {
-			node.currentProperty = node.resiltIsArray ? node.currentIndex : node.property[node.currentIndex];
-		} else {
-			node.index++;
-			delete node.resiltIsArray;
-			delete node.currentIndex;
-			delete node.resultLength;
-			delete node.result;
-			delete node.property;
-			delete node.currentProperty;
-
-			delete this['var'][node.attribute.key];
-			delete this['var'][node.attribute.value];
-		}
-	}
-};
-
-this['template'] = {
-	startRender: function() {
-		this.template = {};
-	},
-	endRender: function() {
-		delete this.template;
-	},
-	'in': function(node) {
-		var isIncluded = node.isIncluded === true,
-			attribute = node.attribute,
-			name = attribute.name;
-
-		if (!isIncluded && typeof name == 'string' && name.length) {
-			this.template[name] = attribute.hasOwnProperty('src') ? new TSN(attribute.src) : node;
-		}
-
-		return isIncluded;
-	}
-};
-
-this['include'] = {
-	parse: function(node) {
-		if (TSN.config.parseIncluded === true && node.attribute.hasOwnProperty('src')) {
-			new TSN(node.attribute.src);
-		}
-	},
-	'in': function(node) {
-		var tmplName = node.attribute.name;
-
-		if (this.template.hasOwnProperty(tmplName)) {
-			node.template = this.template[tmplName];
-
-			if (!(node.template instanceof TSN)) {
-				node.template.isIncluded = true;
-				node.template.realParent = node.template.parent;
-				node.template.parent = node.parent;
-				node.children = [node.template];
-			}
-		} else {
-			return false;
-		}
-	},
-	'out': function(node) {
-		var template,
-			attribute = node.attribute,
-			templateData;
-		
-		if (node.hasOwnProperty('template')) {
-			template = node.template;
-			delete node.template;
-
-			if (template instanceof TSN) {
-				template.parent = this;
-				if(attribute.hasOwnProperty('context')){
-					templateData = this['var'][attribute.context];
-				} else if(attribute.hasOwnProperty('data')) {
-					templateData = this.context[attribute.data];
+			} else if (attribute.hasOwnProperty('src')) {
+				var src = attribute.src;
+				if (typeof src == 'string') {
+					this.children = new TSN(this.attribute.src).children;
 				} else {
-					templateData = this.context;
+					this['in'] = fromFile;
 				}
-
-				node.text = template.render(templateData);
-				delete template.parent;
 			} else {
-				template.parent = template.realParent;
-				delete template.realParent;
-				delete node.template;
-				delete node.children;
-			}
-		} else if (attribute.hasOwnProperty('src')) {
-			template = new TSN(attribute.src);
-			if (template instanceof TSN) {
-				template.parent = this;
-				template.parent = this;
-				if (attribute.hasOwnProperty('context')) {
-					templateData = this['var'][attribute.context];
-				} else if (attribute.hasOwnProperty('data')) {
-					templateData = this.context[attribute.data];
-				} else {
-					templateData = this.context;
-				}
-
-				node.text = template.render(templateData);
-				delete template.parent;
-			} else {
-				node.text = '';
+				return new Error('Attribute "name" or "src" is not defined.');
 			}
 		}
-	}
-};
+	};
+})();
 
-this['anchor'] = (function() {
+this['anchor'] = (function () {
 	var push = [].constructor.prototype.push;
 	return {
-		startRender: function() {
+		parse: function () {
+			if (!this.attribute.hasOwnProperty('name') || !this.attribute.name.length) {
+				this['in'] = false;
+			}
+		},
+		startRender: function () {
 			this.anchor = [];
 			this.tempAnchor = {};
 		},
-		endRender: function(result) {
+		endRender: function (result) {
 			var index = 0,
-				anchor;
+				anchor,
+				parent = this.parent;
 
 			while (anchor = this.anchor.pop()) {
 				var text = anchor.data.join('');
@@ -257,16 +277,16 @@ this['anchor'] = (function() {
 				index += text.length;
 			}
 
-			if (this.parent) {
+			if (parent) {
 				for (var name in this.tempAnchor) {
 					if (this.tempAnchor.hasOwnProperty(name)) {
 						anchor = this.tempAnchor[name];
-						if (this.parent.anchor.hasOwnProperty(name)) {
-							push.apply(this.parent.anchor[name].data, anchor.data);
-						} else if (this.parent.tempAnchor.hasOwnProperty(name)) {
-							push.apply(this.parent.tempAnchor[name].data, anchor.data);
+						if (parent.anchor.hasOwnProperty(name)) {
+							push.apply(parent.anchor[name].data, anchor.data);
+						} else if (parent.tempAnchor.hasOwnProperty(name)) {
+							push.apply(parent.tempAnchor[name].data, anchor.data);
 						} else {
-							this.parent.tempAnchor[anchor.name] = anchor;
+							parent.tempAnchor[anchor.name] = anchor;
 						}
 					}
 				}
@@ -277,32 +297,30 @@ this['anchor'] = (function() {
 
 			return result;
 		},
-		'in': function(node) {
-			var name = node.attribute.name,
+		'in': function (template) {
+			var name = this.attribute.name,
 				parent,
 				anchor;
 
-			if (name) {
-				if (this.tempAnchor.hasOwnProperty(name)) {
-					anchor = this.tempAnchor[name];
-					delete this.tempAnchor[name];
-				} else {
-					anchor = {
-						name: name,
-						data: []
-					}
+			if (template.tempAnchor.hasOwnProperty(name)) {
+				anchor = template.tempAnchor[name];
+				delete template.tempAnchor[name];
+			} else {
+				anchor = {
+					name: name,
+					data: []
 				}
-
-				anchor.pos = this.text.length;
-				parent = this.parent;
-				while (parent) {
-					anchor.pos += parent.text.length;
-					parent = parent.parent;
-				}
-
-				this.anchor[name] = anchor;
-				this.anchor.push(anchor);
 			}
+
+			anchor.pos = template.text.length;
+			parent = this.parent;
+			while (parent) {
+				anchor.pos += parent.text.length;
+				parent = parent.parent;
+			}
+
+			template.anchor[name] = anchor;
+			template.anchor.push(anchor);
 
 			return false;
 		}
@@ -310,29 +328,24 @@ this['anchor'] = (function() {
 })();
 
 this['set-anchor'] = {
-	'in': function(node) {
-		if (node.attribute.hasOwnProperty('data')) {
-			node.result = this.context[node.attribute.data];
-			return false;
-		}
+	parse: function () {
+		this['in'] = !this.attribute.hasOwnProperty('data');
 	},
-	'out': function(node) {
-		var name = node.attribute.name,
-			anchorData = node.hasOwnProperty('result') ? node.result : node.text;
+	'out': function (template) {
+		var name = this.attribute.name,
+			anchorData = this['in'] ? this.text : template.context[this.attribute.data];
 
-		delete node.result;
-
-		if (this.anchor.hasOwnProperty(name)) {
-			this.anchor[name].data.push(anchorData);
-		} else if (this.tempAnchor.hasOwnProperty(name)) {
-			this.tempAnchor[name].data.push(anchorData);
+		if (template.anchor.hasOwnProperty(name)) {
+			template.anchor[name].data.push(anchorData);
+		} else if (template.tempAnchor.hasOwnProperty(name)) {
+			template.tempAnchor[name].data.push(anchorData);
 		} else {
-			this.tempAnchor[name] = {
+			template.tempAnchor[name] = {
 				name: name,
 				data: [anchorData]
 			};
 		}
 
-		node.text = '';
+		this.text = '';
 	}
 };
