@@ -184,75 +184,41 @@ this['for'] = (function () {
 })();
 
 this['template'] = {
-	parse: function (template) {
+	parse: function (instance) {
 		var attribute = this.attribute;
 
-		if (!template.hasOwnProperty('template')) {
-			template.template = {};
+		if (!instance.hasOwnProperty('template')) {
+			instance.template = {};
 		}
 
-		if (attribute.hasOwnProperty('name')) {
-			if (typeof attribute.name == 'string') {
-				if (attribute.name.length) {
-					template.template[attribute.name] = this.children;
-					return '';
-				}
-			}
-		} else {
-			return new Error('Attribute "name" is not defined.');
+		if (attribute.hasOwnProperty('name') && attribute.name.length) {
+			instance.template[attribute.name] = this.children;
+			return '';
+		} else{
+			return new Error('Attribute "name" or "src" is not defined.');
 		}
-	},
-	'in': function (template) {
-		template.template[this.attribute.name] = this.children;
-		this.text = '';
-		return false;
 	}
 };
 
-this['include'] = (function () {
-	function fromInlineTemplate (template) {
-		var name = String(this.attribute.name);
-		if (template.template.hasOwnProperty(name)) {
-			this.children = template.template[name];
-			return true;
-		} else {
-			return false;
-		}
-	}
+this['include'] = {
+	parse: function (instance) {
+		var attribute = this.attribute;
 
-	function fromFile() {
-		this.children = new TSN(this.attribute.src).children;
-	}
+		if (attribute.hasOwnProperty('name')) {
+			var name = String(attribute.name);
 
-	return {
-		parse: function (template) {
-			var attribute = this.attribute;
-
-			if (attribute.hasOwnProperty('name')) {
-				var name = attribute.name;
-
-				if (template.template.hasOwnProperty(name)) {
-					if (typeof name == 'string') {
-						this.children = template.template[name];
-					} else {
-						this['in'] = fromInlineTemplate;
-					}
-				} else {
-					return new Error('Template with the name "' + name + '" is not defined.')
-				}
-			} else if (attribute.hasOwnProperty('src')) {
-				var src = attribute.src;
-				if (typeof src == 'string') {
-					this.children = new TSN(this.attribute.src).children;
-				} else {
-					this['in'] = fromFile;
-				}
+			if (instance.template.hasOwnProperty(name)) {
+				this.children = instance.template[name];
 			} else {
-				return new Error('Attribute "name" or "src" is not defined.');
+				return new Error('Template with the name "' + name + '" is not defined.')
 			}
+		} else if (attribute.hasOwnProperty('src')) {
+			this.children = new TSN(attribute.src).children;
+		} else {
+			return new Error('Attribute "name" or "src" is not defined.');
 		}
-	};
-})();
+	}
+};
 
 this['anchor'] = (function () {
 	var push = [].constructor.prototype.push;
