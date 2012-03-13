@@ -5,80 +5,104 @@
  */
 
 var TSN = module.parent.exports;
+var LIB = {
+	path: require('path')
+};
 
 this['root'] = {};
 
 this['context'] = (function () {
-	function fromData() {
-		this.attribute.context = this.attribute.data;
-	}
-
-	function fromVar(template) {
-		template.context = template['var'][this.attribute['var']];
+	function fromVar(instance) {
+		instance.context = instance['var'][this.aVar];
 	}
 
 	return {
 		parse: function () {
-			if (this.attribute.hasOwnProperty('data')) {
-				this['in'] = fromData;
-			} else if (this.attribute.hasOwnProperty('var')) {
+			var attribute = this.attribute;
+
+			if (attribute.hasOwnProperty('data')) {
+				attribute.context = attribute.data;
+			} else if (attribute.hasOwnProperty('var')) {
+				this.aVar = attribute['var'];
 				this['in'] = fromVar;
-			} else {
-				return new Error('Attribute "data" or "var" is not defined.');
 			}
 		}
 	};
 })();
 
 this['var'] = (function () {
-	function fromData(template) {
-		template['var'][this.attribute.name] = template.context[this.attribute.data];
+	var prototype = {};
+
+	function Variable () {}
+
+	function fromData(instance) {
+		instance['var'][this.aName] = instance.context[this.aData];
 		return false;
 	}
 
-	function fromText(template) {
-		template['var'][this.attribute.name] = this.text;
+	function fromVar(instance) {
+		instance['var'][this.aName] = instance['var'][this.aVar];
+		return false;
+	}
+
+	function fromContent(instance) {
+		instance['var'][this.aName] = this.text;
 		this.text = '';
 	}
 
 	return {
-		parse: function () {
+		parse: function (instance) {
 			var attribute = this.attribute;
-			if (!attribute.hasOwnProperty('name') || !attribute.name.length) {
-				this['in'] = false;
-			} else if (attribute.hasOwnProperty('data')) {
-				this['in'] = fromData;
-			} else {
-				this['out'] = fromText;
+
+			if (!instance.hasOwnProperty('var')) {
+				Variable.prototype = 'parent' in instance ? instance.parent['var'] : prototype;
+				instance['var'] = new Variable;
 			}
-		},
-		startRender: function () {
-			this['var'] = {};
-		},
-		endRender: function () {
-			delete this['var'];
+
+			if (attribute.hasOwnProperty('name')) {
+				this.aName = attribute.name;
+
+				if (attribute.hasOwnProperty('data')) {
+					this.aData = attribute.data;
+					this['in'] = fromData;
+				} else if (attribute.hasOwnProperty('var')) {
+					this.aVar = attribute['var'];
+					this['in'] = fromVar;
+				} else {
+					this['out'] = fromContent;
+				}
+			} else {
+				return new Error('Attribute "name" is not defined.');
+			}
 		}
 	};
 })();
 
 this['if'] = (function () {
-	function fromData() {
-		return this.result = template.context[this.attribute.data];
+	function fromData(instance) {
+		return instance.context[this.aData];
 	}
 
-	function fromContext() {
-		return this.result = template.context;
+	function fromVar(instance) {
+		return instance['var'][this.aVar];
 	}
 
 	return {
 		parse: function () {
-			this['in'] = this.attribute.hasOwnProperty('data') ? fromData : fromContext;
+			var attribute = this.attribute;
+
+			if (attribute.hasOwnProperty('data')) {
+				this.aData = attribute.data;
+				this['in'] = fromData;
+			} else if (attribute.hasOwnProperty('var')) {
+				this.aVar = attribute['var'];
+				this['in'] = fromVar;
+			}
+		},
+		'in': function (instance) {
+			return instance.context;
 		},
 		'out': function () {
-			if (!this.result) {
-				this.text = '';
-			}
-
 			delete this.result;
 		}
 	};
@@ -183,42 +207,67 @@ this['for'] = (function () {
 	};
 })();
 
-this['template'] = {
-	parse: function (instance) {
-		var attribute = this.attribute;
+(function (API){
+	var templateStack = [];
+	var parentTemplate;
+	var prototype = {};
 
+	function Template() {
+	}
+
+	function createTemplates (instance) {
 		if (!instance.hasOwnProperty('template')) {
-			instance.template = {};
-		}
-
-		if (attribute.hasOwnProperty('name') && attribute.name.length) {
-			instance.template[attribute.name] = this.children;
-			return '';
-		} else{
-			return new Error('Attribute "name" or "src" is not defined.');
+			Template.prototype = parentTemplate ? parentTemplate.template : prototype;
+			instance.template = new Template;
 		}
 	}
-};
 
-this['include'] = {
-	parse: function (instance) {
-		var attribute = this.attribute;
+	API.template = {
+		parse: function (instance) {
+			var attribute = this.attribute;
 
-		if (attribute.hasOwnProperty('name')) {
-			var name = String(attribute.name);
+			createTemplates(instance);
 
-			if (instance.template.hasOwnProperty(name)) {
-				this.children = instance.template[name];
+			if (attribute.hasOwnProperty('name')) {
+				instance.template[attribute.name] = this.children;
+				return '';
 			} else {
-				return new Error('Template with the name "' + name + '" is not defined.')
+				return new Error('Attribute "name" is not defined.');
 			}
-		} else if (attribute.hasOwnProperty('src')) {
-			this.children = new TSN(attribute.src).children;
-		} else {
-			return new Error('Attribute "name" or "src" is not defined.');
 		}
-	}
-};
+	};
+
+	API.include = {
+		parse: function (instance) {
+			var attribute = this.attribute;
+
+			if (attribute.hasOwnProperty('name')) {
+				var name = String(attribute.name);
+
+				createTemplates(instance);
+
+				if (instance.template[name]) {
+					this.children = instance.template[name];
+					//console.log(this.children);
+				} else {
+					return new Error('Template with the name "' + name + '" is not defined.')
+				}
+			} else if (attribute.hasOwnProperty('src')) {
+				delete TSN.cache[LIB.path.join(TSN.config.templateRoot, attribute.src)];
+
+				templateStack.push(parentTemplate);
+				parentTemplate = instance;
+
+				this.children = new TSN(attribute.src).children;
+
+				parentTemplate = templateStack.pop();
+			} else {
+				return new Error('Attribute "name" or "src" is not defined.');
+			}
+		}
+	};
+
+})(this);
 
 this['anchor'] = (function () {
 	var push = [].constructor.prototype.push;

@@ -507,7 +507,7 @@ TSN.prototype.render = function (data) {
  */
 TSN.prototype.reload = function (newPath) {
 	delete TSN.cache[this.path];
-	return TSN.call(this, typeof newPath == 'string' ? newPath : this.path.substr(this.config.templateRoot.length), false);
+	return TSN.call(this, typeof newPath == 'string' ? newPath : this.path.substr(TSN.config.templateRoot.length), false);
 };
 
 LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
@@ -535,24 +535,13 @@ LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
 });
 
 TSN.on('ready', function () {
-	function dataFromContext(template) {
-		this.text = template.context[this.attribute.data];
+	function dataFromContext(instance) {
+		this.text = instance.context[this.aData];
 		return false;
 	}
 
-	function fromContext(template) {
-		this.text = template.context;
-		return false;
-	}
-
-	function fromVar(template) {
-		this.text = template['var'][this.attribute['var']];
-		return false;
-	}
-
-	function dataFromVar(template) {
-		var attribute = this.attribute;
-		this.text = template['var'][attribute['var']][attribute.data];
+	function fromVar(instance) {
+		this.text = instance['var'][this.aVar];
 		return false;
 	}
 
@@ -561,18 +550,19 @@ TSN.on('ready', function () {
 			var attribute = this.attribute;
 
 			if (attribute.hasOwnProperty('data')) {
-				if (attribute.hasOwnProperty('var')) {
-					this['in'] = dataFromVar;
-				} else {
-					this['in'] = dataFromContext;
-				}
+				this.aData = attribute.data;
+				this['in'] = dataFromContext;
 			} else if (attribute.hasOwnProperty('var')) {
+				this.aVar = attribute['var'];
 				this['in'] = fromVar;
 			}
 
 			this.children.length = 0;
 		},
-		'in': fromContext
+		'in': function (instance) {
+			this.text = instance.context;
+			return false;
+		}
 	});
 });
 
