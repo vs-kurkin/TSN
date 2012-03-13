@@ -56,11 +56,13 @@ function normalize (node) {
 	while ((child = children.shift()) != undefined) {
 		type = typeof child;
 
-		if (type == 'string' && type == oldType) {
-			newChildren.push(newChildren.pop() + child);
-		} else {
-			child.index = newChildren.length;
-			newChildren.push(child);
+		if (child !== '') {
+			if (type == 'string' && type == oldType) {
+				newChildren.push((newChildren.pop() || '') + child);
+			} else {
+				child.index = newChildren.length;
+				newChildren.push(child);
+			}
 		}
 
 		oldType = type;
