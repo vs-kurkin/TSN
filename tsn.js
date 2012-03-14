@@ -16,7 +16,7 @@ var LIB = {
 	tag,
 	currentTmplChild,
 	currentTemplate,
-	regExpTag;
+	regExpNode;
 
 /**
  * @ignore
@@ -102,7 +102,7 @@ function parseAttribute(result, name, value) {
 		attribute,
 		data = [];
 
-	while (match = regExpTag.exec(value)) {
+	while (match = regExpNode.exec(value)) {
 		index = match.index;
 		data.push(value.slice(lastIndex, index), match[1]);
 		lastIndex = index + match[0].length;
@@ -181,25 +181,25 @@ function TSN(path, isInline) {
 
 	var space = '(?:\\r|\\n[^\\S\\r\\n]*)?',
 		entity = '&' + this.namespace + '.([a-z0-9]+);',
-		tagStart = '(?:' + space + entity + ')|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>)',
+		nodeStart = '(?:' + space + entity + ')|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>)',
 		regExp = {
-			tag: new RegExp(tagStart + '|(?:' + space + '<\\s*' + this.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi'),
+			node: new RegExp(nodeStart + '|(?:' + space + '<\\s*' + this.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi'),
 			attr: /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:"([^"]*)")|(?:'[^']*')))?/gi,
 			xml: /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*(<!DOCTYPE\s+[a-z\-_]+(?::[a-z\-_]+)?(?:\s+PUBLIC\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:\[[\s\S]*?\])?)?\s*>)?/i,
 			entity: new RegExp(entity, 'gi')
 		},
 		match,
 		current = this,
-		node,
+		newNode,
 		stack = [],
 		xmlDeclaration = '',
 		result,
 		comment,
 		value,
-		closeTagName,
-		openTagName,
+		closeNodeName,
+		openNodeName,
 		attributes,
-		emptyTag,
+		emptyNode,
 		index,
 		lastIndex = 0,
 		fullPath,
@@ -214,79 +214,79 @@ function TSN(path, isInline) {
 		return '';
 	});
 
-	while (match = regExp.tag.exec(content)) {
+	while (match = regExp.node.exec(content)) {
 		result = match[0];
 		value = match[1];
 		comment = match[2];
-		closeTagName = match[3];
-		openTagName = match[4];
+		closeNodeName = match[3];
+		openNodeName = match[4];
 		attributes = match[5];
-		emptyTag = match[6];
+		emptyNode = match[6];
 		index = match.index;
 
 		current.children.push(content.substring(lastIndex, index));
 
 		if (value) {
-			openTagName = 'echo';
-			emptyTag = true;
+			openNodeName = 'echo';
+			emptyNode = true;
 			attributes = {
 				data: value
 			};
 		}
 
-		if (openTagName) {
-			if (tag.hasOwnProperty(openTagName)) {
-				node = {
-					name: openTagName,
+		if (openNodeName) {
+			if (node.hasOwnProperty(openNodeName)) {
+				newNode = {
+					name: openNodeName,
 					attribute: {},
 					start: index,
-					'in': tag[openTagName]['in'],
-					out: tag[openTagName].out,
+					'in': node[openNodeName]['in'],
+					out: node[openNodeName].out,
 					children: [],
 					root: this
 				};
 
 				if (typeof attributes == 'string') {
-					currentTmplChild = node;
+					currentTmplChild = newNode;
 					currentTemplate = this;
-					regExpTag = regExp.entity;
+					regExpNode = regExp.entity;
 					attributes.replace(regExp.attr, parseAttribute);
 				} else if (attributes) {
-					node.attribute = attributes;
+					newNode.attribute = attributes;
 				}
 
-				onParse = tag[openTagName].parse;
-				parseResult = typeof onParse == 'function' ? onParse.call(node, this) : true;
+				onParse = node[openNodeName].parse;
+				parseResult = typeof onParse == 'function' ? onParse.call(newNode, this) : true;
 
 				if (typeof parseResult == 'string') {
 					current.children.push(parseResult);
 				} else if (parseResult && parseResult.constructor == Error) {
 					error = createError(index, result, content, xmlDeclaration);
 					error.message = parseResult.message;
-					error.tagName = openTagName;
+					error.nodeName = openNodeName;
 
 					this.errors.push(error);
 				} else {
-					current.children.push(node);
+					current.children.push(newNode);
 				}
 
-				if (emptyTag) {
-					delete node.start;
+				if (emptyNode) {
+					delete newNode.start;
 				} else {
 					stack.push(current);
-					current = node;
+					current = newNode;
 				}
 			} else {
 				error = createError(index, result, content, xmlDeclaration);
-				error.message = emptyTag ? 'Unknown tag.' : 'Unknown tag opening.';
-				error.tagName = openTagName;
+				error.message = emptyNode ? 'Unknown node.' : 'Unknown node opening.';
+				error.nodeName = openNodeName;
 
 				this.errors.push(error);
 			}
 
-		} else if (closeTagName) {
-			if (tag.hasOwnProperty(closeTagName)) {
-				if (current.name == closeTagName) {
+		} else if (closeNodeName) {
+			if (node.hasOwnProperty(closeNodeName)) {
+				if (current.name == closeNodeName) {
 					delete current.start;
 
 					if (current.hasOwnProperty('children') && current.children.length) {
@@ -296,15 +296,15 @@ function TSN(path, isInline) {
 					current = stack.pop();
 				} else {
 					error = createError(index, result, content, xmlDeclaration);
-					error.message = 'Missing start tag.';
-					error.tagName = closeTagName;
+					error.message = 'Missing start node.';
+					error.nodeName = closeNodeName;
 
 					this.errors.push(error);
 				}
 			} else {
 				error = createError(index, result, content, xmlDeclaration);
-				error.message = 'Unknown tag closing.';
-				error.tagName = closeTagName;
+				error.message = 'Unknown node closing.';
+				error.nodeName = closeNodeName;
 
 				this.errors.push(error);
 			}
@@ -324,8 +324,8 @@ function TSN(path, isInline) {
 
 	while (current = stack.pop()) {
 		error = createError(index, result, content, xmlDeclaration);
-		error.message = 'Tag is not closed.';
-		error.tagName = current.name;
+		error.message = 'Node is not closed.';
+		error.nodeName = current.name;
 
 		this.errors.push(error);
 
@@ -336,7 +336,7 @@ function TSN(path, isInline) {
 
 	normalize(this);
 
-	currentTemplate = currentTmplChild = regExpTag = null;
+	currentTemplate = currentTmplChild = regExpNode = null;
 
 	return this;
 }
@@ -372,7 +372,7 @@ TSN.cache = {};
  */
 TSN.extend = function (name, data) {
 	if (typeof name == 'string' && data && (typeof data['in'] == 'function' || typeof data['out'] == 'function')) {
-		tag[name] = data;
+		node[name] = data;
 	}
 };
 
@@ -388,7 +388,6 @@ TSN.prototype.render = function (data) {
 		currentChild = currentNode.children[currentIndex],
 		result = '',
 		isParse,
-		tagName,
 		parent,
 		stack = [],
 		contexts = [];
