@@ -204,14 +204,12 @@ this['for'] = (function () {
 })();
 
 (function (API){
-	var prototype = {};
-
 	function Template() {
 	}
 
 	function initTemplates (instance) {
 		if (!instance.temp.hasOwnProperty('template')) {
-			Template.prototype = 'parent' in instance ? instance.parent.temp.template : prototype;
+			Template.prototype = 'parent' in instance ? instance.parent.temp.template : {};
 			instance.temp.template = new Template;
 		}
 	}
