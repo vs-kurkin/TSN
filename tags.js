@@ -208,16 +208,14 @@ this['for'] = (function () {
 })();
 
 (function (API){
-	var templateStack = [];
-	var parentTemplate;
 	var prototype = {};
 
 	function Template() {
 	}
 
-	function createTemplates (instance) {
+	function initTemplates (instance) {
 		if (!instance.hasOwnProperty('template')) {
-			Template.prototype = parentTemplate ? parentTemplate.template : prototype;
+			Template.prototype = 'parent' in instance ? instance.parent.template : prototype;
 			instance.template = new Template;
 		}
 	}
@@ -226,7 +224,7 @@ this['for'] = (function () {
 		parse: function (instance) {
 			var attribute = this.attribute;
 
-			createTemplates(instance);
+			initTemplates(instance);
 
 			if (attribute.hasOwnProperty('name')) {
 				instance.template[attribute.name] = this.children;
@@ -244,23 +242,21 @@ this['for'] = (function () {
 			if (attribute.hasOwnProperty('name')) {
 				var name = String(attribute.name);
 
-				createTemplates(instance);
+				initTemplates(instance);
 
 				if (instance.template[name]) {
 					this.children = instance.template[name];
-					//console.log(this.children);
 				} else {
 					return new Error('Template with the name "' + name + '" is not defined.')
 				}
 			} else if (attribute.hasOwnProperty('src')) {
-				delete TSN.cache[LIB.path.join(TSN.config.templateRoot, attribute.src)];
-
-				templateStack.push(parentTemplate);
-				parentTemplate = instance;
-
-				this.children = new TSN(attribute.src).children;
-
-				parentTemplate = templateStack.pop();
+				if (instance.path == LIB.path.join(TSN.config.templateRoot, attribute.src)) {
+					this.children = instance.children;
+				} else {
+					TSN.prototype.parent = instance;
+					this.children = new TSN(attribute.src).children;
+					delete TSN.prototype.parent;
+				}
 			} else {
 				return new Error('Attribute "name" or "src" is not defined.');
 			}
