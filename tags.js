@@ -13,7 +13,7 @@ this['root'] = {};
 
 this['context'] = (function () {
 	function fromVar(instance) {
-		instance.context = instance['var'][this.aVar];
+		instance.context = instance.cache['var'][this.aVar];
 	}
 
 	return {
@@ -31,22 +31,18 @@ this['context'] = (function () {
 })();
 
 this['var'] = (function () {
-	var prototype = {};
-
-	function Variable () {}
-
 	function fromData(instance) {
-		instance['var'][this.aName] = instance.context[this.aData];
+		instance.temp['var'][this.aName] = instance.context[this.aData];
 		return false;
 	}
 
 	function fromVar(instance) {
-		instance['var'][this.aName] = instance['var'][this.aVar];
+		instance.temp['var'][this.aName] = instance.temp['var'][this.aVar];
 		return false;
 	}
 
 	function fromContent(instance) {
-		instance['var'][this.aName] = this.text;
+		instance.temp['var'][this.aName] = this.text;
 		this.text = '';
 	}
 
@@ -54,9 +50,8 @@ this['var'] = (function () {
 		parse: function (instance) {
 			var attribute = this.attribute;
 
-			if (!instance.hasOwnProperty('var')) {
-				Variable.prototype = 'parent' in instance ? instance.parent['var'] : prototype;
-				instance['var'] = new Variable;
+			if (!instance.cache.hasOwnProperty('var')) {
+				instance.cache['var'] = {};
 			}
 
 			if (attribute.hasOwnProperty('name')) {
@@ -78,18 +73,19 @@ this['var'] = (function () {
 	};
 })();
 
-this['if'] = (function () {
+this['if'] = this['unless'] = (function () {
 	function fromData(instance) {
-		return instance.context[this.aData];
+		return instance.context[this.aData] == this.type;
 	}
 
 	function fromVar(instance) {
-		return instance['var'][this.aVar];
+		return instance.temp['var'][this.aVar] == this.type;
 	}
 
 	return {
 		parse: function () {
 			var attribute = this.attribute;
+			this.type = this.name == 'if';
 
 			if (attribute.hasOwnProperty('data')) {
 				this.aData = attribute.data;
@@ -117,11 +113,11 @@ this['for'] = (function () {
 	}).toString().replace(fncRegExp, '$1');
 
 	var setKey = (function (template) {
-		template['var'][this.attribute.key] = this.currentProperty;
+		template.cache['var'][this.attribute.key] = this.currentProperty;
 	}).toString().replace(fncRegExp, '$1');
 
 	var setValue = (function (template) {
-		template['var'][this.attribute.value] = this.result[this.currentProperty];
+		template.cache['var'][this.attribute.value] = this.result[this.currentProperty];
 	}).toString().replace(fncRegExp, '$1');
 
 	var setContext = (function (template) {
@@ -179,8 +175,8 @@ this['for'] = (function () {
 		delete this.property;
 		delete this.currentProperty;
 
-		delete template['var'][this.attribute.key];
-		delete template['var'][this.attribute.value];
+		delete template.cache['var'][this.attribute.key];
+		delete template.cache['var'][this.attribute.value];
 
 		this['in'] = inListener;
 		delete this['out'];
@@ -214,9 +210,9 @@ this['for'] = (function () {
 	}
 
 	function initTemplates (instance) {
-		if (!instance.hasOwnProperty('template')) {
-			Template.prototype = 'parent' in instance ? instance.parent.template : prototype;
-			instance.template = new Template;
+		if (!instance.temp.hasOwnProperty('template')) {
+			Template.prototype = 'parent' in instance ? instance.parent.temp.template : prototype;
+			instance.temp.template = new Template;
 		}
 	}
 
@@ -224,10 +220,9 @@ this['for'] = (function () {
 		parse: function (instance) {
 			var attribute = this.attribute;
 
-			initTemplates(instance);
-
 			if (attribute.hasOwnProperty('name')) {
-				instance.template[attribute.name] = this.children;
+				initTemplates(instance);
+				instance.temp.template[attribute.name] = this.children;
 				return '';
 			} else {
 				return new Error('Attribute "name" is not defined.');
@@ -244,119 +239,30 @@ this['for'] = (function () {
 
 				initTemplates(instance);
 
-				if (instance.template[name]) {
-					this.children = instance.template[name];
+				if (instance.temp.template[name]) {
+					this.children = instance.temp.template[name];
 				} else {
 					return new Error('Template with the name "' + name + '" is not defined.')
 				}
 			} else if (attribute.hasOwnProperty('src')) {
-				if (instance.path == LIB.path.join(TSN.config.templateRoot, attribute.src)) {
-					this.children = instance.children;
-				} else {
-					TSN.prototype.parent = instance;
-					this.children = new TSN(attribute.src).children;
-					delete TSN.prototype.parent;
-				}
+				var parent = TSN.prototype.parent;
+
+				TSN.prototype.parent = instance;
+				this.template = new TSN(attribute.src);
+				this.children = this.template.children;
+				TSN.prototype.parent = parent;
 			} else {
 				return new Error('Attribute "name" or "src" is not defined.');
 			}
+		},
+		'in': function (instance) {
+			this.temp = instance.temp;
+			instance.temp = this.template.cache;
+		},
+		out: function (instance) {
+			instance.temp = this.temp;
+			delete this.temp;
 		}
 	};
 
 })(this);
-
-this['anchor'] = (function () {
-	var push = [].constructor.prototype.push;
-	return {
-		parse: function () {
-			if (!this.attribute.hasOwnProperty('name') || !this.attribute.name.length) {
-				this['in'] = false;
-			}
-		},
-		startRender: function () {
-			this.anchor = [];
-			this.tempAnchor = {};
-		},
-		endRender: function (result) {
-			var index = 0,
-				anchor,
-				parent = this.parent;
-
-			while (anchor = this.anchor.pop()) {
-				var text = anchor.data.join('');
-				result = result.substr(0, anchor.pos) + text + result.substr(anchor.pos);
-				index += text.length;
-			}
-
-			if (parent) {
-				for (var name in this.tempAnchor) {
-					if (this.tempAnchor.hasOwnProperty(name)) {
-						anchor = this.tempAnchor[name];
-						if (parent.anchor.hasOwnProperty(name)) {
-							push.apply(parent.anchor[name].data, anchor.data);
-						} else if (parent.tempAnchor.hasOwnProperty(name)) {
-							push.apply(parent.tempAnchor[name].data, anchor.data);
-						} else {
-							parent.tempAnchor[anchor.name] = anchor;
-						}
-					}
-				}
-			}
-
-			delete this.anchor;
-			delete this.tempAnchor;
-
-			return result;
-		},
-		'in': function (template) {
-			var name = this.attribute.name,
-				parent,
-				anchor;
-
-			if (template.tempAnchor.hasOwnProperty(name)) {
-				anchor = template.tempAnchor[name];
-				delete template.tempAnchor[name];
-			} else {
-				anchor = {
-					name: name,
-					data: []
-				}
-			}
-
-			anchor.pos = template.text.length;
-			parent = this.parent;
-			while (parent) {
-				anchor.pos += parent.text.length;
-				parent = parent.parent;
-			}
-
-			template.anchor[name] = anchor;
-			template.anchor.push(anchor);
-
-			return false;
-		}
-	};
-})();
-
-this['set-anchor'] = {
-	parse: function () {
-		this['in'] = !this.attribute.hasOwnProperty('data');
-	},
-	'out': function (template) {
-		var name = this.attribute.name,
-			anchorData = this['in'] ? this.text : template.context[this.attribute.data];
-
-		if (template.anchor.hasOwnProperty(name)) {
-			template.anchor[name].data.push(anchorData);
-		} else if (template.tempAnchor.hasOwnProperty(name)) {
-			template.tempAnchor[name].data.push(anchorData);
-		} else {
-			template.tempAnchor[name] = {
-				name: name,
-				data: [anchorData]
-			};
-		}
-
-		this.text = '';
-	}
-};

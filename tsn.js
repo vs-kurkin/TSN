@@ -160,6 +160,8 @@ function TSN(path, isInline) {
 
 	this.errors = [];
 	this.children = [];
+	this.temp = {};
+	this.cache = {};
 
 	LIB.fileSystem.realpathSync(TSN.config.templateRoot);
 
@@ -225,49 +227,32 @@ function TSN(path, isInline) {
 		current.children.push(content.substring(lastIndex, index));
 
 		if (value) {
-			node = {
-				name: 'echo',
-				attribute: {
-					'data': value
-				},
-				'in': tag.echo['in'],
-				out: tag.echo['out']
+			openTagName = 'echo';
+			emptyTag = true;
+			attributes = {
+				data: value
 			};
+		}
 
-			if (typeof tag.echo.parse == 'function') {
-				parseResult = tag.echo.parse.call(node, this);
-			} else {
-				parseResult = true;
-			}
-
-			if (typeof parseResult == 'string') {
-				current.children.push(parseResult);
-			} else if (parseResult.constructor = Error) {
-				error = createError(index, result, content, xmlDeclaration);
-				error.message = parseResult.message;
-				error.tagName = 'echo';
-
-				this.errors.push(error);
-			} else {
-				current.children.push(node);
-			}
-
-		} else if (openTagName) {
+		if (openTagName) {
 			if (tag.hasOwnProperty(openTagName)) {
 				node = {
 					name: openTagName,
 					attribute: {},
 					start: index,
 					'in': tag[openTagName]['in'],
-					out: tag[openTagName]['out'],
-					children: []
+					out: tag[openTagName].out,
+					children: [],
+					root: this
 				};
 
-				if (attributes) {
+				if (typeof attributes == 'string') {
 					currentTmplChild = node;
 					currentTemplate = this;
 					regExpTag = regExp.entity;
 					attributes.replace(regExp.attr, parseAttribute);
+				} else if (attributes) {
+					node.attribute = attributes;
 				}
 
 				onParse = tag[openTagName].parse;
@@ -334,6 +319,8 @@ function TSN(path, isInline) {
 
 		lastIndex = index + result.length;
 	}
+
+	delete this.temp;
 
 	while (current = stack.pop()) {
 		error = createError(index, result, content, xmlDeclaration);
@@ -402,18 +389,12 @@ TSN.prototype.render = function (data) {
 		result = '',
 		isParse,
 		tagName,
-		newResult,
 		parent,
 		stack = [],
 		contexts = [];
 
 	this.data = this.context = data;
-
-	for (tagName in tag) {
-		if (tag.hasOwnProperty(tagName) && typeof tag[tagName].startRender == 'function') {
-			tag[tagName].startRender.call(this);
-		}
-	}
+	this.temp = this.cache;
 
 	currentNode.text = '';
 
@@ -488,15 +469,7 @@ TSN.prototype.render = function (data) {
 
 	delete this.data;
 	delete this.context;
-
-	for (tagName in tag) {
-		if (tag.hasOwnProperty(tagName) && typeof tag[tagName].endRender == 'function') {
-			newResult = String(tag[tagName].endRender.call(this, result));
-			if (newResult != 'undefined') {
-				result = newResult;
-			}
-		}
-	}
+	delete this.temp;
 
 	return result;
 };
@@ -543,7 +516,7 @@ TSN.on('ready', function () {
 	}
 
 	function fromVar(instance) {
-		this.text = instance['var'][this.aVar];
+		this.text = instance.temp['var'][this.aVar];
 		return false;
 	}
 
@@ -564,6 +537,9 @@ TSN.on('ready', function () {
 		'in': function (instance) {
 			this.text = instance.context;
 			return false;
+		},
+		entity: {
+			attribute: ''
 		}
 	});
 });
