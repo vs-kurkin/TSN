@@ -235,6 +235,8 @@ function TSN(path, isInline) {
 		}
 
 		if (openNodeName) {
+			openNodeName = openNodeName.toLowerCase();
+
 			if (node.hasOwnProperty(openNodeName)) {
 				newNode = {
 					name: openNodeName,
@@ -285,6 +287,8 @@ function TSN(path, isInline) {
 			}
 
 		} else if (closeNodeName) {
+			closeNodeName = closeNodeName.toLowerCase();
+
 			if (node.hasOwnProperty(closeNodeName)) {
 				if (current.name == closeNodeName) {
 					delete current.start;
