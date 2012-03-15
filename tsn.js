@@ -72,67 +72,6 @@ function normalize (node) {
 }
 
 /**
- * @ignore
- */
-function toString() {
-	if (this.hasOwnProperty('name')) {
-		return this.template.temp['var'][this.name];
-	} else {
-		var length = this.length,
-			vars = this.template.temp['var'],
-			value = this.value,
-			result = value[--length];
-
-		while (length) {
-			result = vars[value[--length]] + result;
-			result = value[--length] + result;
-		}
-
-		return result;
-	}
-}
-
-/**
- * @ignore
- */
-function parseAttribute(result, name, value) {
-	var match,
-		index,
-		lastIndex = 0,
-		attribute,
-		data = [];
-
-	while (match = regExpNode.exec(value)) {
-		index = match.index;
-		data.push(value.slice(lastIndex, index), match[1]);
-		lastIndex = index + match[0].length;
-	}
-
-	if (lastIndex) {
-		data.push(value.slice(lastIndex));
-
-		if (data.length == 3 && data[0] == '' && data[2] == '') {
-			attribute = {
-				name: data[1],
-				toString: toString,
-				template: currentTemplate
-			};
-		} else {
-			attribute = {
-				value: data,
-				toString: toString,
-				length: data.length,
-				template: currentTemplate
-			};
-		}
-	} else {
-		attribute = value;
-	}
-
-	currentTmplChild.attribute[name] = attribute;
-}
-
-/**
  * @name TSN
  * @constructor
  * @description Конструктор создания шаблонов.
@@ -210,6 +149,12 @@ function TSN(data) {
 		content = data;
 	}
 
+	for (var nodeName in nodeAPI) {
+		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('init')) {
+			nodeAPI[nodeName].init(this);
+		}
+	}
+
 	content = content.replace(regExp.xml, function (result) {
 		xmlDeclaration = result;
 		return '';
@@ -253,10 +198,14 @@ function TSN(data) {
 				};
 
 				if (typeof attributes == 'string') {
-					currentTmplChild = newNode;
-					currentTemplate = this;
-					regExpNode = regExp.entity;
-					attributes.replace(regExp.attr, parseAttribute);
+					attributes.replace(regExp.attr, function (result, name, value) {
+						if (regExp.entity.test(value)) {
+							value = new TSN(value);
+							value.toString = value.render;
+						}
+
+						newNode.attribute[name] = value;
+					});
 				} else if (attributes) {
 					newNode.attribute = attributes;
 				}
@@ -399,7 +348,7 @@ TSN.prototype.render = function (data) {
 		stack = [],
 		contexts = [];
 
-	this.data = this.context = data;
+	this.data = this.context = data || this.context;
 	this.temp = this.cache;
 
 	currentNode.text = '';
@@ -428,7 +377,7 @@ TSN.prototype.render = function (data) {
 						currentChild['out'](this);
 					}
 
-					currentNode.text += currentChild.text || '';
+					currentNode.text += currentChild.text;
 					delete currentChild.text;
 
 					currentIndex = currentChild.index + 1;
