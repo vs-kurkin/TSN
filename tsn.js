@@ -76,10 +76,10 @@ function normalize (node) {
  */
 function toString() {
 	if (this.hasOwnProperty('name')) {
-		return this.template['var'][this.name];
+		return this.template.temp['var'][this.name];
 	} else {
 		var length = this.length,
-			vars = this.template['var'],
+			vars = this.template.temp['var'],
 			value = this.value,
 			result = value[--length];
 
@@ -110,6 +110,7 @@ function parseAttribute(result, name, value) {
 
 	if (lastIndex) {
 		data.push(value.slice(lastIndex));
+
 		if (data.length == 3 && data[0] == '' && data[2] == '') {
 			attribute = {
 				name: data[1],
@@ -135,51 +136,23 @@ function parseAttribute(result, name, value) {
  * @name TSN
  * @constructor
  * @description Конструктор создания шаблонов.
- * @param {String} path Относительный путь к файлу шаблона или код шаблона. Полный путь выглядет как <i>config.templateRoot</i> ({@link TSN#config}) + '/' + <i>path</i>.
- * @param {Boolean} [isInline] Флаг, указывающий на то что, в параметре path передан код шаблона.
+ * @param {String} data Относительный путь к файлу шаблона или код шаблона. Полный путь выглядет как <i>config.templateRoot</i> ({@link TSN#config}) + '/' + <i>data</i>.
  * @return {Object} Объект шаблона.
  */
-function TSN(path, isInline) {
+function TSN(data) {
 	if (!(this instanceof TSN)) {
 		throw 'TSN should be called as a constructor';
-	}
-
-	if (typeof path.toString == 'function') {
-		path = path.toString();
-	}
-
-	if (typeof path != 'string') {
-		throw 'Invalid path type';
 	}
 
 	if (TSN.config.hasOwnProperty('namespace') && (/[a-z\d\-_]+/i).test(TSN.config.namespace)) {
 		this.namespace = TSN.config.namespace;
 	} else {
 		TSN.emit('error', new Error('Invalid namespace.'));
+		this.namespace = 'tsn';
 	}
 
-	this.errors = [];
-	this.children = [];
-	this.temp = {};
-	this.cache = {};
-
-	LIB.fileSystem.realpathSync(TSN.config.templateRoot);
-
-	fullPath = LIB.path.join(TSN.config.templateRoot, path);
-	if (TSN.cache.hasOwnProperty(fullPath)) {
-		return TSN.cache[fullPath];
-	}
-
-	var content;
-	if (isInline !== true) {
-		content = LIB.fileSystem.readFileSync(fullPath, TSN.config.encoding);
-
-		this.path = fullPath;
-	} else {
-		content = path;
-	}
-
-	var space = '(?:\\r|\\n[^\\S\\r\\n]*)?',
+	var content,
+		space = '(?:\\r|\\n[^\\S\\r\\n]*)?',
 		entity = '&' + this.namespace + '.([a-z\\-_]+).([a-z\\-_\\.]+);',
 		nodeStart = '(?:' + space + entity + ')|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>)',
 		regExp = {
@@ -203,12 +176,39 @@ function TSN(path, isInline) {
 		emptyNode,
 		index,
 		lastIndex = 0,
-		fullPath,
 		parseResult,
 		error,
 		newNodeAPI;
 
-	TSN.cache[fullPath] = this;
+	this.errors = [];
+	this.children = [];
+	this.temp = {};
+	this.cache = {};
+
+	if (typeof data.toString == 'function') {
+		data = data.toString();
+	}
+
+	if (typeof data != 'string') {
+		throw 'Invalid data type';
+	}
+
+	try {
+		var fullPath = LIB.path.join(TSN.config.templateRoot, data);
+
+		if (TSN.cache.hasOwnProperty(fullPath)) {
+			return TSN.cache[fullPath];
+		}
+
+		LIB.fileSystem.realpathSync(fullPath);
+
+		content = LIB.fileSystem.readFileSync(fullPath, TSN.config.encoding);
+
+		this.path = fullPath;
+		TSN.cache[fullPath] = this;
+	} catch (e) {
+		content = data;
+	}
 
 	content = content.replace(regExp.xml, function (result) {
 		xmlDeclaration = result;
