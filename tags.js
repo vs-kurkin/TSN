@@ -85,12 +85,8 @@ this['var'] = (function () {
 	}
 
 	return {
-		parse: function (instance) {
+		parse: function () {
 			var attribute = this.attribute;
-
-			if (!instance.cache.hasOwnProperty('var')) {
-				instance.cache['var'] = {};
-			}
 
 			if (attribute.hasOwnProperty('name')) {
 				this.aName = attribute.name;
@@ -107,17 +103,20 @@ this['var'] = (function () {
 			} else {
 				return new Error('Attribute "name" is not defined.');
 			}
+		},
+		init: function (instance) {
+			instance.cache['var'] = {};
 		}
 	};
 })();
 
 this['if'] = this['unless'] = (function () {
 	function fromData(instance) {
-		return instance.context[this.aData] == this.type;
+		return Boolean(instance.context[this.aData]) == this.type;
 	}
 
 	function fromVar(instance) {
-		return instance.temp['var'][this.aVar] == this.type;
+		return Boolean(instance.temp['var'][this.aVar]) == this.type;
 	}
 
 	return {
@@ -134,119 +133,121 @@ this['if'] = this['unless'] = (function () {
 			}
 		},
 		'in': function (instance) {
-			return instance.context == this.type;
+			return Boolean(instance.context) == this.type;
 		}
 	};
 })();
 
-this['for'] = (function () {
-	var toString = {}.constructor.prototype.toString,
-		fncRegExp = /^function\s+[a-z]*\([^\)]*?\)\s*\{(?:\n|\r)?\s*([\s\S]*?)\}$/i;
+(function (API) {
+	function onInFor (instance) {
+		this.data = instance.context[this.aData];
 
-	var getProperty = (function () {
-		this.currentProperty = this.resultIsArray ? this.currentIndex : this.property[this.currentIndex];
-	}).toString().replace(fncRegExp, '$1');
-
-	var setKey = (function (template) {
-		template.cache['var'][this.attribute.key] = this.currentProperty;
-	}).toString().replace(fncRegExp, '$1');
-
-	var setValue = (function (template) {
-		template.cache['var'][this.attribute.value] = this.result[this.currentProperty];
-	}).toString().replace(fncRegExp, '$1');
-
-	var setContext = (function (template) {
-		template.context = this.result[this.currentProperty];
-	}).toString().replace(fncRegExp, '$1');
-
-	var inListenerBase = (function () {
-		if (++this.currentIndex == this.resultLength) {
-			this['out'] = this.outListener;
-		}
-		return true;
-	}).toString().replace(fncRegExp, '$1');
-
-	function inListener(template) {
-		var property;
-
-		this.result = this.attribute.hasOwnProperty('data') ? template.context[this.attribute.data] : template.context;
-		this.property = [];
-
-		switch (toString.call(this.result)) {
-			case '[object Array]':
-				this.resultIsArray = true;
-				this.resultLength = this.result.length;
-				break;
-			case '[object Object]':
-				for (property in this.result) {
-					this.property.push(property);
-				}
-				this.resultLength = this.property.length;
-				break;
-		}
-
-		if (this.resultLength) {
-			this.currentIndex = 0;
+		if (0 in this.data) {
+			this.context = instance.context;
+			this.currentIndex = 1;
+			this['in'] = onStep;
 			this.index--;
-			this['in'] = this.inListener;
-			delete this['out'];
-			this.inListener(template);
+
+			if (this.aKey) {
+				this['var'][this.aKey] = 0;
+			}
+
+			instance.context = this.data[0];
 			return true;
 		} else {
-			delete this.resultIsArray;
-			delete this.resultLength;
-			delete this.result;
-			delete this.property;
+			delete this.data;
+
 			return false;
 		}
 	}
 
-	function outListener(template) {
-		this.index++;
-		delete this.resultIsArray;
-		delete this.currentIndex;
-		delete this.resultLength;
-		delete this.result;
-		delete this.property;
-		delete this.currentProperty;
+	function onInEach (instance) {
+		var data = instance.context[this.aData];
 
-		delete template.cache['var'][this.attribute.key];
-		delete template.cache['var'][this.attribute.value];
+		this.data = [];
+		this.indexes = [];
 
-		this['in'] = inListener;
-		delete this['out'];
+		for (var property in data) {
+			if (data.hasOwnProperty(property)) {
+				this.data.push(data[property]);
+				this.indexes.push(property);
+			}
+		}
+
+		if (0 in this.data) {
+			this.index--;
+			this['in'] = onStep;
+			this.currentIndex = 1;
+			this.context = instance.context;
+
+			if (this.aKey) {
+				this['var'][this.aKey] = this.indexes[0];
+			}
+
+			instance.context = this.data[0];
+			return true;
+		} else {
+			delete this.data;
+			delete this.indexes;
+
+			return false;
+		}
 	}
 
-	return {
-		parse: function () {
-			this.outListener = outListener;
-			var codeListener = getProperty;
+	function onStep (instance) {
+		var currentIndex = this.currentIndex;
 
-			if (this.attribute.hasOwnProperty('key')) {
-				codeListener += setKey;
+		if (currentIndex in this.data) {
+			if (this.aKey) {
+				this['var'][this.aKey] = this.isFor ? currentIndex : this.indexes[currentIndex];
 			}
 
-			if (!this.attribute.hasOwnProperty('context')) {
-				codeListener += this.attribute.hasOwnProperty('value') ? 'template.context = ' + setValue : setContext;
-			} else if (this.attribute.hasOwnProperty('value')) {
-				codeListener += setValue;
-			}
+			instance.context = this.data[currentIndex];
 
-			this.inListener = new Function('template', codeListener += inListenerBase);
-		},
-		'in': inListener
-	};
-})();
+			this.currentIndex++;
+			return true;
+		} else {
+			instance.context = this.context;
+
+			this.index++;
+			this['in'] = this.onIn;
+
+			delete this.data;
+			delete this.indexes;
+			delete this.currentIndex;
+			delete this.context;
+
+			return false;
+		}
+	}
+
+	API['for'] = API['each'] = {
+		parse: function (instance) {
+			var attribute = this.attribute;
+
+			if (attribute.hasOwnProperty('data')) {
+				this.aData = attribute.data;
+				this['var'] = instance.cache['var'];
+				this.isFor = this.name == 'for';
+				this['in'] = this.onIn = this.isFor ? onInFor : onInEach;
+
+				if (attribute.hasOwnProperty('key')) {
+					this.aKey = attribute.key.toString();
+				}
+			} else {
+				return new Error('Attribute "data" in not defined.');
+			}
+		}
+	}
+})(this);
 
 (function (API){
 	function Template() {
 	}
 
-	function initTemplates (instance) {
-		if (!instance.temp.hasOwnProperty('template')) {
-			Template.prototype = 'parent' in instance ? instance.parent.temp.template : {};
-			instance.temp.template = new Template;
-		}
+	function init (instance) {
+		Template.prototype = 'parent' in instance ? instance.parent.temp.template : {};
+		instance.temp.template = new Template;
 	}
 
 	API.template = {
@@ -254,13 +255,17 @@ this['for'] = (function () {
 			var attribute = this.attribute;
 
 			if (attribute.hasOwnProperty('name')) {
-				initTemplates(instance);
-				instance.temp.template[attribute.name] = this.children;
-				return '';
+				if (typeof attribute.name == 'string') {
+					instance.temp.template[attribute.name] = this.children;
+					return '';
+				} else {
+					return new Error('Attribute "name" can not contain TSN-entity.');
+				}
 			} else {
 				return new Error('Attribute "name" is not defined.');
 			}
-		}
+		},
+		init: init
 	};
 
 	API.include = {
@@ -268,9 +273,11 @@ this['for'] = (function () {
 			var attribute = this.attribute;
 
 			if (attribute.hasOwnProperty('name')) {
-				var name = String(attribute.name);
+				var name = attribute.name;
 
-				initTemplates(instance);
+				if (typeof name != 'string') {
+					return new Error('Attribute "name" can not contain TSN-entity.');
+				}
 
 				if (instance.temp.template[name]) {
 					this.children = instance.temp.template[name];
@@ -280,6 +287,10 @@ this['for'] = (function () {
 					return new Error('Template with the name "' + name + '" is not defined.')
 				}
 			} else if (attribute.hasOwnProperty('src')) {
+				if (typeof attribute.src != 'string') {
+					return new Error('Attribute "src" can not contain TSN-entity.');
+				}
+
 				var parent = TSN.prototype.parent;
 
 				TSN.prototype.parent = instance;
@@ -297,7 +308,11 @@ this['for'] = (function () {
 		out: function (instance) {
 			instance.temp = this.temp;
 			delete this.temp;
-		}
+		},
+		entity: {
+			attribute: 'name'
+		},
+		init: init
 	};
 
 })(this);
