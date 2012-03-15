@@ -5,9 +5,6 @@
  */
 
 var TSN = module.parent.exports;
-var LIB = {
-	path: require('path')
-};
 
 this['root'] = {};
 
@@ -26,6 +23,41 @@ this['context'] = (function () {
 				this.aVar = attribute['var'];
 				this['in'] = fromVar;
 			}
+		}
+	};
+})();
+
+this['echo'] = (function () {
+	function dataFromContext(instance) {
+		this.text = instance.context[this.aData];
+		return false;
+	}
+
+	function fromVar(instance) {
+		this.text = instance.temp['var'][this.aVar];
+		return false;
+	}
+
+	return {
+		parse: function () {
+			var attribute = this.attribute;
+
+			if (attribute.hasOwnProperty('data')) {
+				this.aData = attribute.data;
+				this['in'] = dataFromContext;
+			} else if (attribute.hasOwnProperty('var')) {
+				this.aVar = attribute['var'];
+				this['in'] = fromVar;
+			}
+
+			this.children.length = 0;
+		},
+		'in': function (instance) {
+			this.text = instance.context;
+			return false;
+		},
+		entity: {
+			attribute: 'data'
 		}
 	};
 })();

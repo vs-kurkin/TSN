@@ -13,7 +13,7 @@ var LIB = {
 	event: require('events')
 },
 	configPath = LIB.path.join(__dirname, 'config.json'),
-	tag,
+	nodeAPI,
 	currentTmplChild,
 	currentTemplate,
 	regExpNode;
@@ -152,7 +152,7 @@ function TSN(path, isInline) {
 		throw 'Invalid path type';
 	}
 
-	if (TSN.config.hasOwnProperty('namespace') && (/[a-z0-9-_]+/i).test(TSN.config.namespace)) {
+	if (TSN.config.hasOwnProperty('namespace') && (/[a-z\d\-_]+/i).test(TSN.config.namespace)) {
 		this.namespace = TSN.config.namespace;
 	} else {
 		TSN.emit('error', new Error('Invalid namespace.'));
@@ -180,7 +180,7 @@ function TSN(path, isInline) {
 	}
 
 	var space = '(?:\\r|\\n[^\\S\\r\\n]*)?',
-		entity = '&' + this.namespace + '.([a-z0-9]+);',
+		entity = '&' + this.namespace + '.([a-z\\-_]+).([a-z\\-_\\.]+);',
 		nodeStart = '(?:' + space + entity + ')|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>)',
 		regExp = {
 			node: new RegExp(nodeStart + '|(?:' + space + '<\\s*' + this.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi'),
@@ -195,7 +195,8 @@ function TSN(path, isInline) {
 		xmlDeclaration = '',
 		result,
 		comment,
-		value,
+		entityTagName,
+		entityAttrValue,
 		closeNodeName,
 		openNodeName,
 		attributes,
@@ -205,7 +206,7 @@ function TSN(path, isInline) {
 		fullPath,
 		parseResult,
 		error,
-		onParse;
+		newNodeAPI;
 
 	TSN.cache[fullPath] = this;
 
@@ -216,36 +217,39 @@ function TSN(path, isInline) {
 
 	while (match = regExp.node.exec(content)) {
 		result = match[0];
-		value = match[1];
-		comment = match[2];
-		closeNodeName = match[3];
-		openNodeName = match[4];
-		attributes = match[5];
-		emptyNode = match[6];
+		entityTagName = match[1];
+		entityAttrValue = match[2];
+		comment = match[3];
+		closeNodeName = match[4];
+		openNodeName = match[5];
+		attributes = match[6];
+		emptyNode = match[7];
 		index = match.index;
 
 		current.children.push(content.substring(lastIndex, index));
 
-		if (value) {
-			openNodeName = 'echo';
+		if (entityTagName) {
+			openNodeName = entityTagName;
 			emptyNode = true;
-			attributes = {
-				data: value
-			};
+			newNodeAPI = nodeAPI.hasOwnProperty(openNodeName) && nodeAPI[openNodeName];
+			attributes = {};
+			if (newNodeAPI && newNodeAPI.hasOwnProperty('entity')) {
+				attributes[newNodeAPI.entity.attribute] = entityAttrValue;
+			}
 		}
 
 		if (openNodeName) {
 			openNodeName = openNodeName.toLowerCase();
 
-			if (node.hasOwnProperty(openNodeName)) {
+			if (nodeAPI.hasOwnProperty(openNodeName)) {
+				newNodeAPI = nodeAPI[openNodeName];
 				newNode = {
 					name: openNodeName,
 					attribute: {},
 					start: index,
-					'in': node[openNodeName]['in'],
-					out: node[openNodeName].out,
-					children: [],
-					root: this
+					'in': newNodeAPI['in'],
+					out: newNodeAPI.out,
+					children: []
 				};
 
 				if (typeof attributes == 'string') {
@@ -257,8 +261,7 @@ function TSN(path, isInline) {
 					newNode.attribute = attributes;
 				}
 
-				onParse = node[openNodeName].parse;
-				parseResult = typeof onParse == 'function' ? onParse.call(newNode, this) : true;
+				parseResult = typeof newNodeAPI.parse == 'function' ? newNodeAPI.parse.call(newNode, this) : true;
 
 				if (typeof parseResult == 'string') {
 					current.children.push(parseResult);
@@ -289,7 +292,7 @@ function TSN(path, isInline) {
 		} else if (closeNodeName) {
 			closeNodeName = closeNodeName.toLowerCase();
 
-			if (node.hasOwnProperty(closeNodeName)) {
+			if (nodeAPI.hasOwnProperty(closeNodeName)) {
 				if (current.name == closeNodeName) {
 					delete current.start;
 
@@ -376,7 +379,7 @@ TSN.cache = {};
  */
 TSN.extend = function (name, data) {
 	if (typeof name == 'string' && data && (typeof data['in'] == 'function' || typeof data['out'] == 'function')) {
-		node[name] = data;
+		nodeAPI[name] = data;
 	}
 };
 
@@ -507,44 +510,9 @@ LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
 		}
 	}
 
-	tag = require(LIB.path.join(__dirname, 'tags.js'));
+	nodeAPI = require(LIB.path.join(__dirname, 'tags.js'));
 
 	TSN.emit('ready');
-});
-
-TSN.on('ready', function () {
-	function dataFromContext(instance) {
-		this.text = instance.context[this.aData];
-		return false;
-	}
-
-	function fromVar(instance) {
-		this.text = instance.temp['var'][this.aVar];
-		return false;
-	}
-
-	TSN.extend('echo', {
-		parse: function () {
-			var attribute = this.attribute;
-
-			if (attribute.hasOwnProperty('data')) {
-				this.aData = attribute.data;
-				this['in'] = dataFromContext;
-			} else if (attribute.hasOwnProperty('var')) {
-				this.aVar = attribute['var'];
-				this['in'] = fromVar;
-			}
-
-			this.children.length = 0;
-		},
-		'in': function (instance) {
-			this.text = instance.context;
-			return false;
-		},
-		entity: {
-			attribute: ''
-		}
-	});
 });
 
 module.exports = TSN;
