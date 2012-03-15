@@ -8,9 +8,15 @@ var TSN = module.parent.exports;
 
 this['root'] = {};
 
+this['comment'] = {
+	parse: function () {
+		return '';
+	}
+};
+
 this['context'] = (function () {
 	function fromVar(instance) {
-		instance.context = instance.cache['var'][this.aVar];
+		instance.context = instance.temp['var'][this.aVar];
 	}
 
 	return {
@@ -128,10 +134,7 @@ this['if'] = this['unless'] = (function () {
 			}
 		},
 		'in': function (instance) {
-			return instance.context;
-		},
-		'out': function () {
-			delete this.result;
+			return instance.context == this.type;
 		}
 	};
 })();
@@ -271,6 +274,8 @@ this['for'] = (function () {
 
 				if (instance.temp.template[name]) {
 					this.children = instance.temp.template[name];
+					delete this['in'];
+					delete this['out'];
 				} else {
 					return new Error('Template with the name "' + name + '" is not defined.')
 				}
