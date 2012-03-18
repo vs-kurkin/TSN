@@ -90,7 +90,7 @@ function TSN(data) {
 
 	var content,
 		space = '(?:\\r|\\n[^\\S\\r\\n]*)?',
-		entity = '&' + this.namespace + '.([a-z\\-_]+).([a-z\\-_\\.]+);',
+		entity = '&' + this.namespace + '.([a-z\\-_]+)(?:.([a-z\\-_\\.]+))?;',
 		nodeStart = '(?:' + space + entity + ')|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>)',
 		regExp = {
 			node: new RegExp(nodeStart + '|(?:' + space + '<\\s*' + this.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi'),
@@ -175,10 +175,39 @@ function TSN(data) {
 		if (entityTagName) {
 			openNodeName = entityTagName;
 			emptyNode = true;
-			newNodeAPI = nodeAPI.hasOwnProperty(openNodeName) && nodeAPI[openNodeName];
 			attributes = {};
-			if (newNodeAPI && newNodeAPI.hasOwnProperty('entity')) {
-				attributes[newNodeAPI.entity.attribute] = entityAttrValue;
+
+			if (nodeAPI.hasOwnProperty(openNodeName)) {
+				if (entityAttrValue) {
+					newNodeAPI = nodeAPI[openNodeName];
+
+					if (newNodeAPI.hasOwnProperty('entity')) {
+						if (newNodeAPI.entity.hasOwnProperty('attribute')) {
+							attributes[newNodeAPI.entity.attribute] = entityAttrValue;
+						} else {
+							error = createError(index, result, content, xmlDeclaration);
+							error.message = 'Attribute name in entity declaration is not defined.';
+							error.nodeName = openNodeName;
+							error.template = this.path;
+
+							TSN.emit(error);
+						}
+					} else {
+						error = createError(index, result, content, xmlDeclaration);
+						error.message = 'Entity declaration is not defined.';
+						error.nodeName = openNodeName;
+						error.template = this.path;
+
+						TSN.emit(error);
+					}
+				}
+			} else {
+				error = createError(index, result, content, xmlDeclaration);
+				error.message = 'Unknown node.';
+				error.nodeName = openNodeName;
+				error.template = this.path;
+
+				TSN.emit(error);
 			}
 		}
 
