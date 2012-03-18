@@ -221,8 +221,9 @@ function TSN(data) {
 					error = createError(index, result, content, xmlDeclaration);
 					error.message = parseResult.message;
 					error.nodeName = openNodeName;
+					error.template = this.path;
 
-					TSN.emit(error, this);
+					TSN.emit(error);
 				} else {
 					current.children.push(newNode);
 				}
@@ -237,8 +238,9 @@ function TSN(data) {
 				error = createError(index, result, content, xmlDeclaration);
 				error.message = emptyNode ? 'Unknown node.' : 'Unknown node opening.';
 				error.nodeName = openNodeName;
+				error.template = this.path;
 
-				TSN.emit(error, this);
+				TSN.emit(error);
 			}
 
 		} else if (closeNodeName) {
@@ -257,15 +259,17 @@ function TSN(data) {
 					error = createError(index, result, content, xmlDeclaration);
 					error.message = 'Missing start node.';
 					error.nodeName = closeNodeName;
+					error.template = this.path;
 
-					TSN.emit(error, this);
+					TSN.emit(error);
 				}
 			} else {
 				error = createError(index, result, content, xmlDeclaration);
 				error.message = 'Unknown node closing.';
 				error.nodeName = closeNodeName;
+				error.template = this.path;
 
-				TSN.emit(error, this);
+				TSN.emit(error);
 			}
 
 		} else if (comment) {
@@ -287,8 +291,9 @@ function TSN(data) {
 		error = createError(index, result, content, xmlDeclaration);
 		error.message = 'Node is not closed.';
 		error.nodeName = current.name;
+		error.template = this.path;
 
-		TSN.emit(error, this);
+		TSN.emit(error);
 	}
 
 	this.children.push(content.substring(lastIndex));
@@ -379,8 +384,8 @@ TSN.prototype.render = function (data) {
 				}
 
 				if (isParse === false) {
-					if (typeof currentChild['out'] == 'function') {
-						currentChild['out'](this);
+					if (typeof currentChild.out == 'function') {
+						currentChild.out(this);
 					}
 
 					currentNode.text += currentChild.text;
@@ -413,8 +418,8 @@ TSN.prototype.render = function (data) {
 
 			parent = stack.pop();
 
-			if (typeof currentNode['out'] == 'function') {
-				currentNode['out'](this);
+			if (typeof currentNode.out == 'function') {
+				currentNode.out(this);
 			}
 
 			this.context = contexts.pop();

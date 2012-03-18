@@ -246,8 +246,10 @@ this['if'] = this['unless'] = (function () {
 	}
 
 	function init (instance) {
-		Template.prototype = ('parent' in instance) ? instance.parent.temp.template : {};
-		instance.temp.template = new Template;
+		if (!instance.temp.hasOwnProperty('template')) {
+			Template.prototype = ('parent' in instance) ? instance.parent.temp.template : {};
+			instance.temp.template = new Template;
+		}
 	}
 
 	API.template = {
