@@ -173,7 +173,7 @@ function TSN(data) {
 		current.children.push(content.substring(lastIndex, index));
 
 		if (entityTagName) {
-			openNodeName = entityTagName;
+			openNodeName = entityTagName.toLowerCase();
 			emptyNode = true;
 			attributes = {};
 
