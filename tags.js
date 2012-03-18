@@ -246,7 +246,7 @@ this['if'] = this['unless'] = (function () {
 	}
 
 	function init (instance) {
-		Template.prototype = 'parent' in instance ? instance.parent.temp.template : {};
+		Template.prototype = ('parent' in instance) ? instance.parent.temp.template : {};
 		instance.temp.template = new Template;
 	}
 
@@ -270,7 +270,8 @@ this['if'] = this['unless'] = (function () {
 
 	API.include = {
 		parse: function (instance) {
-			var attribute = this.attribute;
+			var attribute = this.attribute,
+				parent;
 
 			if (attribute.hasOwnProperty('name')) {
 				var name = attribute.name;
@@ -291,8 +292,7 @@ this['if'] = this['unless'] = (function () {
 					return new Error('Attribute "src" can not contain TSN-entity.');
 				}
 
-				var parent = TSN.prototype.parent;
-
+				parent = TSN.prototype.parent;
 				TSN.prototype.parent = instance;
 				this.template = new TSN(attribute.src);
 				this.children = this.template.children;
