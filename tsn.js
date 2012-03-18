@@ -13,10 +13,7 @@ var LIB = {
 	event: require('events')
 },
 	configPath = LIB.path.join(__dirname, 'config.json'),
-	nodeAPI,
-	currentTmplChild,
-	currentTemplate,
-	regExpNode;
+	nodeAPI;
 
 /**
  * @ignore
@@ -145,6 +142,7 @@ function TSN(data) {
 		content = LIB.fileSystem.readFileSync(fullPath, TSN.config.encoding);
 
 		this.path = fullPath;
+		this.templateRoot = TSN.config.templateRoot;
 		TSN.cache[fullPath] = this;
 	} catch (e) {
 		content = data;
@@ -297,8 +295,6 @@ function TSN(data) {
 
 	normalize(this);
 
-	currentTemplate = currentTmplChild = regExpNode = null;
-
 	return this;
 }
 
@@ -447,7 +443,7 @@ TSN.prototype.render = function (data) {
  */
 TSN.prototype.reload = function (newPath) {
 	delete TSN.cache[this.path];
-	return TSN.call(this, typeof newPath == 'string' ? newPath : this.path.substr(TSN.config.templateRoot.length), false);
+	return TSN.call(this, typeof newPath == 'string' ? newPath : this.path.substr(this.templateRoot.length));
 };
 
 LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
