@@ -51,7 +51,8 @@ function normalize (node) {
 		child,
 		oldType,
 		type,
-		newChildren = [];
+		newChildren = [],
+		undefined = void 0;
 
 	while ((child = children.shift()) != undefined) {
 		type = typeof child;
@@ -119,7 +120,6 @@ function TSN(data) {
 		error,
 		newNodeAPI;
 
-	this.errors = [];
 	this.children = [];
 	this.temp = {};
 	this.cache = {};
@@ -201,6 +201,7 @@ function TSN(data) {
 					attributes.replace(regExp.attr, function (result, name, value) {
 						if (regExp.entity.test(value)) {
 							value = new TSN(value);
+							value.parent = this;
 							value.toString = value.render;
 						}
 
@@ -219,7 +220,7 @@ function TSN(data) {
 					error.message = parseResult.message;
 					error.nodeName = openNodeName;
 
-					this.errors.push(error);
+					TSN.emit(error, this);
 				} else {
 					current.children.push(newNode);
 				}
@@ -235,7 +236,7 @@ function TSN(data) {
 				error.message = emptyNode ? 'Unknown node.' : 'Unknown node opening.';
 				error.nodeName = openNodeName;
 
-				this.errors.push(error);
+				TSN.emit(error, this);
 			}
 
 		} else if (closeNodeName) {
@@ -255,14 +256,14 @@ function TSN(data) {
 					error.message = 'Missing start node.';
 					error.nodeName = closeNodeName;
 
-					this.errors.push(error);
+					TSN.emit(error, this);
 				}
 			} else {
 				error = createError(index, result, content, xmlDeclaration);
 				error.message = 'Unknown node closing.';
 				error.nodeName = closeNodeName;
 
-				this.errors.push(error);
+				TSN.emit(error, this);
 			}
 
 		} else if (comment) {
@@ -279,13 +280,13 @@ function TSN(data) {
 	delete this.temp;
 
 	while (current = stack.pop()) {
+		delete current.start;
+
 		error = createError(index, result, content, xmlDeclaration);
 		error.message = 'Node is not closed.';
 		error.nodeName = current.name;
 
-		this.errors.push(error);
-
-		delete current.start;
+		TSN.emit(error, this);
 	}
 
 	this.children.push(content.substring(lastIndex));
@@ -348,8 +349,13 @@ TSN.prototype.render = function (data) {
 		stack = [],
 		contexts = [];
 
-	this.data = this.context = data || this.context;
+	if (this.hasOwnProperty('parent')) {
+		data = this.parent.context;
+	}
+
+	this.data = this.context = data;
 	this.temp = this.cache;
+
 
 	currentNode.text = '';
 

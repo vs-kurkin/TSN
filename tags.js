@@ -112,17 +112,17 @@ this['var'] = (function () {
 
 this['if'] = this['unless'] = (function () {
 	function fromData(instance) {
-		return Boolean(instance.context[this.aData]) == this.type;
+		return Boolean(instance.context[this.aData]) === this.type;
 	}
 
 	function fromVar(instance) {
-		return Boolean(instance.temp['var'][this.aVar]) == this.type;
+		return Boolean(instance.temp['var'][this.aVar]) === this.type;
 	}
 
 	return {
 		parse: function () {
 			var attribute = this.attribute;
-			this.type = this.name == 'if';
+			this.type = this.name === 'if';
 
 			if (attribute.hasOwnProperty('data')) {
 				this.aData = attribute.data;
@@ -133,7 +133,7 @@ this['if'] = this['unless'] = (function () {
 			}
 		},
 		'in': function (instance) {
-			return Boolean(instance.context) == this.type;
+			return Boolean(instance.context) === this.type;
 		}
 	};
 })();
