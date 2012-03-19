@@ -232,7 +232,7 @@ this['if'] = this['unless'] = (function () {
 				this['in'] = this.onIn = this.isFor ? onInFor : onInEach;
 
 				if (attribute.hasOwnProperty('key')) {
-					this.aKey = attribute.key.toString();
+					this.aKey = attribute.key;
 				}
 			} else {
 				return new Error('Attribute "data" in not defined.');
