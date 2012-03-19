@@ -118,10 +118,6 @@ function TSN(data) {
 		error,
 		newNodeAPI;
 
-	this.children = [];
-	this.temp = {};
-	this.cache = {};
-
 	if (typeof data.toString == 'function') {
 		data = data.toString();
 	}
@@ -129,6 +125,9 @@ function TSN(data) {
 	if (typeof data != 'string') {
 		throw 'Invalid data type';
 	}
+
+	this.children = [];
+	this.cache = {};
 
 	try {
 		var fullPath = LIB.path.join(TSN.config.templateRoot, data);
@@ -312,7 +311,7 @@ function TSN(data) {
 		lastIndex = index + result.length;
 	}
 
-	delete this.temp;
+	delete this.cache;
 
 	while (current = stack.pop()) {
 		delete current.start;
@@ -388,8 +387,7 @@ TSN.prototype.render = function (data) {
 	}
 
 	this.data = this.context = data;
-	this.temp = this.cache;
-
+	this.cache = {};
 
 	currentNode.text = '';
 
@@ -464,7 +462,7 @@ TSN.prototype.render = function (data) {
 
 	delete this.data;
 	delete this.context;
-	delete this.temp;
+	delete this.cache;
 
 	return result;
 };
