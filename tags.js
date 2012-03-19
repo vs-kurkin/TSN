@@ -130,8 +130,9 @@ this['if'] = this['unless'] = (function () {
 (function (API) {
 	function onInFor (instance) {
 		this.data = instance[this.aType][this.aData];
+		this.length = this.data.length;
 
-		if (0 in this.data) {
+		if (this.length) {
 			this.context = instance.context;
 			this.currentIndex = 1;
 			this['in'] = onStep;
@@ -145,6 +146,7 @@ this['if'] = this['unless'] = (function () {
 			return true;
 		} else {
 			delete this.data;
+			delete this.length;
 
 			return false;
 		}
@@ -163,7 +165,9 @@ this['if'] = this['unless'] = (function () {
 			}
 		}
 
-		if (0 in this.data) {
+		this.length = this.data.length;
+
+		if (this.length) {
 			this.index--;
 			this['in'] = onStep;
 			this.currentIndex = 1;
@@ -178,6 +182,7 @@ this['if'] = this['unless'] = (function () {
 		} else {
 			delete this.data;
 			delete this.indexes;
+			delete this.length;
 
 			return false;
 		}
@@ -186,16 +191,7 @@ this['if'] = this['unless'] = (function () {
 	function onStep (instance) {
 		var currentIndex = this.currentIndex;
 
-		if (currentIndex in this.data) {
-			if (this.aKey) {
-				instance.cache[this.aKey] = this.isFor ? currentIndex : this.indexes[currentIndex];
-			}
-
-			instance.context = this.data[currentIndex];
-
-			this.currentIndex++;
-			return true;
-		} else {
+		if (currentIndex == this.length) {
 			instance.context = this.context;
 
 			this.index++;
@@ -204,9 +200,19 @@ this['if'] = this['unless'] = (function () {
 			delete this.data;
 			delete this.indexes;
 			delete this.currentIndex;
+			delete this.length;
 			delete this.context;
 
 			return false;
+		} else {
+			if (this.aKey) {
+				instance.cache[this.aKey] = this.isFor ? currentIndex : this.indexes[currentIndex];
+			}
+
+			instance.context = this.data[currentIndex];
+
+			this.currentIndex++;
+			return true;
 		}
 	}
 
