@@ -117,7 +117,8 @@ function TSN(data) {
 		lastIndex = 0,
 		parseResult,
 		error,
-		newNodeAPI;
+		newNodeAPI,
+		parent;
 
 	if (typeof data.toString == 'function') {
 		data = data.toString();
@@ -203,7 +204,7 @@ function TSN(data) {
 				}
 			} else {
 				error = createError(index, result, content, xmlDeclaration);
-				error.message = 'Unknown node.';
+				error.message = 'Unknown tag.';
 				error.nodeName = openNodeName;
 				error.template = this.path;
 
@@ -219,7 +220,6 @@ function TSN(data) {
 				newNode = {
 					name: openNodeName,
 					attribute: {},
-					start: index,
 					'in': newNodeAPI['in'],
 					out: newNodeAPI.out,
 					children: []
@@ -230,11 +230,13 @@ function TSN(data) {
 						if (regExp.entity.test(value)) {
 							var parent = TSN.prototype.parent;
 							TSN.prototype.parent = instance;
+
 							if (inlineTemplates.hasOwnProperty(value)) {
 								value = inlineTemplates[value];
 							} else {
 								value = inlineTemplates[value] = new TSN(value);
 							}
+
 							TSN.prototype.parent = parent;
 							value.parent = instance;
 							value.toString = value.render;
@@ -246,30 +248,30 @@ function TSN(data) {
 					newNode.attribute = attributes;
 				}
 
-				parseResult = typeof newNodeAPI.parse == 'function' ? newNodeAPI.parse.call(newNode, this) : true;
-
-				if (typeof parseResult == 'string') {
-					current.children.push(parseResult);
-				} else if (parseResult && parseResult.constructor == Error) {
-					error = createError(index, result, content, xmlDeclaration);
-					error.message = parseResult.message;
-					error.nodeName = openNodeName;
-					error.template = this.path;
-
-					TSN.emit('error', error);
-				} else {
-					current.children.push(newNode);
-				}
-
 				if (emptyNode) {
-					delete newNode.start;
+					parseResult = typeof newNodeAPI.parse == 'function' ? newNodeAPI.parse.call(newNode, this) : true;
+
+					if (typeof parseResult == 'string') {
+						current.children.push(parseResult);
+					} else if (parseResult && parseResult.constructor == Error) {
+						error = createError(index, result, content, xmlDeclaration);
+						error.message = parseResult.message;
+						error.nodeName = openNodeName;
+						error.template = this.path;
+
+						TSN.emit('error', error);
+					} else {
+						current.children.push(newNode);
+					}
 				} else {
 					stack.push(current);
+					newNode.start = index;
+					newNode.result = result;
 					current = newNode;
 				}
 			} else {
 				error = createError(index, result, content, xmlDeclaration);
-				error.message = emptyNode ? 'Unknown node.' : 'Unknown node opening.';
+				error.message = emptyNode ? 'Unknown empty tag.' : 'Unknown tag opening.';
 				error.nodeName = openNodeName;
 				error.template = this.path;
 
@@ -280,25 +282,62 @@ function TSN(data) {
 			closeNodeName = closeNodeName.toLowerCase();
 
 			if (nodeAPI.hasOwnProperty(closeNodeName)) {
-				if (current.name == closeNodeName) {
-					delete current.start;
+				if (current.name != closeNodeName) {
+					parent = stack.pop();
 
-					if (current.hasOwnProperty('children') && current.children.length) {
-						normalize(current);
+					if (parent && closeNodeName == parent.name) {
+						error = createError(current.start, current.result, content, xmlDeclaration);
+						error.message = 'Tag is not closed.';
+						error.nodeName = current.name;
+						error.template = this.path;
+
+						TSN.emit('error', error);
+
+						parent.children.push.apply(parent.children, current.children);
+						current = parent;
+					} else {
+						error = createError(index, result, content, xmlDeclaration);
+						error.message = 'Closing tag matches nothing.';
+						error.nodeName = closeNodeName;
+						error.template = this.path;
+
+						TSN.emit('error', error);
+
+						parent && stack.push(parent);
+						lastIndex = index + result.length;
+						continue;
 					}
+				}
 
-					current = stack.pop();
-				} else {
-					error = createError(index, result, content, xmlDeclaration);
-					error.message = 'Missing start node.';
-					error.nodeName = closeNodeName;
+				delete current.start;
+				delete current.result;
+
+				parent = stack.pop();
+
+				if (current.children.length) {
+					normalize(current);
+				}
+
+				newNodeAPI = nodeAPI[current.name];
+				parseResult = typeof newNodeAPI.parse == 'function' ? newNodeAPI.parse.call(current, this) : true;
+
+				if (typeof parseResult == 'string') {
+					parent.children.push(parseResult);
+				} else if (parseResult && parseResult.constructor == Error) {
+					error = createError(current.start, current.result, content, xmlDeclaration);
+					error.message = parseResult.message;
+					error.nodeName = openNodeName;
 					error.template = this.path;
 
 					TSN.emit('error', error);
+				} else {
+					parent.children.push(current);
 				}
+
+				current = parent;
 			} else {
 				error = createError(index, result, content, xmlDeclaration);
-				error.message = 'Unknown node closing.';
+				error.message = 'Unknown tag closing.';
 				error.nodeName = closeNodeName;
 				error.template = this.path;
 
@@ -318,20 +357,23 @@ function TSN(data) {
 
 	delete this.cache;
 
-	while (current = stack.pop()) {
-		delete current.start;
-
-		error = createError(index, result, content, xmlDeclaration);
-		error.message = 'Node is not closed.';
-		error.nodeName = current.name;
-		error.template = this.path;
-
-		TSN.emit('error', error);
-	}
-
 	this.children.push(content.substring(lastIndex));
 
 	normalize(this);
+
+	do {
+		if (current != this) {
+			error = createError(current.start, current.result, content, xmlDeclaration);
+			error.message = 'Tag is not closed.';
+			error.nodeName = current.name;
+			error.template = this.path;
+
+			delete current.start;
+			delete current.result;
+
+			TSN.emit('error', error);
+		}
+	} while (current = stack.pop());
 
 	return this;
 }
