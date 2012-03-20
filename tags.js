@@ -15,7 +15,7 @@ this['comment'] = {
 };
 
 this['context'] = (function () {
-	function fromVar(instance) {
+	function fromCache(instance) {
 		instance.context = instance.cache[this.aName];
 	}
 
@@ -25,9 +25,9 @@ this['context'] = (function () {
 
 			if (attribute.hasOwnProperty('data')) {
 				attribute.context = attribute.data;
-			} else if (attribute.hasOwnProperty('var')) {
-				this.aName = attribute['var'];
-				this['in'] = fromVar;
+			} else if (attribute.hasOwnProperty('cache')) {
+				this.aName = attribute.cache;
+				this['in'] = fromCache;
 			}
 		}
 	};
@@ -47,8 +47,8 @@ this['echo'] = (function () {
 				this.aName = attribute.data;
 				this.aType = 'context';
 				this['in'] = fromData;
-			} else if (attribute.hasOwnProperty('var')) {
-				this.aName = attribute['var'];
+			} else if (attribute.hasOwnProperty('cache')) {
+				this.aName = attribute.cache;
 				this.aType = 'cache';
 				this['in'] = fromData;
 			}
@@ -65,7 +65,7 @@ this['echo'] = (function () {
 	};
 })();
 
-this['var'] = (function () {
+this['cache'] = (function () {
 	function fromData(instance) {
 		instance.cache[this.aName] = instance[this.aType][this.aData];
 		return false;
@@ -87,8 +87,8 @@ this['var'] = (function () {
 					this.aData = attribute.data;
 					this.aType = 'context';
 					this['in'] = fromData;
-				} else if (attribute.hasOwnProperty('var')) {
-					this.aData = attribute['var'];
+				} else if (attribute.hasOwnProperty('cache')) {
+					this.aData = attribute.cache;
 					this.aType = 'cache';
 					this['in'] = fromData;
 				} else {
@@ -115,8 +115,8 @@ this['if'] = this['unless'] = (function () {
 				this.aName = attribute.data;
 				this.aType = 'context';
 				this['in'] = fromData;
-			} else if (attribute.hasOwnProperty('var')) {
-				this.aName = attribute['var'];
+			} else if (attribute.hasOwnProperty('cache')) {
+				this.aName = attribute.cache;
 				this.aType = 'cache';
 				this['in'] = fromData;
 			}
@@ -223,11 +223,11 @@ this['if'] = this['unless'] = (function () {
 			if (attribute.hasOwnProperty('data')) {
 				this.aData = attribute['data'];
 				this.aType = 'context';
-			} else if (attribute.hasOwnProperty('var')) {
-				this.aData = attribute['var'];
+			} else if (attribute.hasOwnProperty('cache')) {
+				this.aData = attribute.cache;
 				this.aType = 'cache';
 			} else {
-				return new Error('Attribute "data" or "var" in not defined.');
+				return new Error('Attribute "data" or "cache" in not defined.');
 			}
 
 			this.isFor = this.name == 'for';

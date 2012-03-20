@@ -9,18 +9,18 @@
 <!ELEMENT tsn:context ANY>
 <!ATTLIST tsn:context
 	data CDATA #IMPLIED
-	var CDATA #IMPLIED
+	cache CDATA #IMPLIED
 	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:echo EMPTY>
 <!ATTLIST tsn:echo
 	data CDATA #IMPLIED
-	var CDATA #IMPLIED
+	cache CDATA #IMPLIED
 	>
 
-<!ELEMENT tsn:var ANY>
-<!ATTLIST tsn:var
+<!ELEMENT tsn:cache ANY>
+<!ATTLIST tsn:cache
 	name CDATA #REQUIRED
 	data CDATA #IMPLIED
 	context CDATA #IMPLIED
@@ -29,14 +29,14 @@
 <!ELEMENT tsn:if ANY>
 <!ATTLIST tsn:if
 	data CDATA #IMPLIED
-	var CDATA #IMPLIED
+	cache CDATA #IMPLIED
 	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:unless ANY>
 <!ATTLIST tsn:unless
 	data CDATA #IMPLIED
-	var CDATA #IMPLIED
+	cache CDATA #IMPLIED
 	context CDATA #IMPLIED
 	>
 
@@ -65,6 +65,6 @@
 	>
 
 <!-- include DTD XHTML1.1 -->
-<!ENTITY % Block.extra "| tsn:root | tsn:comment | tsn:context | tsn:var | tsn:if | tsn:unless | tsn:for | tsn:each | tsn:template | tsn:include">
+<!ENTITY % Block.extra "| tsn:root | tsn:comment | tsn:context | tsn:cache | tsn:if | tsn:unless | tsn:for | tsn:each | tsn:template | tsn:include">
 <!ENTITY % xhtml11.dtd PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 %xhtml11.dtd;
