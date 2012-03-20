@@ -13,7 +13,8 @@ var LIB = {
 	event: require('events')
 },
 	configPath = LIB.path.join(__dirname, 'config.json'),
-	nodeAPI;
+	nodeAPI,
+	inlineTemplates = {};
 
 /**
  * @ignore
@@ -130,7 +131,7 @@ function TSN(data) {
 	this.cache = {};
 
 	try {
-		var fullPath = LIB.path.join(TSN.config.templateRoot, data);
+		var fullPath = LIB.path.join(TSN.config.pathRoot, data);
 
 		if (TSN.cache.hasOwnProperty(fullPath)) {
 			return TSN.cache[fullPath];
@@ -141,7 +142,7 @@ function TSN(data) {
 		content = LIB.fileSystem.readFileSync(fullPath, TSN.config.encoding);
 
 		this.path = fullPath;
-		this.templateRoot = TSN.config.templateRoot;
+		this.pathRoot = TSN.config.pathRoot;
 		TSN.cache[fullPath] = this;
 	} catch (e) {
 		content = data;
@@ -227,10 +228,11 @@ function TSN(data) {
 				if (typeof attributes == 'string') {
 					attributes.replace(regExp.attr, function (result, name, value) {
 						if (regExp.entity.test(value)) {
-							var parent = TSN.prototype.parent;
-							TSN.prototype.parent = instance;
-							value = new TSN(value);
-							TSN.prototype.parent = parent;
+							if (inlineTemplates.hasOwnProperty(value)) {
+								value = inlineTemplates[value];
+							} else {
+								value = inlineTemplates[value] = new TSN(value);
+							}
 							value.parent = instance;
 							value.toString = value.render;
 						}
@@ -469,13 +471,13 @@ TSN.prototype.render = function (data) {
 
 /**
  * Повторный парсинг шаблона, загруженного из файла.
- * @param {String} [newPath] Новый оносительный пути к файлу шаблона.
- * @return {Object} Объект шаблона или ошибку доступа к файлу.
+ * @param {String} [newPath] Новый путь к файлу шаблона.
+ * @return {Object} Объект шаблона.
  * @function
  */
 TSN.prototype.reload = function (newPath) {
 	delete TSN.cache[this.path];
-	return TSN.call(this, typeof newPath == 'string' ? newPath : this.path.substr(this.templateRoot.length));
+	return TSN.call(this, typeof newPath == 'string' ? newPath : this.path.substr(this.pathRoot.length));
 };
 
 LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
@@ -516,5 +518,5 @@ module.exports = TSN;
  * @event
  * @param {string} message
  * @param {Object} event
- * @description Ошибка инициализации модуля.
+ * @description Ошибка инициализации или парсинга шаблона.
  */
