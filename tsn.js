@@ -189,7 +189,7 @@ function TSN(data) {
 							error.nodeName = openNodeName;
 							error.template = this.path;
 
-							TSN.emit(error);
+							TSN.emit('error', error);
 						}
 					} else {
 						error = createError(index, result, content, xmlDeclaration);
@@ -197,7 +197,7 @@ function TSN(data) {
 						error.nodeName = openNodeName;
 						error.template = this.path;
 
-						TSN.emit(error);
+						TSN.emit('error', error);
 					}
 				}
 			} else {
@@ -206,7 +206,7 @@ function TSN(data) {
 				error.nodeName = openNodeName;
 				error.template = this.path;
 
-				TSN.emit(error);
+				TSN.emit('error', error);
 			}
 		}
 
@@ -251,7 +251,7 @@ function TSN(data) {
 					error.nodeName = openNodeName;
 					error.template = this.path;
 
-					TSN.emit(error);
+					TSN.emit('error', error);
 				} else {
 					current.children.push(newNode);
 				}
@@ -268,7 +268,7 @@ function TSN(data) {
 				error.nodeName = openNodeName;
 				error.template = this.path;
 
-				TSN.emit(error);
+				TSN.emit('error', error);
 			}
 
 		} else if (closeNodeName) {
@@ -289,7 +289,7 @@ function TSN(data) {
 					error.nodeName = closeNodeName;
 					error.template = this.path;
 
-					TSN.emit(error);
+					TSN.emit('error', error);
 				}
 			} else {
 				error = createError(index, result, content, xmlDeclaration);
@@ -297,7 +297,7 @@ function TSN(data) {
 				error.nodeName = closeNodeName;
 				error.template = this.path;
 
-				TSN.emit(error);
+				TSN.emit('error', error);
 			}
 
 		} else if (comment) {
@@ -321,7 +321,7 @@ function TSN(data) {
 		error.nodeName = current.name;
 		error.template = this.path;
 
-		TSN.emit(error);
+		TSN.emit('error', error);
 	}
 
 	this.children.push(content.substring(lastIndex));
