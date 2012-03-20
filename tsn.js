@@ -228,11 +228,14 @@ function TSN(data) {
 				if (typeof attributes == 'string') {
 					attributes.replace(regExp.attr, function (result, name, value) {
 						if (regExp.entity.test(value)) {
+							var parent = TSN.prototype.parent;
+							TSN.prototype.parent = instance;
 							if (inlineTemplates.hasOwnProperty(value)) {
 								value = inlineTemplates[value];
 							} else {
 								value = inlineTemplates[value] = new TSN(value);
 							}
+							TSN.prototype.parent = parent;
 							value.parent = instance;
 							value.toString = value.render;
 						}
