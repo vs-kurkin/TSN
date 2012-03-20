@@ -131,7 +131,7 @@ function TSN(data) {
 	this.cache = {};
 
 	try {
-		var fullPath = LIB.path.join(TSN.config.pathRoot, data);
+		var fullPath = LIB.path.join(TSN.config.templateRoot, data);
 
 		if (TSN.cache.hasOwnProperty(fullPath)) {
 			return TSN.cache[fullPath];
@@ -142,7 +142,7 @@ function TSN(data) {
 		content = LIB.fileSystem.readFileSync(fullPath, TSN.config.encoding);
 
 		this.path = fullPath;
-		this.pathRoot = TSN.config.pathRoot;
+		this.pathRoot = TSN.config.templateRoot;
 		TSN.cache[fullPath] = this;
 	} catch (e) {
 		content = data;
