@@ -233,7 +233,7 @@ function TSN(data) {
 				};
 
 				if (typeof attributes == 'string') {
-					while (attribute = attributes.match(regExpAttr)) {
+					while (attribute = regExpAttr.exec(attributes)) {
 						attrValue = attribute[2];
 
 						if (regExpEntity.test(attrValue)) {
