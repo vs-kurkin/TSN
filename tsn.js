@@ -19,9 +19,10 @@ var LIB = {
 var getErrorData = (function () {
 	var regExpN = /[^\n]+/g;
 	var regExpR = /[^\r]+/g;
+	var n, r;
 
 	return function (index, result, content, declaration) {
-		var n, r, error = new Error();
+		var error = new Error();
 
 		content = (declaration + content).substr(0, index + declaration.length) + result;
 
@@ -39,7 +40,10 @@ var getErrorData = (function () {
  * @ignore
  */
 function normalize(node) {
-	var children = node.children, child, oldType, type, newChildren = [], undefined = void 0;
+	var children = node.children;
+	var undefined = void 0;
+	var newChildren = [];
+	var child, oldType, type;
 
 	while ((child = children.shift()) != undefined) {
 		type = typeof child;
