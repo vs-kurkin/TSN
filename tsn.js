@@ -11,23 +11,17 @@ var LIB = {
 	fileSystem: require('fs'),
 	path: require('path'),
 	event: require('events')
-},
-	configPath = LIB.path.join(__dirname, 'config.json'),
-	nodeAPI,
-	inlineTemplates = {};
+}, configPath = LIB.path.join(__dirname, 'config.json'), nodeAPI, inlineTemplates = {};
 
 /**
  * @ignore
- * todo: Доделать информацию о ошибках парсинга
  */
-var createError = (function () {
+var getErrorData = (function () {
 	var regExpN = /[^\n]+/g;
 	var regExpR = /[^\r]+/g;
 
 	return function (index, result, content, declaration) {
-		var n,
-			r,
-			error = new Error();
+		var n, r, error = new Error();
 
 		content = (declaration + content).substr(0, index + declaration.length) + result;
 
@@ -35,7 +29,7 @@ var createError = (function () {
 		r = content.lastIndexOf('\r');
 
 		error.line = content.replace((n > r) ? regExpN : regExpR, '').length + 1;
-		error.char = content.substring((n > r) ? n : r).lastIndexOf(result.replace(/^\s+/, ''));
+		error.char = content.substring(Math.max(n, r)).lastIndexOf(result.replace(/^\s+/, ''));
 
 		return error;
 	};
@@ -44,30 +38,39 @@ var createError = (function () {
 /**
  * @ignore
  */
-function normalize (node) {
-	var children = node.children,
-		child,
-		oldType,
-		type,
-		newChildren = [],
-		undefined = void 0;
+function normalize(node) {
+	var children = node.children, child, oldType, type, newChildren = [], undefined = void 0;
 
 	while ((child = children.shift()) != undefined) {
 		type = typeof child;
 
 		if (child !== '') {
-			if (type == 'string' && type == oldType) {
+			if (type == 'string' && oldType == 'string') {
 				newChildren.push((newChildren.pop() || '') + child);
 			} else {
 				child.index = newChildren.length;
 				newChildren.push(child);
 			}
-		}
 
-		oldType = type;
+			oldType = type;
+		}
 	}
 
 	node.children.push.apply(node.children, newChildren);
+}
+
+function fixIndent(text, stack) {
+	var stackLength = stack.length;
+	var tabSize, spaceSize;
+
+	if (stackLength) {
+		tabSize = stackLength * (TSN.config.indent / TSN.config.tabSize);
+		spaceSize = stackLength * TSN.config.indent;
+
+		return text.replace(new RegExp('((?:\\r\\n)|\\r|\\n)[\\t]{' + tabSize + '}|[ ]{' + spaceSize + '}', 'g'), '$1');
+	} else {
+		return text;
+	}
 }
 
 /**
@@ -89,36 +92,35 @@ function TSN(data) {
 		this.namespace = 'tsn';
 	}
 
-	var content,
-		space = '(?:\\r|\\n[^\\S\\r\\n]*)?',
-		entity = '&' + this.namespace + '.([a-z\\-_]+)(?:.([a-z\\-_\\.]+))?;',
-		nodeStart = '(?:' + space + entity + ')|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>)',
-		regExp = {
-			node: new RegExp(nodeStart + '|(?:' + space + '<\\s*' + this.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi'),
-			attr: /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:"([^"]*)")|(?:'[^']*')))?/gi,
-			xml: /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*(<!DOCTYPE\s+[a-z\-_]+(?::[a-z\-_]+)?(?:\s+PUBLIC\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:\[[\s\S]*?\])?)?\s*>)?/i,
-			entity: new RegExp(entity, 'gi')
-		},
-		match,
-		current = this,
-		instance = this,
-		newNode,
-		stack = [],
-		xmlDeclaration = '',
-		result,
-		comment,
-		entityTagName,
-		entityAttrValue,
-		closeNodeName,
-		openNodeName,
-		attributes,
-		emptyNode,
-		index,
-		lastIndex = 0,
-		parseResult,
-		error,
-		newNodeAPI,
-		parent;
+	if (typeof TSN.config.tabSize != 'number' || TSN.config.tabSize < 1) {
+		TSN.emit('error', new Error('Invalid tab size.'));
+		TSN.config.tabSize = 2;
+	} else {
+		TSN.config.tabSize = Number(TSN.config.tabSize.toFixed(0));
+	}
+
+	if (typeof TSN.config.indent != 'number' || TSN.config.indent < 1) {
+		TSN.emit('error', new Error('Invalid indent.'));
+		TSN.config.indent = 2;
+	} else {
+		TSN.config.indent = Number(TSN.config.indent.toFixed(0));
+	}
+
+	var content, match, newNode, result, comment, entityTagName, entityAttrValue, closeNodeName, openNodeName, attributes, emptyNode, index, parseResult, error, newNodeAPI, parent, parentTemplate;
+
+	var current = this;
+	var instance = this;
+	var stack = [];
+	var xmlDeclaration = '';
+	var lastIndex = 0;
+
+	var space = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)?';
+	var entity = '&' + this.namespace + '.([a-z\\-_]+)(?:.([a-z\\-_\\.]+))?;';
+
+	var regExpNode = new RegExp('(?:' + space + entity + ')|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + space + '<\\s*' + this.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi');
+	var regExpEntity = new RegExp(entity, 'gi');
+	var regExpAttr = /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:"([^"]*)")|(?:'[^']*')))?/gi;
+	var regExpXML = /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*(<!DOCTYPE\s+[a-z\-_]+(?::[a-z\-_]+)?(?:\s+PUBLIC\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:\[[\s\S]*?\])?)?\s*>)?/i;
 
 	if (typeof data.toString == 'function') {
 		data = data.toString();
@@ -155,12 +157,13 @@ function TSN(data) {
 		}
 	}
 
-	content = content.replace(regExp.xml, function (result) {
-		xmlDeclaration = result;
-		return '';
-	});
+	xmlDeclaration = content.match(regExpXML);
+	if (xmlDeclaration) {
+		xmlDeclaration = xmlDeclaration[0];
+		content = content.substring(xmlDeclaration.length);
+	}
 
-	while (match = regExp.node.exec(content)) {
+	while (match = regExpNode.exec(content)) {
 		result = match[0];
 		entityTagName = match[1];
 		entityAttrValue = match[2];
@@ -171,7 +174,7 @@ function TSN(data) {
 		emptyNode = match[7];
 		index = match.index;
 
-		current.children.push(content.substring(lastIndex, index));
+		current.children.push(fixIndent(content.substring(lastIndex, index), stack));
 
 		if (entityTagName) {
 			openNodeName = entityTagName.toLowerCase();
@@ -186,7 +189,7 @@ function TSN(data) {
 						if (newNodeAPI.entity.hasOwnProperty('attribute')) {
 							attributes[newNodeAPI.entity.attribute] = entityAttrValue;
 						} else {
-							error = createError(index, result, content, xmlDeclaration);
+							error = getErrorData(index, result, content, xmlDeclaration);
 							error.message = 'Attribute name in entity declaration is not defined.';
 							error.nodeName = openNodeName;
 							error.template = this.path;
@@ -194,7 +197,7 @@ function TSN(data) {
 							TSN.emit('error', error);
 						}
 					} else {
-						error = createError(index, result, content, xmlDeclaration);
+						error = getErrorData(index, result, content, xmlDeclaration);
 						error.message = 'Entity declaration is not defined.';
 						error.nodeName = openNodeName;
 						error.template = this.path;
@@ -203,7 +206,7 @@ function TSN(data) {
 					}
 				}
 			} else {
-				error = createError(index, result, content, xmlDeclaration);
+				error = getErrorData(index, result, content, xmlDeclaration);
 				error.message = 'Unknown tag.';
 				error.nodeName = openNodeName;
 				error.template = this.path;
@@ -226,9 +229,9 @@ function TSN(data) {
 				};
 
 				if (typeof attributes == 'string') {
-					attributes.replace(regExp.attr, function (result, name, value) {
-						if (regExp.entity.test(value)) {
-							var parent = TSN.prototype.parent;
+					attributes.replace(regExpAttr, function (result, name, value) {
+						if (regExpEntity.test(value)) {
+							parentTemplate = TSN.prototype.parent;
 							TSN.prototype.parent = instance;
 
 							if (inlineTemplates.hasOwnProperty(value)) {
@@ -237,7 +240,7 @@ function TSN(data) {
 								value = inlineTemplates[value] = new TSN(value);
 							}
 
-							TSN.prototype.parent = parent;
+							TSN.prototype.parent = parentTemplate;
 							value.parent = instance;
 							value.toString = value.render;
 						}
@@ -254,7 +257,7 @@ function TSN(data) {
 					if (typeof parseResult == 'string') {
 						current.children.push(parseResult);
 					} else if (parseResult && parseResult.constructor == Error) {
-						error = createError(index, result, content, xmlDeclaration);
+						error = getErrorData(index, result, content, xmlDeclaration);
 						error.message = parseResult.message;
 						error.nodeName = openNodeName;
 						error.template = this.path;
@@ -270,7 +273,7 @@ function TSN(data) {
 					current = newNode;
 				}
 			} else {
-				error = createError(index, result, content, xmlDeclaration);
+				error = getErrorData(index, result, content, xmlDeclaration);
 				error.message = emptyNode ? 'Unknown empty tag.' : 'Unknown tag opening.';
 				error.nodeName = openNodeName;
 				error.template = this.path;
@@ -286,7 +289,7 @@ function TSN(data) {
 					parent = stack.pop();
 
 					if (parent && closeNodeName == parent.name) {
-						error = createError(current.start, current.result, content, xmlDeclaration);
+						error = getErrorData(current.start, current.result, content, xmlDeclaration);
 						error.message = 'Tag is not closed.';
 						error.nodeName = current.name;
 						error.template = this.path;
@@ -296,7 +299,7 @@ function TSN(data) {
 						parent.children.push.apply(parent.children, current.children);
 						current = parent;
 					} else {
-						error = createError(index, result, content, xmlDeclaration);
+						error = getErrorData(index, result, content, xmlDeclaration);
 						error.message = 'Closing tag matches nothing.';
 						error.nodeName = closeNodeName;
 						error.template = this.path;
@@ -321,7 +324,7 @@ function TSN(data) {
 				if (typeof parseResult == 'string') {
 					parent.children.push(parseResult);
 				} else if (parseResult && parseResult.constructor == Error) {
-					error = createError(current.start, current.result, content, xmlDeclaration);
+					error = getErrorData(current.start, current.result, content, xmlDeclaration);
 					error.message = parseResult.message;
 					error.nodeName = openNodeName;
 					error.template = this.path;
@@ -336,7 +339,7 @@ function TSN(data) {
 
 				current = parent;
 			} else {
-				error = createError(index, result, content, xmlDeclaration);
+				error = getErrorData(index, result, content, xmlDeclaration);
 				error.message = 'Unknown tag closing.';
 				error.nodeName = closeNodeName;
 				error.template = this.path;
@@ -346,10 +349,10 @@ function TSN(data) {
 
 		} else if (comment) {
 			if (TSN.config.saveComments === true) {
-				current.children.push(result);
+				current.children.push(fixIndent(result, stack));
 			}
 		} else { // CDATA
-			current.children.push(result);
+			current.children.push(fixIndent(result, stack));
 		}
 
 		lastIndex = index + result.length;
@@ -357,13 +360,13 @@ function TSN(data) {
 
 	delete this.cache;
 
-	this.children.push(content.substring(lastIndex));
+	this.children.push(fixIndent(content.substring(lastIndex), stack));
 
 	normalize(this);
 
 	do {
 		if (current != this) {
-			error = createError(current.start, current.result, content, xmlDeclaration);
+			error = getErrorData(current.start, current.result, content, xmlDeclaration);
 			error.message = 'Tag is not closed.';
 			error.nodeName = current.name;
 			error.template = this.path;
@@ -420,14 +423,13 @@ TSN.extend = function (name, data) {
  * @function
  */
 TSN.prototype.render = function (data) {
-	var currentNode = this,
-		currentIndex = 0,
-		currentChild = currentNode.children[currentIndex],
-		result = '',
-		isParse,
-		parent,
-		stack = [],
-		contexts = [];
+	var isParse, parent;
+	var currentNode = this;
+	var currentIndex = 0;
+	var currentChild = currentNode.children[currentIndex];
+	var result = '';
+	var stack = [];
+	var contexts = [];
 
 	if (this.hasOwnProperty('parent')) {
 		data = this.parent.context;
@@ -481,7 +483,6 @@ TSN.prototype.render = function (data) {
 					currentChild = currentNode.children[currentIndex];
 				}
 			}
-
 
 		} else {
 			if (currentNode == this) {

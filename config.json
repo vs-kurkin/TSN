@@ -2,5 +2,7 @@
 	"namespace": "tsn",
 	"templateRoot": "",
 	"encoding": "utf-8",
-	"saveComments": true
+	"saveComments": true,
+	"tabSize": 2,
+	"indent": 2
 }
