@@ -11,7 +11,11 @@ var LIB = {
 	fileSystem: require('fs'),
 	path: require('path'),
 	event: require('events')
-}, configPath = LIB.path.join(__dirname, 'config.json'), nodeAPI, inlineTemplates = {};
+};
+
+var nodeAPI;
+var configPath = LIB.path.join(__dirname, 'config.json');
+var inlineTemplates = {};
 
 /**
  * @ignore
@@ -105,12 +109,11 @@ function TSN(data) {
 		TSN.config.indent = Number(TSN.config.indent.toFixed(0));
 	}
 
-	var content, match, newNode, result, comment, entityTagName, entityAttrValue, closeNodeName, openNodeName, attributes, emptyNode, index, parseResult, error, newNodeAPI, parent, parentTemplate;
+	var content, match, newNode, result, comment, entityTagName, entityAttrValue, closeNodeName, openNodeName, attributes, emptyNode, index, parseResult, error, newNodeAPI, parent, xmlDeclaration, attribute, attrValue;
 
 	var current = this;
 	var instance = this;
 	var stack = [];
-	var xmlDeclaration = '';
 	var lastIndex = 0;
 
 	var space = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)?';
@@ -160,6 +163,8 @@ function TSN(data) {
 	if (xmlDeclaration) {
 		xmlDeclaration = xmlDeclaration[0];
 		content = content.substring(xmlDeclaration.length);
+	} else {
+		xmlDeclaration = '';
 	}
 
 	while (match = regExpNode.exec(content)) {
@@ -228,24 +233,26 @@ function TSN(data) {
 				};
 
 				if (typeof attributes == 'string') {
-					attributes.replace(regExpAttr, function (result, name, value) {
-						if (regExpEntity.test(value)) {
-							parentTemplate = TSN.prototype.parent;
+					while (attribute = attributes.match(regExpAttr)) {
+						attrValue = attribute[2];
+
+						if (regExpEntity.test(attrValue)) {
+							var parentTemplate = TSN.prototype.parent;
 							TSN.prototype.parent = instance;
 
-							if (inlineTemplates.hasOwnProperty(value)) {
-								value = inlineTemplates[value];
+							if (inlineTemplates.hasOwnProperty(attrValue)) {
+								attrValue = inlineTemplates[attrValue];
 							} else {
-								value = inlineTemplates[value] = new TSN(value);
+								attrValue = inlineTemplates[attrValue] = new TSN(attrValue);
 							}
 
 							TSN.prototype.parent = parentTemplate;
-							value.parent = instance;
-							value.toString = value.render;
+							attrValue.parent = instance;
+							attrValue.toString = attrValue.render;
 						}
 
-						newNode.attribute[name] = value;
-					});
+						newNode.attribute[attribute[1]] = attrValue;
+					}
 				} else if (attributes) {
 					newNode.attribute = attributes;
 				}
@@ -351,7 +358,7 @@ function TSN(data) {
 				current.children.push(fixIndent(result, stack));
 			}
 		} else { // CDATA
-			current.children.push(fixIndent(result, stack));
+			current.children.push(result);
 		}
 
 		lastIndex = index + result.length;
