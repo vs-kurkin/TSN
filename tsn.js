@@ -309,9 +309,6 @@ function TSN(data) {
 					}
 				}
 
-				delete current.start;
-				delete current.result;
-
 				parent = stack.pop();
 
 				if (current.children.length) {
@@ -333,6 +330,9 @@ function TSN(data) {
 				} else {
 					parent.children.push(current);
 				}
+
+				delete current.start;
+				delete current.result;
 
 				current = parent;
 			} else {
