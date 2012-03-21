@@ -16,25 +16,20 @@ var LIB = {
 /**
  * @ignore
  */
-var getErrorData = (function () {
-	var regExpN = /[^\n]+/g;
-	var regExpR = /[^\r]+/g;
+function getErrorData(index, result, content, declaration) {
+	var error = new Error();
 	var n, r;
 
-	return function (index, result, content, declaration) {
-		var error = new Error();
+	content = (declaration + content).substr(0, index + declaration.length) + result;
 
-		content = (declaration + content).substr(0, index + declaration.length) + result;
+	n = content.lastIndexOf('\n');
+	r = content.lastIndexOf('\r');
 
-		n = content.lastIndexOf('\n');
-		r = content.lastIndexOf('\r');
+	error.line = content.replace((n > r) ? /[^\n]+/g : /[^\r]+/g, '').length + 1;
+	error.char = content.substring(Math.max(n, r)).lastIndexOf(result.replace(/^\s+/, ''));
 
-		error.line = content.replace((n > r) ? regExpN : regExpR, '').length + 1;
-		error.char = content.substring(Math.max(n, r)).lastIndexOf(result.replace(/^\s+/, ''));
-
-		return error;
-	};
-})();
+	return error;
+}
 
 /**
  * @ignore
