@@ -62,13 +62,12 @@ function normalize(node) {
 	node.children.push.apply(node.children, newChildren);
 }
 
-function fixIndent(text, stack) {
-	var stackLength = stack.length;
+function fixIndent(text, depth) {
 	var tabSize, spaceSize;
 
-	if (stackLength) {
-		tabSize = stackLength * (TSN.config.indent / TSN.config.tabSize);
-		spaceSize = stackLength * TSN.config.indent;
+	if (depth) {
+		tabSize = depth * (TSN.config.indent / TSN.config.tabSize);
+		spaceSize = depth * TSN.config.indent;
 
 		return text.replace(new RegExp('((?:\\r\\n)|\\r|\\n)[\\t]{' + tabSize + '}|[ ]{' + spaceSize + '}', 'g'), '$1');
 	} else {
@@ -109,7 +108,7 @@ function TSN(data) {
 		TSN.config.indent = Number(TSN.config.indent.toFixed(0));
 	}
 
-	var content, match, newNode, result, comment, entityTagName, entityAttrValue, closeNodeName, openNodeName, attributes, emptyNode, index, parseResult, error, newNodeAPI, parent, xmlDeclaration, attribute, attrValue;
+	var content, nodeData, newNode, result, comment, entityTagName, entityAttrValue, closeNodeName, openNodeName, attributes, emptyNode, index, parseResult, error, newNodeAPI, parent, xmlDeclaration, attribute, attrValue, parentTemplate;
 
 	var current = this;
 	var instance = this;
@@ -119,7 +118,7 @@ function TSN(data) {
 	var space = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)?';
 	var entity = '&' + this.namespace + '.([a-z\\-_]+)(?:.([a-z\\-_\\.]+))?;';
 
-	var regExpNode = new RegExp('(?:' + space + entity + ')|(' + space + '<!--[\\s\\S]*?-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + space + '<\\s*' + this.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi');
+	var regExpNode = new RegExp('(?:' + space + entity + ')|(' + space + '<!--(?!\\[if [^\\]]+?\\]>)[\\s\\S]*?(?!<!\\[endif\\])-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + space + '<\\s*' + this.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:"[^"]*")|(?:\'[^\']*\')))*)\\s*(\\/)?>)', 'gi');
 	var regExpEntity = new RegExp(entity, 'gi');
 	var regExpAttr = /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:"([^"]*)")|(?:'[^']*')))?/gi;
 	var regExpXML = /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*(<!DOCTYPE\s+[a-z\-_]+(?::[a-z\-_]+)?(?:\s+PUBLIC\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:\[[\s\S]*?\])?)?\s*>)?/i;
@@ -167,18 +166,18 @@ function TSN(data) {
 		xmlDeclaration = '';
 	}
 
-	while (match = regExpNode.exec(content)) {
-		result = match[0];
-		entityTagName = match[1];
-		entityAttrValue = match[2];
-		comment = match[3];
-		closeNodeName = match[4];
-		openNodeName = match[5];
-		attributes = match[6];
-		emptyNode = match[7];
-		index = match.index;
+	while (nodeData = regExpNode.exec(content)) {
+		result = nodeData[0];
+		entityTagName = nodeData[1];
+		entityAttrValue = nodeData[2];
+		comment = nodeData[3];
+		closeNodeName = nodeData[4];
+		openNodeName = nodeData[5];
+		attributes = nodeData[6];
+		emptyNode = nodeData[7];
+		index = nodeData.index;
 
-		current.children.push(fixIndent(content.substring(lastIndex, index), stack));
+		current.children.push(fixIndent(content.substring(lastIndex, index), stack.length));
 
 		if (entityTagName) {
 			openNodeName = entityTagName.toLowerCase();
@@ -237,7 +236,7 @@ function TSN(data) {
 						attrValue = attribute[2];
 
 						if (regExpEntity.test(attrValue)) {
-							var parentTemplate = TSN.prototype.parent;
+							parentTemplate = TSN.prototype.parent;
 							TSN.prototype.parent = instance;
 
 							if (inlineTemplates.hasOwnProperty(attrValue)) {
@@ -355,7 +354,7 @@ function TSN(data) {
 
 		} else if (comment) {
 			if (TSN.config.saveComments === true) {
-				current.children.push(fixIndent(result, stack));
+				current.children.push(fixIndent(result, stack.length));
 			}
 		} else { // CDATA
 			current.children.push(result);
@@ -366,7 +365,7 @@ function TSN(data) {
 
 	delete this.cache;
 
-	this.children.push(fixIndent(content.substring(lastIndex), stack));
+	this.children.push(fixIndent(content.substring(lastIndex), stack.length));
 
 	normalize(this);
 
