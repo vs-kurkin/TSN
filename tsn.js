@@ -453,7 +453,16 @@ TSN.prototype.render = function (data) {
 			} else {
 				currentChild.text = '';
 
-				isParse = typeof currentChild.input == 'function' ? currentChild.input(this) : true;
+				switch (typeof currentChild.input) {
+					case 'boolean':
+						isParse = currentChild.input;
+						break;
+					case 'function':
+						isParse = currentChild.input(this);
+						break;
+					default:
+						isParse = true;
+				}
 
 				if (isParse === false) {
 					if (typeof currentChild.output == 'function') {
