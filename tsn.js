@@ -226,8 +226,8 @@ function TSN(data) {
 				newNode = {
 					name: openNodeName,
 					attribute: {},
-					'in': newNodeAPI['in'],
-					out: newNodeAPI.out,
+					input: newNodeAPI.input,
+					output: newNodeAPI.output,
 					children: []
 				};
 
@@ -416,7 +416,7 @@ TSN.cache = {};
  * @param {Object} data Объектное описание тега.
  */
 TSN.extend = function (name, data) {
-	if (typeof name == 'string' && data && (typeof data['in'] == 'function' || typeof data['out'] == 'function')) {
+	if (typeof name == 'string' && data && (typeof data.input == 'function' || typeof data.output == 'function')) {
 		nodeAPI[name] = data;
 	}
 };
@@ -453,20 +453,11 @@ TSN.prototype.render = function (data) {
 			} else {
 				currentChild.text = '';
 
-				switch (typeof currentChild['in']) {
-					case 'boolean':
-						isParse = currentChild['in'];
-						break;
-					case 'function':
-						isParse = currentChild['in'](this);
-						break;
-					default:
-						isParse = true;
-				}
+				isParse = typeof currentChild.input == 'function' ? currentChild.input(this) : true;
 
 				if (isParse === false) {
-					if (typeof currentChild.out == 'function') {
-						currentChild.out(this);
+					if (typeof currentChild.output == 'function') {
+						currentChild.output(this);
 					}
 
 					currentNode.text += currentChild.text;
@@ -498,8 +489,8 @@ TSN.prototype.render = function (data) {
 
 			parent = stack.pop();
 
-			if (typeof currentNode.out == 'function') {
-				currentNode.out(this);
+			if (typeof currentNode.output == 'function') {
+				currentNode.output(this);
 			}
 
 			this.context = contexts.pop();

@@ -27,7 +27,7 @@ this['context'] = (function () {
 				attribute.context = attribute.data;
 			} else if (attribute.hasOwnProperty('cache')) {
 				this.aName = attribute.cache;
-				this['in'] = fromCache;
+				this.input = fromCache;
 			}
 		}
 	};
@@ -46,16 +46,16 @@ this['echo'] = (function () {
 			if (attribute.hasOwnProperty('data')) {
 				this.aName = attribute.data;
 				this.aType = 'context';
-				this['in'] = fromData;
+				this.input = fromData;
 			} else if (attribute.hasOwnProperty('cache')) {
 				this.aName = attribute.cache;
 				this.aType = 'cache';
-				this['in'] = fromData;
+				this.input = fromData;
 			}
 
 			this.children.length = 0;
 		},
-		'in': function (instance) {
+		input: function (instance) {
 			this.text = String(instance.context);
 			return false;
 		},
@@ -86,13 +86,13 @@ this['cache'] = (function () {
 				if (attribute.hasOwnProperty('data')) {
 					this.aData = attribute.data;
 					this.aType = 'context';
-					this['in'] = fromData;
+					this.input = fromData;
 				} else if (attribute.hasOwnProperty('cache')) {
 					this.aData = attribute.cache;
 					this.aType = 'cache';
-					this['in'] = fromData;
+					this.input = fromData;
 				} else {
-					this['out'] = fromContent;
+					this.output = fromContent;
 				}
 			} else {
 				return new Error('Attribute "name" is not defined.');
@@ -114,14 +114,14 @@ this['if'] = this['unless'] = (function () {
 			if (attribute.hasOwnProperty('data')) {
 				this.aName = attribute.data;
 				this.aType = 'context';
-				this['in'] = fromData;
+				this.input = fromData;
 			} else if (attribute.hasOwnProperty('cache')) {
 				this.aName = attribute.cache;
 				this.aType = 'cache';
-				this['in'] = fromData;
+				this.input = fromData;
 			}
 		},
-		'in': function (instance) {
+		input: function (instance) {
 			return Boolean(instance.context) === this.type;
 		}
 	};
@@ -135,7 +135,7 @@ this['if'] = this['unless'] = (function () {
 		if (this.length) {
 			this.context = instance.context;
 			this.currentIndex = 1;
-			this['in'] = onStep;
+			this.input = onStep;
 			this.index--;
 
 			if (this.aKey) {
@@ -169,7 +169,7 @@ this['if'] = this['unless'] = (function () {
 
 		if (this.length) {
 			this.index--;
-			this['in'] = onStep;
+			this.input = onStep;
 			this.currentIndex = 1;
 			this.context = instance.context;
 
@@ -195,7 +195,7 @@ this['if'] = this['unless'] = (function () {
 			instance.context = this.context;
 
 			this.index++;
-			this['in'] = this.onIn;
+			this.input = this.onIn;
 
 			delete this.data;
 			delete this.indexes;
@@ -231,7 +231,7 @@ this['if'] = this['unless'] = (function () {
 			}
 
 			this.isFor = this.name == 'for';
-			this['in'] = this.onIn = this.isFor ? onInFor : onInEach;
+			this.input = this.onIn = this.isFor ? onInFor : onInEach;
 
 			if (attribute.hasOwnProperty('key')) {
 				this.aKey = attribute.key;
@@ -283,8 +283,8 @@ this['if'] = this['unless'] = (function () {
 
 				if (instance.cache.template[name]) {
 					this.children = instance.cache.template[name];
-					delete this['in'];
-					delete this['out'];
+					delete this.input;
+					delete this.output;
 				} else {
 					return new Error('Template with the name "' + name + '" is not defined.')
 				}
@@ -302,11 +302,11 @@ this['if'] = this['unless'] = (function () {
 				return new Error('Attribute "name" or "src" is not defined.');
 			}
 		},
-		'in': function (instance) {
+		input: function (instance) {
 			this.cache = instance.cache;
 			instance.cache = {};
 		},
-		out: function (instance) {
+		output: function (instance) {
 			instance.cache = this.cache;
 			delete this.cache;
 		},
