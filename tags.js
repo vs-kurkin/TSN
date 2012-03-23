@@ -34,31 +34,70 @@ this['context'] = (function () {
 })();
 
 this['echo'] = (function () {
-	function fromData(instance) {
-		this.text = String(instance[this.aType][this.aName]);
-		return false;
-	}
+	var queryString = require('querystring');
 
 	return {
 		parse: function () {
 			var attribute = this.attribute;
 
+			this.children.length = 0;
+
 			if (attribute.hasOwnProperty('data')) {
 				this.aName = attribute.data;
 				this.aType = 'context';
-				this.input = fromData;
 			} else if (attribute.hasOwnProperty('cache')) {
 				this.aName = attribute.cache;
 				this.aType = 'cache';
-				this.input = fromData;
+			} else {
+				this.fromContext = true;
 			}
 
-			this.children.length = 0;
+			if (attribute.hasOwnProperty('type')) {
+				if (typeof attribute.type == 'string') {
+					this.type = attribute.type;
+				} else {
+					return new Error('Attribute "type" can not contain TSN-entity.');
+				}
+			}
+
+			if (attribute.hasOwnProperty('escape')) {
+				if (typeof attribute.escape == 'string') {
+					this.escape = attribute.escape;
+				} else {
+					return new Error('Attribute "escape" can not contain TSN-entity.');
+				}
+			}
+
 		},
 		input: function (instance) {
-			this.text = String(instance.context);
-			return false;
-		},
+				var data = this.fromContext ? instance.context : instance[this.aType][this.aName];
+
+				switch (this.type) {
+					case 'json':
+						data = JSON.stringify(data);
+						break;
+					case 'query':
+						data = queryString.stringify(data);
+						break;
+					default:
+						data = String(data);
+				}
+
+				switch (this.escape) {
+					case 'js':
+						data = data.replace(/('|")/g, '\\$1').replace(/\r|\n/g, '\\');
+						break;
+					case 'url':
+						data = encodeURI(data);
+						break;
+					case 'html':
+
+					break;
+				}
+
+				this.text = data;
+				return false;
+			},
 		entity: {
 			attribute: 'data'
 		}
@@ -128,7 +167,7 @@ this['if'] = this['unless'] = (function () {
 })();
 
 (function (API) {
-	function onInFor (instance) {
+	function onInFor(instance) {
 		this.data = instance[this.aType][this.aData];
 		this.length = this.data.length;
 
@@ -152,7 +191,7 @@ this['if'] = this['unless'] = (function () {
 		}
 	}
 
-	function onInEach (instance) {
+	function onInEach(instance) {
 		var data = instance[this.aType][this.aData];
 
 		this.data = [];
@@ -188,7 +227,7 @@ this['if'] = this['unless'] = (function () {
 		}
 	}
 
-	function onStep (instance) {
+	function onStep(instance) {
 		var currentIndex = this.currentIndex;
 
 		if (currentIndex == this.length) {
@@ -240,11 +279,11 @@ this['if'] = this['unless'] = (function () {
 	}
 })(this);
 
-(function (API){
+(function (API) {
 	function Template() {
 	}
 
-	function init (instance) {
+	function init(instance) {
 		if (!instance.cache.hasOwnProperty('template')) {
 			Template.prototype = ('parent' in instance) ? instance.parent.cache.template : {};
 			instance.cache.template = new Template;
@@ -271,8 +310,7 @@ this['if'] = this['unless'] = (function () {
 
 	API.include = {
 		parse: function (instance) {
-			var attribute = this.attribute,
-				parent;
+			var attribute = this.attribute, parent;
 
 			if (attribute.hasOwnProperty('name')) {
 				var name = attribute.name;
