@@ -108,7 +108,7 @@ function TSN(data) {
 		TSN.config.indent = Number(TSN.config.indent.toFixed(0));
 	}
 
-	var content, nodeData, newNode, result, comment, entityTagName, entityAttrValue, closeNodeName, openNodeName, attributes, emptyNode, index, parseResult, error, newNodeAPI, parent, xmlDeclaration, attribute, attrValue, parentTemplate;
+	var content, nodeData, newNode, result, comment, entityTagName, entityAttrValue, closeNodeName, openNodeName, attributes, emptyNode, index, parseResult, error, newNodeAPI, parent, xmlDeclaration, attribute, attrName, attrValue, parentTemplate;
 
 	var current = this;
 	var instance = this;
@@ -116,10 +116,12 @@ function TSN(data) {
 	var lastIndex = 0;
 
 	var space = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)?';
-	var entity = '&' + this.namespace + '.([a-z\\-_]+)(?:.([a-z\\-_\\.]+))?;';
+	var entity = '&' + this.namespace + '.([a-z\\-_]+)(.[a-z\\-_\\.]*)?;';
+	var cdata = TSN.config.parseCDATA === true ? '' : '|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)';
 
-	var regExpNode = new RegExp('(?:' + space + entity + ')|(' + space + '<!--(?!\\[if [^\\]]+?\\]>)[\\s\\S]*?(?!<!\\[endif\\])-->)|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + space + '<\\s*' + this.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>)', 'gi');
+	var regExpNode = new RegExp('(?:' + space + entity + space + ')|(' + space + '<!--(?!\\[if [^\\]]+?\\]>)[\\s\\S]*?(?!<!\\[endif\\])-->' + space + ')' + cdata + '|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>' + space + ')|(?:' + space + '<\\s*' + this.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>' + space + ')', 'gi');
 	var regExpEntity = new RegExp(entity, 'gi');
+	var regExpEntityAttr = /\.([a-z\-_]*)/gi;
 	var regExpAttr = /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:(?:\\)?"([^"]*?)(?:\\)?")|(?:(?:\\)?'([^']*?)(?:\\)?')))?/gi;
 	var regExpXML = /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*(<!DOCTYPE\s+[a-z\-_]+(?::[a-z\-_]+)?(?:\s+PUBLIC\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:\[[\s\S]*?\])?)?\s*>)?/i;
 
@@ -189,15 +191,15 @@ function TSN(data) {
 					newNodeAPI = nodeAPI[openNodeName];
 
 					if (newNodeAPI.hasOwnProperty('entity')) {
-						if (newNodeAPI.entity.hasOwnProperty('attribute')) {
-							attributes[newNodeAPI.entity.attribute] = entityAttrValue;
-						} else {
-							error = getErrorData(index, result, content, xmlDeclaration);
-							error.message = 'Attribute name in entity declaration is not defined.';
-							error.nodeName = openNodeName;
-							error.template = this.path;
+						var indexValues = 0;
 
-							TSN.emit('error', error);
+						while (attrValue = regExpEntityAttr.exec(entityAttrValue)) {
+							attrValue = attrValue[1];
+							attrName = newNodeAPI.entity[indexValues++];
+
+							if (attrName && attrValue) {
+								attributes[attrName] = attrValue;
+							}
 						}
 					} else {
 						error = getErrorData(index, result, content, xmlDeclaration);
@@ -357,7 +359,7 @@ function TSN(data) {
 				current.children.push(fixIndent(result, stack.length));
 			}
 		} else { // CDATA
-			current.children.push(result);
+			current.children.push(fixIndent(result, stack.length));
 		}
 
 		lastIndex = index + result.length;

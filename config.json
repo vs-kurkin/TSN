@@ -3,6 +3,7 @@
 	"templateRoot": "",
 	"encoding": "utf-8",
 	"saveComments": true,
+	"parseCDATA": false,
 	"tabSize": 2,
 	"indent": 2
 }

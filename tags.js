@@ -35,6 +35,17 @@ this['context'] = (function () {
 
 this['echo'] = (function () {
 	var queryString = require('querystring');
+	var regExpJS = /('|"|(?:\r\n)|\r|\n)/g;
+	var regExpHTML = /[&<>"']/g;
+	var regExpAll = /[^a-z0-9\-_\.]/gi;
+
+	function getDec(char) {
+		return '&#' + char.charCodeAt(0) + ';';
+	}
+
+	function getHex (char) {
+		return '&#x' + char.charCodeAt(0).toString(16) + ';';
+	}
 
 	return {
 		parse: function () {
@@ -53,54 +64,56 @@ this['echo'] = (function () {
 			}
 
 			if (attribute.hasOwnProperty('type')) {
-				if (typeof attribute.type == 'string') {
-					this.type = attribute.type;
-				} else {
-					return new Error('Attribute "type" can not contain TSN-entity.');
-				}
+				this.type = attribute.type;
 			}
 
 			if (attribute.hasOwnProperty('escape')) {
-				if (typeof attribute.escape == 'string') {
-					this.escape = attribute.escape;
-				} else {
-					return new Error('Attribute "escape" can not contain TSN-entity.');
-				}
+				this.escape = attribute.escape;
 			}
 
 		},
 		input: function (instance) {
-				var data = this.fromContext ? instance.context : instance[this.aType][this.aName];
+			var data = this.fromContext ? instance.context : instance[this.aType][this.aName];
 
-				switch (this.type) {
-					case 'json':
-						data = JSON.stringify(data);
-						break;
-					case 'query':
-						data = queryString.stringify(data);
-						break;
-					default:
-						data = String(data);
-				}
-
-				switch (this.escape) {
-					case 'js':
-						data = data.replace(/('|")/g, '\\$1').replace(/\r|\n/g, '\\');
-						break;
-					case 'url':
-						data = encodeURI(data);
-						break;
-					case 'html':
-
+			switch (this.type) {
+				case 'json':
+					data = JSON.stringify(data);
 					break;
-				}
+				case 'query':
+					data = queryString.stringify(data);
+					break;
+				default:
+					data = String(data);
+			}
 
-				this.text = data;
-				return false;
-			},
-		entity: {
-			attribute: 'data'
-		}
+			switch (this.escape) {
+				case 'js':
+					data = data.replace(regExpJS, '\\$1');
+					break;
+				case 'decAll':
+					data = data.replace(regExpAll, getDec);
+					break;
+				case 'decHtml':
+					data = data.replace(regExpHTML, getDec);
+					break;
+				case 'hexAll':
+					data = data.replace(regExpAll, getHex);
+					break;
+				case 'hexHtml':
+					data = data.replace(regExpHTML, getHex);
+					break;
+				case 'hexUrl':
+					data = encodeURI(data);
+					break;
+				case 'hexUrlAll':
+					data = encodeURIComponent(data);
+					break;
+			}
+
+			this.text = data;
+			return false;
+		},
+		entity: ['data', 'cache', 'type', 'escape']
 	};
 })();
 
@@ -348,9 +361,7 @@ this['if'] = this['unless'] = (function () {
 			instance.cache = this.cache;
 			delete this.cache;
 		},
-		entity: {
-			attribute: 'name'
-		},
+		entity: ['name', 'src'],
 		init: init
 	};
 

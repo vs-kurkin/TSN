@@ -17,6 +17,8 @@
 <!ATTLIST tsn:echo
 	data CDATA #IMPLIED
 	cache CDATA #IMPLIED
+	type (json|query) #IMPLIED
+	escape (js|decAll|decHtml|hexAll|hexHtml|hexUrl|hexUrlAll) #IMPLIED
 	>
 
 <!ELEMENT tsn:cache ANY>
