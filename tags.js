@@ -16,7 +16,7 @@ this['comment'] = {
 
 this['context'] = (function () {
 	function fromCache(instance) {
-		instance.context = instance.cache[this.aName];
+		this.context = instance.cache[this.aName];
 	}
 
 	return {
@@ -73,41 +73,45 @@ this['echo'] = (function () {
 
 		},
 		input: function (instance) {
-			var data = this.fromContext ? instance.context : instance[this.aType][this.aName];
+			var data = this.context;
 
-			switch (this.type) {
-				case 'json':
-					data = JSON.stringify(data);
-					break;
-				case 'query':
-					data = queryString.stringify(data);
-					break;
-				default:
-					data = String(data);
+			if (this.hasOwnProperty('type')) {
+				switch (this.type) {
+					case 'json':
+						data = JSON.stringify(data);
+						break;
+					case 'query':
+						data = queryString.stringify(data);
+						break;
+					default:
+						data = String(data);
+				}
 			}
 
-			switch (this.escape) {
-				case 'js':
-					data = data.replace(regExpJS, '\\$1');
-					break;
-				case 'decAll':
-					data = data.replace(regExpAll, getDec);
-					break;
-				case 'decHtml':
-					data = data.replace(regExpHTML, getDec);
-					break;
-				case 'hexAll':
-					data = data.replace(regExpAll, getHex);
-					break;
-				case 'hexHtml':
-					data = data.replace(regExpHTML, getHex);
-					break;
-				case 'hexUrl':
-					data = encodeURI(data);
-					break;
-				case 'hexUrlAll':
-					data = encodeURIComponent(data);
-					break;
+			if (this.hasOwnProperty('escape')) {
+				switch (this.escape) {
+					case 'js':
+						data = data.replace(regExpJS, '\\$1');
+						break;
+					case 'decAll':
+						data = data.replace(regExpAll, getDec);
+						break;
+					case 'decHtml':
+						data = data.replace(regExpHTML, getDec);
+						break;
+					case 'hexAll':
+						data = data.replace(regExpAll, getHex);
+						break;
+					case 'hexHtml':
+						data = data.replace(regExpHTML, getHex);
+						break;
+					case 'hexUrl':
+						data = encodeURI(data);
+						break;
+					case 'hexUrlAll':
+						data = encodeURIComponent(data);
+						break;
+				}
 			}
 
 			this.text = data;
@@ -154,8 +158,12 @@ this['cache'] = (function () {
 })();
 
 this['if'] = this['unless'] = (function () {
-	function fromData(instance) {
-		return Boolean(instance[this.aType][this.aName]) === this.type;
+	function fromContext(instance) {
+		return Boolean(this.context[this.aName]) === this.type;
+	}
+
+	function fromCache(instance) {
+		return Boolean(instance.cache[this.aName]) === this.type;
 	}
 
 	return {
@@ -165,110 +173,20 @@ this['if'] = this['unless'] = (function () {
 
 			if (attribute.hasOwnProperty('data')) {
 				this.aName = attribute.data;
-				this.aType = 'context';
-				this.input = fromData;
+				this.input = fromContext;
 			} else if (attribute.hasOwnProperty('cache')) {
 				this.aName = attribute.cache;
-				this.aType = 'cache';
-				this.input = fromData;
+				this.input = fromCache;
 			}
 		},
-		input: function (instance) {
-			return Boolean(instance.context) === this.type;
+		input: function () {
+			return Boolean(this.context) === this.type;
 		}
 	};
 })();
 
 (function (API) {
-	function onInFor(instance) {
-		this.data = instance[this.aType][this.aData];
-		this.length = this.data.length;
-
-		if (this.length) {
-			this.context = instance.context;
-			this.currentIndex = 1;
-			this.input = onStep;
-			this.index--;
-
-			if (this.aKey) {
-				instance.cache[this.aKey] = 0;
-			}
-
-			instance.context = this.data[0];
-			return true;
-		} else {
-			delete this.data;
-			delete this.length;
-
-			return false;
-		}
-	}
-
-	function onInEach(instance) {
-		var data = instance[this.aType][this.aData];
-
-		this.data = [];
-		this.indexes = [];
-
-		for (var property in data) {
-			if (data.hasOwnProperty(property)) {
-				this.data.push(data[property]);
-				this.indexes.push(property);
-			}
-		}
-
-		this.length = this.data.length;
-
-		if (this.length) {
-			this.index--;
-			this.input = onStep;
-			this.currentIndex = 1;
-			this.context = instance.context;
-
-			if (this.aKey) {
-				instance.cache[this.aKey] = this.indexes[0];
-			}
-
-			instance.context = this.data[0];
-			return true;
-		} else {
-			delete this.data;
-			delete this.indexes;
-			delete this.length;
-
-			return false;
-		}
-	}
-
-	function onStep(instance) {
-		var currentIndex = this.currentIndex;
-
-		if (currentIndex == this.length) {
-			instance.context = this.context;
-
-			this.index++;
-			this.input = this.onIn;
-
-			delete this.data;
-			delete this.indexes;
-			delete this.currentIndex;
-			delete this.length;
-			delete this.context;
-
-			return false;
-		} else {
-			if (this.aKey) {
-				instance.cache[this.aKey] = this.isFor ? currentIndex : this.indexes[currentIndex];
-			}
-
-			instance.context = this.data[currentIndex];
-
-			this.currentIndex++;
-			return true;
-		}
-	}
-
-	API['for'] = API['each'] = {
+	API['each'] = {
 		parse: function () {
 			var attribute = this.attribute;
 
@@ -281,12 +199,39 @@ this['if'] = this['unless'] = (function () {
 			} else {
 				return new Error('Attribute "data" or "cache" in not defined.');
 			}
+		},
+		input: function (instance) {
+			var data = instance[this.aType][this.aData];
 
-			this.isFor = this.name == 'for';
-			this.input = this.onIn = this.isFor ? onInFor : onInEach;
+			this.data = [];
+			this.indexes = [];
 
-			if (attribute.hasOwnProperty('key')) {
-				this.aKey = attribute.key;
+			for (var property in data) {
+				if (data.hasOwnProperty(property)) {
+					this.data.push(data[property]);
+					this.indexes.push(property);
+				}
+			}
+
+			this.length = this.data.length;
+
+			if (this.length) {
+				this.index--;
+				this.currentIndex = 1;
+				this.context = instance.context;
+
+				if (this.aKey) {
+					instance.cache[this.aKey] = this.indexes[0];
+				}
+
+				instance.context = this.data[0];
+				return true;
+			} else {
+				delete this.data;
+				delete this.indexes;
+				delete this.length;
+
+				return false;
 			}
 		}
 	}

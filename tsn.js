@@ -433,91 +433,102 @@ TSN.prototype.render = function (data) {
 	var isParse, parent;
 	var currentNode = this;
 	var currentIndex = 0;
-	var currentChild = currentNode.children[currentIndex];
+	var currentChild = currentNode.children[0];
 	var result = '';
 	var stack = [];
-	var contexts = [];
+	var context;
 
 	if (this.hasOwnProperty('parent')) {
 		data = this.parent.context;
 	}
 
-	this.data = this.context = data;
+	this.context = data;
 	this.cache = {};
 
 	currentNode.text = '';
 
 	while (true) {
-		if (currentChild) {
-			if (typeof currentChild == 'string') {
-				currentNode.text += currentChild;
-				currentChild = currentNode.children[++currentIndex];
+		if (currentChild instanceof Object) {
+			currentChild.text = '';
+
+			isParse = true;
+			switch (typeof currentChild.input) {
+				case 'function':
+					isParse = currentChild.input(this);
+					break;
+				case 'boolean':
+					isParse = currentChild.input;
+					break;
+			}
+
+			var child;
+			if (isParse === false || !(child = currentChild.children[0])) {
+				if (typeof currentChild.output === 'function') {
+					currentChild.output(this);
+				}
+
+				currentNode.text += currentChild.text;
+				delete currentChild.text;
+
+				currentIndex = currentChild.index + 1;
+				currentChild = currentNode.children[currentIndex];
 			} else {
-				currentChild.text = '';
+				stack.push(currentNode);
 
-				switch (typeof currentChild.input) {
-					case 'boolean':
-						isParse = currentChild.input;
-						break;
-					case 'function':
-						isParse = currentChild.input(this);
-						break;
-					default:
-						isParse = true;
-				}
-
-				if (isParse === false) {
-					if (typeof currentChild.output == 'function') {
-						currentChild.output(this);
-					}
-
-					currentNode.text += currentChild.text;
-					delete currentChild.text;
-
-					currentIndex = currentChild.index + 1;
-					currentChild = currentNode.children[currentIndex];
+				var attributes = currentChild.attribute;
+				if (attributes.hasOwnProperty('context')) {
+					currentChild.context = currentNode.context[attributes.context];
 				} else {
-					contexts.push(this.context);
-					stack.push(currentNode);
-
-					if (currentChild.attribute.hasOwnProperty('context')) {
-						this.context = this.context[currentChild.attribute.context];
-					}
-
-					currentChild.text = '';
-					currentNode = currentChild;
-					currentIndex = 0;
-					currentChild = currentNode.children[currentIndex];
+					currentChild.context = currentNode.context;
 				}
+
+				context = currentChild.context;
+
+				if (Array.isArray(context)) {
+					currentChild.repeatLength = context.length;
+					currentChild.repeatIndex = 1;
+					currentChild.repeatContext = context;
+					currentChild.context = context[0];
+				}
+
+				currentChild.text = '';
+				currentNode = currentChild;
+				currentIndex = 0;
+				currentChild = child;
 			}
-
-		} else {
-			if (currentNode == this) {
-				result = currentNode.text;
-				delete currentNode.text;
-				break;
-			}
-
-			parent = stack.pop();
-
-			if (typeof currentNode.output == 'function') {
+		} else if (currentChild) {
+			currentNode.text += currentChild;
+			currentChild = currentNode.children[++currentIndex];
+		} else if (currentNode === this) {
+			result = currentNode.text;
+			delete currentNode.text;
+			break;
+		} else if (currentNode.repeatIndex === currentNode.repeatLength) {
+			if (typeof currentNode.output === 'function') {
 				currentNode.output(this);
 			}
 
-			this.context = contexts.pop();
-
+			parent = stack.pop();
 			parent.text += currentNode.text;
+
 			delete currentNode.text;
+			delete currentNode.context;
+			delete currentNode.repeatLength;
+			delete currentNode.repeatContext;
+			delete currentNode.repeatIndex;
 
 			currentIndex = currentNode.index + 1;
 			currentChild = parent.children[currentIndex];
 			currentNode = parent;
+		} else {
+			currentNode.context = currentNode.repeatContext[++currentNode.repeatIndex];
+			currentIndex = 0;
+			currentChild = currentNode.children[0];
 		}
 	}
 
-	delete this.data;
-	delete this.context;
 	delete this.cache;
+	delete this.context;
 
 	return result;
 };
@@ -530,7 +541,7 @@ TSN.prototype.render = function (data) {
  */
 TSN.prototype.reload = function (newPath) {
 	delete TSN.cache[this.path];
-	return TSN.call(this, typeof newPath == 'string' ? newPath : this.path.substr(this.pathRoot.length));
+	return TSN.call(this, typeof newPath === 'string' ? newPath : this.path.substr(this.pathRoot.length));
 };
 
 LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
