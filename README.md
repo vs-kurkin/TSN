@@ -27,7 +27,7 @@ MIT: https://github.com/appendto/amplify/blob/master/MIT-LICENSE.txt
   * `indent`: Размер отступа в пробелах. По-умолчанию 2.
   * `tabSize`: Размер одного символа табуляции в пробелах. По-умолчанию 2.
 
-## Примеры использования.
+
 API обработки шаблонов находятся в пространстве имен TSN, которое является экземпляром конструктора <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
 ###Инициализация модуля
 	var TSN = require('TSN');
@@ -84,3 +84,5 @@ API обработки шаблонов находятся в пространс
 Без использования:
 
 	var result = template.call(data);
+
+###Теги.
