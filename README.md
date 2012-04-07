@@ -9,9 +9,10 @@ MIT: https://github.com/appendto/amplify/blob/master/MIT-LICENSE.txt
 ## Документация
 ### Конфигурация.
 
-Стандартный конфиг описан в файле config.json.
+Стандартный конфиг описан в файле <a href="https://github.com/B-Vladi/TSN/blob/dev/config.json">config.json</a>.
 
 В коде общие настройки для всех шаблонов указываются в
+
 	TSN.config
 
 Параметры конфига:
