@@ -120,7 +120,7 @@ TSN.config = {};
  * @param {function} [callback] Функция, которая будет вызвана по окончании компиляции шаблона.
  */
 TSN.load = function (path, name, config, callback) {
-	config = config || TSN.config;
+	config = new Config(config);
 
 	var fullPath = LIB.path.join(config.templateRoot, path);
 	var data;
@@ -144,6 +144,8 @@ TSN.load = function (path, name, config, callback) {
 	}
 
 	TSN.compile(data, name || fullPath, config, callback);
+
+	return this;
 };
 
 /**
@@ -154,7 +156,7 @@ TSN.load = function (path, name, config, callback) {
  * @param {function} [callback] Функция, которая будет вызвана по окончании компиляции шаблона.
  */
 TSN.compile = function (data, name, config, callback) {
-	config = config || TSN.config;
+	config = new Config(config);
 
 	if (TSN.cache.hasOwnProperty(name)) {
 		return TSN.cache[name];
@@ -185,16 +187,29 @@ TSN.compile = function (data, name, config, callback) {
 	parser.on('error', onError);
 
 	parser.parse(data);
+
+	return this;
 };
 
 /**
  * Рендеринг шаблона на основе переданных данных.
  * @param {function} template Скомпилированный шаблон.
  * @param {object} data Данные, на основе которых будет рендериться шаблон.
+ * @return {text} Результат рендеринга.
  */
 TSN.render = function (template, data) {
 	return template.call(data);
 };
+
+function Config (options) {
+	for (var property in options) {
+		if (options.hasOwnProperty(property)) {
+			this[property] = options[property];
+		}
+	}
+}
+
+Config.prototype = TSN.config;
 
 LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
 	if (e) {
@@ -209,13 +224,13 @@ LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
 					TSN.config[property] = config[property];
 				}
 			}
+
+			TSN.emit('ready');
 		} catch (e) {
 			e.message = 'Format error in configuration file "' + configPath + '"';
 			TSN.emit('error', e);
 		}
 	}
-
-	TSN.emit('ready');
 });
 
 module.exports = TSN;
