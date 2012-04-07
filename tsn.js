@@ -36,6 +36,10 @@ function compileNode(node) {
 	});
 }
 
+function toString () {
+	return /^function\s+[a-z]*\([^\)]*?\)\s*\{(?:\n|\r)?\s*([\s\S]*?)\}$/i
+}
+
 /*
 * Event listeners
 * */
@@ -166,7 +170,10 @@ TSN.compile = function (data, name, config, callback) {
 
 	parser.once('start', onStart);
 	parser.once('end', function () {
-		var template = new Function ('var __output=""; ' + this.root.code + '; return __output;');
+		var source = 'var __output=""; ' + this.root.code + '; return __output;';
+		var template = new Function (source);
+
+		template.source = source;
 
 		if (typeof name === 'string' && name !== '') {
 			template.name = name;
@@ -257,5 +264,6 @@ module.exports = TSN;
  * @name TSN#compiled
  * @description Завершение компиляции шаблона.
  * @param {function} template Скомпилированный шаблон.
- * @param {string} template.name Имя шаблона.
+ * @param {string} [template.name] Имя шаблона.
+ * @param {string} template.source Исходный код шаблона.
  */
