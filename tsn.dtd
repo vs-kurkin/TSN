@@ -8,49 +8,45 @@
 
 <!ELEMENT tsn:context ANY>
 <!ATTLIST tsn:context
-	data CDATA #IMPLIED
-	cache CDATA #IMPLIED
+	expr CDATA #IMPLIED
 	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:echo EMPTY>
 <!ATTLIST tsn:echo
-	data CDATA #IMPLIED
-	cache CDATA #IMPLIED
-	type (json|query) #IMPLIED
+	expr CDATA #IMPLIED
+	type (json) #IMPLIED
 	escape (js|decAll|decHtml|hexAll|hexHtml|hexUrl|hexUrlAll) #IMPLIED
 	>
 
-<!ELEMENT tsn:cache ANY>
-<!ATTLIST tsn:cache
+<!ELEMENT tsn:var ANY>
+<!ATTLIST tsn:var
 	name CDATA #REQUIRED
-	data CDATA #IMPLIED
+	expr CDATA #IMPLIED
 	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:if ANY>
 <!ATTLIST tsn:if
-	data CDATA #IMPLIED
-	cache CDATA #IMPLIED
+	expr CDATA #IMPLIED
 	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:unless ANY>
 <!ATTLIST tsn:unless
-	data CDATA #IMPLIED
-	cache CDATA #IMPLIED
+	expr CDATA #IMPLIED
 	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:for ANY>
 <!ATTLIST tsn:for
-	data CDATA #REQUIRED
-	key CDATA #IMPLIED
+	expr CDATA #IMPLIED
+	context CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:each ANY>
 <!ATTLIST tsn:each
-	data CDATA #REQUIRED
+	data CDATA #IMPLIED
 	key CDATA #IMPLIED
 	>
 

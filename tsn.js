@@ -1,547 +1,178 @@
 /**
  * @fileOverview Templateting System for Node.JS.
  * @author <a href="mailto:b-vladi@cs-console.ru">Влад Куркин</a>
- * @version 1.1 beta
+ * @version 1.2 beta
  */
 
 /**
  * @ignore
  */
+
 var LIB = {
 	fileSystem: require('fs'),
 	path: require('path'),
 	event: require('events')
 };
 
-var nodeAPI;
+var Parser = require(LIB.path.join(__dirname, 'parser.js'));
+var nodeAPI = require(LIB.path.join(__dirname, 'tags.js'));
+
 var configPath = LIB.path.join(__dirname, 'config.json');
-var inlineTemplates = {};
+var regExpBody = /\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi;
 
-/**
- * @ignore
- */
-function getErrorData(index, result, content, declaration) {
-	var error = new Error();
-	var n, r;
-
-	content = (declaration + content).substr(0, index + declaration.length) + result;
-
-	n = content.lastIndexOf('\n');
-	r = content.lastIndexOf('\r');
-
-	error.line = content.replace((n > r) ? /[^\n]+/g : /[^\r]+/g, '').length + 1;
-	error.char = content.substring(Math.max(n, r)).lastIndexOf(result.replace(/^\s+/, ''));
-
-	return error;
-}
-
-/**
- * @ignore
- */
-function normalize(node) {
-	var children = node.children;
-	var undefined = void 0;
-	var newChildren = [];
-	var child, oldType, type;
-
-	while ((child = children.shift()) != undefined) {
-		type = typeof child;
-
-		if (child !== '') {
-			if (type == 'string' && oldType == 'string') {
-				newChildren.push((newChildren.pop() || '') + child);
-			} else {
-				child.index = newChildren.length;
-				newChildren.push(child);
-			}
-
-			oldType = type;
+function compileNode(node) {
+	return node.body.replace(regExpBody, function (result, type, name) {
+		switch (type) {
+			case '!':
+				switch (name) {
+					case 'code':
+						return node.code;
+					case 'context':
+						return node.attributes.hasOwnProperty('context') ? node.attributes.context : 'this';
+				}
+				break;
+			case '@':
+				return node.attributes[name];
 		}
-	}
-
-	node.children.push.apply(node.children, newChildren);
+	});
 }
 
-function fixIndent(text, depth) {
-	var tabSize, spaceSize;
-
-	if (depth) {
-		tabSize = depth * (TSN.config.indent / TSN.config.tabSize);
-		spaceSize = depth * TSN.config.indent;
-
-		return text.replace(new RegExp('((?:\\r\\n)|\\r|\\n)[\\t]{' + tabSize + '}|[ ]{' + spaceSize + '}', 'g'), '$1');
-	} else {
-		return text;
-	}
-}
-
-/**
- * @name TSN
- * @constructor
- * @description Конструктор создания шаблонов.
- * @param {String} data Относительный путь к файлу шаблона или код шаблона. Полный путь выглядет как <i>config.templateRoot</i> ({@link TSN#config}) + '/' + <i>data</i>.
- * @return {Object} Объект шаблона.
- */
-function TSN(data) {
-	if (!(this instanceof TSN)) {
-		throw 'TSN should be called as a constructor';
-	}
-
-	if (TSN.config.hasOwnProperty('namespace') && (/[a-z\d\-_]+/i).test(TSN.config.namespace)) {
-		this.namespace = TSN.config.namespace;
-	} else {
-		TSN.emit('error', new Error('Invalid namespace.'));
-		this.namespace = 'tsn';
-	}
-
-	if (typeof TSN.config.tabSize != 'number' || TSN.config.tabSize < 1) {
-		TSN.emit('error', new Error('Invalid tab size.'));
-		TSN.config.tabSize = 2;
-	} else {
-		TSN.config.tabSize = Number(TSN.config.tabSize.toFixed(0));
-	}
-
-	if (typeof TSN.config.indent != 'number' || TSN.config.indent < 1) {
-		TSN.emit('error', new Error('Invalid indent.'));
-		TSN.config.indent = 2;
-	} else {
-		TSN.config.indent = Number(TSN.config.indent.toFixed(0));
-	}
-
-	var content, nodeData, newNode, result, comment, entityTagName, entityAttrValue, closeNodeName, openNodeName, attributes, emptyNode, index, parseResult, error, newNodeAPI, parent, xmlDeclaration, attribute, attrName, attrValue, parentTemplate;
-
-	var current = this;
-	var instance = this;
-	var stack = [];
-	var lastIndex = 0;
-
-	var space = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)?';
-	var entity = '&' + this.namespace + '.([a-z\\-_]+)(.[a-z\\-_\\.]*)?;';
-	var cdata = TSN.config.parseCDATA === true ? '' : '|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)';
-
-	var regExpNode = new RegExp('(?:' + space + entity + space + ')|(' + space + '<!--(?!\\[if [^\\]]+?\\]>)[\\s\\S]*?(?!<!\\[endif\\])-->' + space + ')' + cdata + '|(?:' + space + '<\\/\\s*' + this.namespace + ':([a-z\\-_]+)\\s*>' + space + ')|(?:' + space + '<\\s*' + this.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>' + space + ')', 'gi');
-	var regExpEntity = new RegExp(entity, 'gi');
-	var regExpEntityAttr = /\.([a-z\-_]*)/gi;
-	var regExpAttr = /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:(?:\\)?"([^"]*?)(?:\\)?")|(?:(?:\\)?'([^']*?)(?:\\)?')))?/gi;
-	var regExpXML = /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*(<!DOCTYPE\s+[a-z\-_]+(?::[a-z\-_]+)?(?:\s+PUBLIC\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:\[[\s\S]*?\])?)?\s*>)?/i;
-
-	if (typeof data.toString == 'function') {
-		data = data.toString();
-	}
-
-	if (typeof data != 'string') {
-		throw 'Invalid data type';
-	}
-
-	this.children = [];
-	this.cache = {};
-
-	try {
-		var fullPath = LIB.path.join(TSN.config.templateRoot, data);
-
-		if (TSN.cache.hasOwnProperty(fullPath)) {
-			return TSN.cache[fullPath];
-		}
-
-		LIB.fileSystem.realpathSync(fullPath);
-
-		content = LIB.fileSystem.readFileSync(fullPath, TSN.config.encoding);
-
-		this.path = fullPath;
-		this.pathRoot = TSN.config.templateRoot;
-		TSN.cache[fullPath] = this;
-	} catch (e) {
-		content = data;
-	}
+/*
+* Event listeners
+* */
+function onStart () {
+	this.current.code = '';
 
 	for (var nodeName in nodeAPI) {
 		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('init')) {
-			nodeAPI[nodeName].init(this);
+			nodeAPI[nodeName].init();
 		}
 	}
+}
 
-	xmlDeclaration = content.match(regExpXML);
-	if (xmlDeclaration) {
-		xmlDeclaration = xmlDeclaration[0];
-		content = content.substring(xmlDeclaration.length);
+function onText (node, text) {
+	node.code += '__output+="' + text + '";';
+}
+
+function onError (error) {
+	TSN.emit('error', error);
+}
+
+function onOpen (node) {
+	if (nodeAPI.hasOwnProperty(node.name)) {
+		node.body = nodeAPI[node.name].body;
+		node.parse = nodeAPI[node.name].parse;
+		node.code = '';
+
+		if (node.isEmpty) {
+			var parseResult = typeof node.parse === 'function' ? node.parse() : true;
+
+			if (parseResult && parseResult.constructor === Error) {
+				this._error(parseResult.message, node);
+			} else {
+				node.parent.code += compileNode(node);
+			}
+		}
 	} else {
-		xmlDeclaration = '';
+		this._error(node.isEmpty ? 'Unknown empty tag.' : 'Unknown tag opening.', node);
 	}
-
-	while (nodeData = regExpNode.exec(content)) {
-		result = nodeData[0];
-		entityTagName = nodeData[1];
-		entityAttrValue = nodeData[2];
-		comment = nodeData[3];
-		closeNodeName = nodeData[4];
-		openNodeName = nodeData[5];
-		attributes = nodeData[6];
-		emptyNode = nodeData[7];
-		index = nodeData.index;
-
-		current.children.push(fixIndent(content.substring(lastIndex, index), stack.length));
-
-		if (entityTagName) {
-			openNodeName = entityTagName.toLowerCase();
-			emptyNode = true;
-			attributes = {};
-
-			if (nodeAPI.hasOwnProperty(openNodeName)) {
-				if (entityAttrValue) {
-					newNodeAPI = nodeAPI[openNodeName];
-
-					if (newNodeAPI.hasOwnProperty('entity')) {
-						var indexValues = 0;
-
-						while (attrValue = regExpEntityAttr.exec(entityAttrValue)) {
-							attrValue = attrValue[1];
-							attrName = newNodeAPI.entity[indexValues++];
-
-							if (attrName && attrValue) {
-								attributes[attrName] = attrValue;
-							}
-						}
-					} else {
-						error = getErrorData(index, result, content, xmlDeclaration);
-						error.message = 'Entity declaration is not defined.';
-						error.nodeName = openNodeName;
-						error.template = this.path;
-
-						TSN.emit('error', error);
-					}
-				}
-			} else {
-				error = getErrorData(index, result, content, xmlDeclaration);
-				error.message = 'Unknown tag.';
-				error.nodeName = openNodeName;
-				error.template = this.path;
-
-				TSN.emit('error', error);
-			}
-		}
-
-		if (openNodeName) {
-			openNodeName = openNodeName.toLowerCase();
-
-			if (nodeAPI.hasOwnProperty(openNodeName)) {
-				newNodeAPI = nodeAPI[openNodeName];
-				newNode = {
-					name: openNodeName,
-					attribute: {},
-					input: newNodeAPI.input,
-					output: newNodeAPI.output,
-					children: []
-				};
-
-				if (typeof attributes == 'string') {
-					while (attribute = regExpAttr.exec(attributes)) {
-						attrValue = attribute[2] || attribute[3];
-
-						if (regExpEntity.test(attrValue)) {
-							parentTemplate = TSN.prototype.parent;
-							TSN.prototype.parent = instance;
-
-							if (inlineTemplates.hasOwnProperty(attrValue)) {
-								attrValue = inlineTemplates[attrValue];
-							} else {
-								attrValue = inlineTemplates[attrValue] = new TSN(attrValue);
-							}
-
-							TSN.prototype.parent = parentTemplate;
-							attrValue.parent = instance;
-							attrValue.toString = attrValue.render;
-						}
-
-						newNode.attribute[attribute[1]] = attrValue;
-					}
-				} else if (attributes) {
-					newNode.attribute = attributes;
-				}
-
-				if (emptyNode) {
-					parseResult = typeof newNodeAPI.parse == 'function' ? newNodeAPI.parse.call(newNode, this) : true;
-
-					if (typeof parseResult == 'string') {
-						current.children.push(parseResult);
-					} else if (parseResult && parseResult.constructor == Error) {
-						error = getErrorData(index, result, content, xmlDeclaration);
-						error.message = parseResult.message;
-						error.nodeName = openNodeName;
-						error.template = this.path;
-
-						TSN.emit('error', error);
-					} else {
-						current.children.push(newNode);
-					}
-				} else {
-					stack.push(current);
-					newNode.start = index;
-					newNode.result = result;
-					current = newNode;
-				}
-			} else {
-				error = getErrorData(index, result, content, xmlDeclaration);
-				error.message = emptyNode ? 'Unknown empty tag.' : 'Unknown tag opening.';
-				error.nodeName = openNodeName;
-				error.template = this.path;
-
-				TSN.emit('error', error);
-			}
-
-		} else if (closeNodeName) {
-			closeNodeName = closeNodeName.toLowerCase();
-
-			if (nodeAPI.hasOwnProperty(closeNodeName)) {
-				if (current.name != closeNodeName) {
-					parent = stack.pop();
-
-					if (parent && closeNodeName == parent.name) {
-						error = getErrorData(current.start, current.result, content, xmlDeclaration);
-						error.message = 'Tag is not closed.';
-						error.nodeName = current.name;
-						error.template = this.path;
-
-						TSN.emit('error', error);
-
-						parent.children.push.apply(parent.children, current.children);
-						current = parent;
-					} else {
-						error = getErrorData(index, result, content, xmlDeclaration);
-						error.message = 'Closing tag matches nothing.';
-						error.nodeName = closeNodeName;
-						error.template = this.path;
-
-						TSN.emit('error', error);
-
-						parent && stack.push(parent);
-						lastIndex = index + result.length;
-						continue;
-					}
-				}
-
-				parent = stack.pop();
-
-				if (current.children.length) {
-					normalize(current);
-				}
-
-				newNodeAPI = nodeAPI[current.name];
-				parseResult = typeof newNodeAPI.parse == 'function' ? newNodeAPI.parse.call(current, this) : true;
-
-				if (typeof parseResult == 'string') {
-					parent.children.push(parseResult);
-				} else if (parseResult && parseResult.constructor == Error) {
-					error = getErrorData(current.start, current.result, content, xmlDeclaration);
-					error.message = parseResult.message;
-					error.nodeName = openNodeName;
-					error.template = this.path;
-
-					TSN.emit('error', error);
-				} else {
-					parent.children.push(current);
-				}
-
-				delete current.start;
-				delete current.result;
-
-				current = parent;
-			} else {
-				error = getErrorData(index, result, content, xmlDeclaration);
-				error.message = 'Unknown tag closing.';
-				error.nodeName = closeNodeName;
-				error.template = this.path;
-
-				TSN.emit('error', error);
-			}
-
-		} else if (comment) {
-			if (TSN.config.saveComments === true) {
-				current.children.push(fixIndent(result, stack.length));
-			}
-		} else { // CDATA
-			current.children.push(fixIndent(result, stack.length));
-		}
-
-		lastIndex = index + result.length;
-	}
-
-	delete this.cache;
-
-	this.children.push(fixIndent(content.substring(lastIndex), stack.length));
-
-	normalize(this);
-
-	do {
-		if (current != this) {
-			error = getErrorData(current.start, current.result, content, xmlDeclaration);
-			error.message = 'Tag is not closed.';
-			error.nodeName = current.name;
-			error.template = this.path;
-
-			delete current.start;
-			delete current.result;
-
-			TSN.emit('error', error);
-		}
-	} while (current = stack.pop());
-
-	return this;
 }
 
-/**
- * @ignore
- */
-var eventPrototype = LIB.event.EventEmitter.prototype;
-for (var property in eventPrototype) {
-	if (eventPrototype.hasOwnProperty(property)) {
-		TSN[property] = eventPrototype[property];
+function onClose (node) {
+	if (nodeAPI.hasOwnProperty(node.name)) {
+		var parseResult = typeof node.parse === 'function' ? node.parse() : true;
+
+		if (parseResult && parseResult.constructor === Error) {
+			this._error(parseResult.message, node);
+		} else {
+			node.parent.code += compileNode(node);
+		}
+	} else {
+		this._error('Unknown tag closing.', node);
 	}
 }
 
 /**
- * Стандартные настройки шаблонизатора.
- * @static
+ * @namespace TSN
  */
-TSN.config = {};
+var TSN = new LIB.event.EventEmitter();
 
 /**
  * Кеш. Содержит все созданные объекты шаблона, загруженные из файла.
- * Именами свойств являются полные пути к соответствующим шаблонам.
- * @static
  */
 TSN.cache = {};
 
 /**
- * Метод расширения набора тегов шаблонизатора.
- * @static
- * @param {String} name Локальное имя тега.
- * @param {Object} data Объектное описание тега.
+ * Стандартные настройки шаблонизатора.
  */
-TSN.extend = function (name, data) {
-	if (typeof name == 'string' && data && (typeof data.input == 'function' || typeof data.output == 'function')) {
-		nodeAPI[name] = data;
+TSN.config = {};
+
+TSN.load = function (path, name, config, callback) {
+	config = config || TSN.config;
+
+	var fullPath = LIB.path.join(config.templateRoot, path);
+	var data;
+
+	if (TSN.cache.hasOwnProperty(fullPath)) {
+		return TSN.cache[fullPath];
 	}
+
+	try {
+		LIB.fileSystem.realpathSync(fullPath);
+	} catch (error) {
+		TSN.emit('error', error);
+		return;
+	}
+
+	try {
+		data = LIB.fileSystem.readFileSync(fullPath, config.encoding);
+	} catch (error) {
+		TSN.emit('error', error);
+		return;
+	}
+
+	TSN.compile(data, name || fullPath, config, callback);
 };
 
-/**
- * Рендеринг шаблона на основе переданных данных.
- * @param {Object} data Объект данных, на основе которых генерируется результат.
- * @return {String} Результат рендеринга.
- * @function
- */
-TSN.prototype.render = function (data) {
-	var isParse, parent;
-	var currentNode = this;
-	var currentIndex = 0;
-	var currentChild = currentNode.children[0];
-	var result = '';
-	var stack = [];
-	var context;
+TSN.compile = function (data, name, config, callback) {
+	config = config || TSN.config;
 
-	if (this.hasOwnProperty('parent')) {
-		data = this.parent.context;
+	if (TSN.cache.hasOwnProperty(name)) {
+		return TSN.cache[name];
 	}
 
-	this.context = data;
-	this.cache = {};
+	var parser = new Parser(config);
 
-	currentNode.text = '';
+	parser.once('start', onStart);
+	parser.once('end', function () {
+		var template = new Function ('var __output=""; ' + this.root.code + '; return __output;');
 
-	while (true) {
-		if (currentChild instanceof Object) {
-			currentChild.text = '';
-
-			isParse = true;
-			switch (typeof currentChild.input) {
-				case 'function':
-					isParse = currentChild.input(this);
-					break;
-				case 'boolean':
-					isParse = currentChild.input;
-					break;
-			}
-
-			var child;
-			if (isParse === false || !(child = currentChild.children[0])) {
-				if (typeof currentChild.output === 'function') {
-					currentChild.output(this);
-				}
-
-				currentNode.text += currentChild.text;
-				delete currentChild.text;
-
-				currentIndex = currentChild.index + 1;
-				currentChild = currentNode.children[currentIndex];
-			} else {
-				stack.push(currentNode);
-
-				var attributes = currentChild.attribute;
-				if (attributes.hasOwnProperty('context')) {
-					currentChild.context = currentNode.context[attributes.context];
-				} else {
-					currentChild.context = currentNode.context;
-				}
-
-				context = currentChild.context;
-
-				if (Array.isArray(context)) {
-					currentChild.repeatLength = context.length;
-					currentChild.repeatIndex = 1;
-					currentChild.repeatContext = context;
-					currentChild.context = context[0];
-				}
-
-				currentChild.text = '';
-				currentNode = currentChild;
-				currentIndex = 0;
-				currentChild = child;
-			}
-		} else if (currentChild) {
-			currentNode.text += currentChild;
-			currentChild = currentNode.children[++currentIndex];
-		} else if (currentNode === this) {
-			result = currentNode.text;
-			delete currentNode.text;
-			break;
-		} else if (currentNode.repeatIndex === currentNode.repeatLength) {
-			if (typeof currentNode.output === 'function') {
-				currentNode.output(this);
-			}
-
-			parent = stack.pop();
-			parent.text += currentNode.text;
-
-			delete currentNode.text;
-			delete currentNode.context;
-			delete currentNode.repeatLength;
-			delete currentNode.repeatContext;
-			delete currentNode.repeatIndex;
-
-			currentIndex = currentNode.index + 1;
-			currentChild = parent.children[currentIndex];
-			currentNode = parent;
-		} else {
-			currentNode.context = currentNode.repeatContext[++currentNode.repeatIndex];
-			currentIndex = 0;
-			currentChild = currentNode.children[0];
+		if (typeof name === 'string' && name !== '') {
+			TSN.cache[name] = template;
 		}
-	}
 
-	delete this.cache;
-	delete this.context;
+		if (typeof callback === 'function') {
+			callback.call(TSN, template);
+		}
 
-	return result;
+		TSN.emit('compiled', template);
+	});
+
+	parser.on('open', onOpen);
+	parser.on('close', onClose);
+	parser.on('text', onText);
+
+	parser.on('entity', function (name) {
+
+	});
+
+	parser.on('error', onError);
+
+	parser.parse(data);
 };
 
-/**
- * Повторный парсинг шаблона, загруженного из файла.
- * @param {String} [newPath] Новый путь к файлу шаблона.
- * @return {Object} Объект шаблона.
- * @function
- */
-TSN.prototype.reload = function (newPath) {
-	delete TSN.cache[this.path];
-	return TSN.call(this, typeof newPath === 'string' ? newPath : this.path.substr(this.pathRoot.length));
+TSN.render = function (template, data) {
+	return template.call(data);
 };
 
 LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
@@ -563,8 +194,6 @@ LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
 		}
 	}
 
-	nodeAPI = require(LIB.path.join(__dirname, 'tags.js'));
-
 	TSN.emit('ready');
 });
 
@@ -583,4 +212,11 @@ module.exports = TSN;
  * @param {string} message
  * @param {Object} event
  * @description Ошибка инициализации или парсинга шаблона.
+ */
+
+/**
+ * @name TSN#compiled
+ * @event
+ * @param {function} template
+ * @description Завершение компиляции шаблона.
  */

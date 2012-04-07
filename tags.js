@@ -6,237 +6,145 @@
 
 var TSN = module.parent.exports;
 
-this['root'] = {};
+function fixExprAttribute () {
+	if (!this.attributes.hasOwnProperty('expr') || this.attributes.expr === '') {
+		this.attributes.expr = 'this';
+	}
+}
+
+this.root = {
+	body: '/*!code*/'
+};
 
 this['comment'] = {
+	body: ''
+};
+
+this.context = {
 	parse: function () {
-		return '';
+		if (!this.attributes.hasOwnProperty('expr')) {
+			this.body = '/*!code*/';
+		}
+	},
+	body: '' +
+		'(function () {' +
+			'/*!code*/' +
+		'}).call(/*@expr*/);',
+	attribute: {
+		body: '' +
+			'(function () {' +
+				'/*!code*/' +
+			'}).call(/*@*/);'
 	}
 };
 
-this['context'] = (function () {
-	function fromCache(instance) {
-		this.context = instance.cache[this.aName];
-	}
+this.echo = (function () {
+	var regExpHTML = '/[&<>"\']/g';
+	var regExpAll = '/[^a-z0-9\\-_\\.]/gi';
+
+	var getDec = '' +
+		'function (char) {' +
+			'return "&#" + char.charCodeAt(0) + ";";' +
+		'}';
+
+	var getHex = '' +
+		'function (char) {' +
+			'return "&#x" + char.charCodeAt(0).toString(16) + ";";' +
+		'}';
+
+	var type = {
+		json: 'JSON.stringify(/*expr*/)'
+	};
+
+	var escape = {
+		js: '(/*expr*/).replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
+		decAll: '(/*expr*/).replace(' + regExpAll + ', ' + getDec + ')',
+		decHtml: '(/*expr*/).replace(' + regExpHTML + ', ' + getDec + ')',
+		hexAll: '(/*expr*/).replace(' + regExpAll + ', ' + getHex + ')',
+		hexHtml: '(/*expr*/).replace(' + regExpHTML + ', ' + getHex + ')',
+		hexUrl: 'encodeURI(/*expr*/)',
+		hexUrlAll: 'encodeURIComponent(/*expr*/)'
+	};
 
 	return {
 		parse: function () {
-			var attribute = this.attribute;
+			var attributes = this.attributes;
+			var expr = attributes.hasOwnProperty('expr') ? attributes.expr : 'this';
 
-			if (attribute.hasOwnProperty('data')) {
-				attribute.context = attribute.data;
-			} else if (attribute.hasOwnProperty('cache')) {
-				this.aName = attribute.cache;
-				this.input = fromCache;
+			if (attributes.hasOwnProperty('type') && type.hasOwnProperty(attributes.type)) {
+				expr = type[attributes.type].replace('/*expr*/', expr);
 			}
-		}
+
+			if (attributes.hasOwnProperty('escape') && escape.hasOwnProperty(attributes.escape)) {
+				expr = escape[attributes.escape].replace('/*expr*/', expr);
+			}
+
+			this.body = '__output += (' + expr + ');';
+		},
+		entity: ['expr', 'type', 'escape']
 	};
 })();
 
-this['echo'] = (function () {
-	var queryString = require('querystring');
-	var regExpJS = /('|"|(?:\r\n)|\r|\n)/g;
-	var regExpHTML = /[&<>"']/g;
-	var regExpAll = /[^a-z0-9\-_\.]/gi;
-
-	function getDec(char) {
-		return '&#' + char.charCodeAt(0) + ';';
-	}
-
-	function getHex (char) {
-		return '&#x' + char.charCodeAt(0).toString(16) + ';';
-	}
-
-	return {
-		parse: function () {
-			var attribute = this.attribute;
-
-			this.children.length = 0;
-
-			if (attribute.hasOwnProperty('data')) {
-				this.aName = attribute.data;
-				this.aType = 'context';
-			} else if (attribute.hasOwnProperty('cache')) {
-				this.aName = attribute.cache;
-				this.aType = 'cache';
-			} else {
-				this.fromContext = true;
-			}
-
-			if (attribute.hasOwnProperty('type')) {
-				this.type = attribute.type;
-			}
-
-			if (attribute.hasOwnProperty('escape')) {
-				this.escape = attribute.escape;
-			}
-
-		},
-		input: function (instance) {
-			var data = this.context;
-
-			if (this.hasOwnProperty('type')) {
-				switch (this.type) {
-					case 'json':
-						data = JSON.stringify(data);
-						break;
-					case 'query':
-						data = queryString.stringify(data);
-						break;
-					default:
-						data = String(data);
-				}
-			}
-
-			if (this.hasOwnProperty('escape')) {
-				switch (this.escape) {
-					case 'js':
-						data = data.replace(regExpJS, '\\$1');
-						break;
-					case 'decAll':
-						data = data.replace(regExpAll, getDec);
-						break;
-					case 'decHtml':
-						data = data.replace(regExpHTML, getDec);
-						break;
-					case 'hexAll':
-						data = data.replace(regExpAll, getHex);
-						break;
-					case 'hexHtml':
-						data = data.replace(regExpHTML, getHex);
-						break;
-					case 'hexUrl':
-						data = encodeURI(data);
-						break;
-					case 'hexUrlAll':
-						data = encodeURIComponent(data);
-						break;
-				}
-			}
-
-			this.text = data;
-			return false;
-		},
-		entity: ['data', 'cache', 'type', 'escape']
-	};
-})();
-
-this['cache'] = (function () {
-	function fromData(instance) {
-		instance.cache[this.aName] = instance[this.aType][this.aData];
-		return false;
-	}
-
-	function fromContent(instance) {
-		instance.cache[this.aName] = this.text;
-		this.text = '';
-	}
-
-	return {
-		parse: function () {
-			var attribute = this.attribute;
-
-			if (attribute.hasOwnProperty('name')) {
-				this.aName = attribute.name;
-
-				if (attribute.hasOwnProperty('data')) {
-					this.aData = attribute.data;
-					this.aType = 'context';
-					this.input = fromData;
-				} else if (attribute.hasOwnProperty('cache')) {
-					this.aData = attribute.cache;
-					this.aType = 'cache';
-					this.input = fromData;
-				} else {
-					this.output = fromContent;
-				}
-			} else {
-				return new Error('Attribute "name" is not defined.');
-			}
+this['var'] = {
+	parse: function () {
+		if (!this.attributes.hasOwnProperty('name')) {
+			return new Error('Attribute "name" is not defined.');
 		}
-	};
-})();
 
-this['if'] = this['unless'] = (function () {
-	function fromContext(instance) {
-		return Boolean(this.context[this.aName]) === this.type;
-	}
-
-	function fromCache(instance) {
-		return Boolean(instance.cache[this.aName]) === this.type;
-	}
-
-	return {
-		parse: function () {
-			var attribute = this.attribute;
-			this.type = this.name === 'if';
-
-			if (attribute.hasOwnProperty('data')) {
-				this.aName = attribute.data;
-				this.input = fromContext;
-			} else if (attribute.hasOwnProperty('cache')) {
-				this.aName = attribute.cache;
-				this.input = fromCache;
-			}
-		},
-		input: function () {
-			return Boolean(this.context) === this.type;
+		if (!this.attributes.hasOwnProperty('expr')) {
+			this.body = '' +
+				'var /*@name*/ = (function (__output) {' +
+					'/*!code*/' +
+					';return __output;' +
+				'}).call(/*!context*/, "");';
 		}
-	};
-})();
+	},
+	body: 'var/*@name*/ = /*@expr*/;'
+};
 
-(function (API) {
-	API['each'] = {
-		parse: function () {
-			var attribute = this.attribute;
+this['if'] = {
+	parse: fixExprAttribute,
+	body: '' +
+		'if (/*@expr*/) {' +
+			'/*!code*/' +
+		'}'
+};
 
-			if (attribute.hasOwnProperty('data')) {
-				this.aData = attribute['data'];
-				this.aType = 'context';
-			} else if (attribute.hasOwnProperty('cache')) {
-				this.aData = attribute.cache;
-				this.aType = 'cache';
-			} else {
-				return new Error('Attribute "data" or "cache" in not defined.');
-			}
-		},
-		input: function (instance) {
-			var data = instance[this.aType][this.aData];
+this.unless = {
+	parse: fixExprAttribute,
+	body: '' +
+		'if (!(/*@expr*/)) {' +
+			'/*!code*/' +
+		'}'
+};
 
-			this.data = [];
-			this.indexes = [];
+this['for'] = {
+	parse: fixExprAttribute,
+	body: '' +
+		'(function (_array) {' +
+			'var _length = _array.length;' +
+			'var _index = 0;' +
+			'var _item;' +
+			'while (_index < _length) {' +
+				'_item = _array[_index++];' +
+				'/*!code*/' +
+			'}' +
+		'}).call(/*!context*/, /*@expr*/);'
+};
 
-			for (var property in data) {
-				if (data.hasOwnProperty(property)) {
-					this.data.push(data[property]);
-					this.indexes.push(property);
-				}
-			}
+this['each'] = {
+	parse: fixExprAttribute,
+	body: '' +
+		'(function (_object) {' +
+			'for (var _property in _object) {' +
+				'if (_object.hasOwnProperty(_property)) {' +
+					'/*!code*/' +
+				'}' +
+			'}' +
+		'}).call(/*!context*/, /*@expr*/);'
+};
 
-			this.length = this.data.length;
-
-			if (this.length) {
-				this.index--;
-				this.currentIndex = 1;
-				this.context = instance.context;
-
-				if (this.aKey) {
-					instance.cache[this.aKey] = this.indexes[0];
-				}
-
-				instance.context = this.data[0];
-				return true;
-			} else {
-				delete this.data;
-				delete this.indexes;
-				delete this.length;
-
-				return false;
-			}
-		}
-	}
-})(this);
-
+/*
 (function (API) {
 	function Template() {
 	}
@@ -310,4 +218,4 @@ this['if'] = this['unless'] = (function () {
 		init: init
 	};
 
-})(this);
+})(this);*/
