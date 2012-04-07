@@ -36,10 +36,6 @@ function compileNode(node) {
 	});
 }
 
-function toString () {
-	return /^function\s+[a-z]*\([^\)]*?\)\s*\{(?:\n|\r)?\s*([\s\S]*?)\}$/i
-}
-
 /*
 * Event listeners
 * */
