@@ -214,36 +214,27 @@ function Config (options) {
 
 Config.prototype = TSN.config;
 
-LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
-	if (e) {
-		e.message = 'Can not read configuration file "' + configPath + '"';
-		TSN.emit('error', e);
-	} else {
-		try {
-			var config = JSON.parse(data);
-		} catch (e) {
-			e.message = 'Format error in configuration file "' + configPath + '"';
-			TSN.emit('error', e);
-			return;
-		}
+try {
+	var config = LIB.fileSystem.readFileSync(configPath, 'utf-8');
+
+	try {
+		config = JSON.parse(data);
 
 		for (var property in config) {
 			if (config.hasOwnProperty(property)) {
 				TSN.config[property] = config[property];
 			}
 		}
-
-		TSN.emit('ready');
+	} catch (e) {
+		e.message = 'Format error in configuration file "' + configPath + '"';
+		TSN.emit('error', e);
 	}
-});
+} catch (e) {
+	e.message = 'Can not read configuration file "' + configPath + '"';
+	TSN.emit('error', e);
+}
 
 module.exports = TSN;
-
-/**
- * @event
- * @name TSN#ready
- * @description Модуль инициализирован и готов к использованию.
- */
 
 /**
  * @event
