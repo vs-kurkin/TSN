@@ -224,6 +224,7 @@ LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
 		} catch (e) {
 			e.message = 'Format error in configuration file "' + configPath + '"';
 			TSN.emit('error', e);
+			return;
 		}
 
 		for (var property in config) {
