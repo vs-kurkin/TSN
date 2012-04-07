@@ -3,16 +3,15 @@
  * @author <a href="mailto:b-vladi@cs-console.ru">Влад Куркин</a>
  * @version 1.1 beta
  */
-
-var TSN = module.parent.exports;
-
-function fixExprAttribute () {
-	if (!this.attributes.hasOwnProperty('expr') || this.attributes.expr === '') {
-		this.attributes.expr = 'this';
-	}
-}
-
 this.root = {
+	parse: function () {
+		if (this.attributes.hasOwnProperty('context')) {
+			this.body = '' +
+				'(function () {' +
+					'/*!code*/' +
+				'}).call(/*!context*/);';
+		}
+	},
 	body: '/*!code*/'
 };
 
@@ -22,20 +21,14 @@ this['comment'] = {
 
 this.context = {
 	parse: function () {
-		if (!this.attributes.hasOwnProperty('expr')) {
+		if (!this.attributes.hasOwnProperty('object')) {
 			this.body = '/*!code*/';
 		}
 	},
 	body: '' +
 		'(function () {' +
 			'/*!code*/' +
-		'}).call(/*@expr*/);',
-	attribute: {
-		body: '' +
-			'(function () {' +
-				'/*!code*/' +
-			'}).call(/*@*/);'
-	}
+		'}).call(/*@object*/);'
 };
 
 this.echo = (function () {
@@ -53,45 +46,46 @@ this.echo = (function () {
 		'}';
 
 	var type = {
-		json: 'JSON.stringify(/*expr*/)'
+		json: 'JSON.stringify(/*text*/)'
 	};
 
 	var escape = {
-		js: '(/*expr*/).replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
-		decAll: '(/*expr*/).replace(' + regExpAll + ', ' + getDec + ')',
-		decHtml: '(/*expr*/).replace(' + regExpHTML + ', ' + getDec + ')',
-		hexAll: '(/*expr*/).replace(' + regExpAll + ', ' + getHex + ')',
-		hexHtml: '(/*expr*/).replace(' + regExpHTML + ', ' + getHex + ')',
-		hexUrl: 'encodeURI(/*expr*/)',
-		hexUrlAll: 'encodeURIComponent(/*expr*/)'
+		js: '(/*text*/).replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
+		decAll: '(/*text*/).replace(' + regExpAll + ', ' + getDec + ')',
+		decHtml: '(/*text*/).replace(' + regExpHTML + ', ' + getDec + ')',
+		hexAll: '(/*text*/).replace(' + regExpAll + ', ' + getHex + ')',
+		hexHtml: '(/*text*/).replace(' + regExpHTML + ', ' + getHex + ')',
+		hexUrl: 'encodeURI(/*text*/)',
+		hexUrlAll: 'encodeURIComponent(/*text*/)'
 	};
 
 	return {
 		parse: function () {
 			var attributes = this.attributes;
-			var expr = attributes.hasOwnProperty('expr') ? attributes.expr : 'this';
+			var text = attributes.hasOwnProperty('text') ? attributes.text : 'this';
 
 			if (attributes.hasOwnProperty('type') && type.hasOwnProperty(attributes.type)) {
-				expr = type[attributes.type].replace('/*expr*/', expr);
+				text = type[attributes.type].replace('/*text*/', text);
 			}
 
 			if (attributes.hasOwnProperty('escape') && escape.hasOwnProperty(attributes.escape)) {
-				expr = escape[attributes.escape].replace('/*expr*/', expr);
+				text = escape[attributes.escape].replace('/*text*/', text);
 			}
 
-			this.body = '__output += (' + expr + ');';
-		},
-		entity: ['expr', 'type', 'escape']
+			this.body = '__output += (' + text + ');';
+		}
 	};
 })();
 
 this['var'] = {
 	parse: function () {
-		if (!this.attributes.hasOwnProperty('name')) {
+		var attributes = this.attributes;
+
+		if (!attributes.hasOwnProperty('name')) {
 			return new Error('Attribute "name" is not defined.');
 		}
 
-		if (!this.attributes.hasOwnProperty('expr')) {
+		if (!attributes.hasOwnProperty('value')) {
 			this.body = '' +
 				'var /*@name*/ = (function (__output) {' +
 					'/*!code*/' +
@@ -99,27 +93,59 @@ this['var'] = {
 				'}).call(/*!context*/, "");';
 		}
 	},
-	body: 'var/*@name*/ = /*@expr*/;'
+	body: 'var/*@name*/ = /*@value*/;'
+};
+
+this['entity'] = {
+	init: function () {
+		return 'var __entity = {};';
+	},
+	parse: function () {
+		if (!this.attributes.hasOwnProperty('name')) {
+			return new Error('Attribute "name" is not defined.');
+		}
+
+		if (!this.attributes.hasOwnProperty('value')) {
+			this.body = '' +
+				'__entity./*@name*/ = (function (__output) {' +
+					'/*!code*/' +
+					';return __output;' +
+				'}).call(/*!context*/, "");';
+		}
+	},
+	body: '__entity./*@name*/ = /*@value*/;'
 };
 
 this['if'] = {
-	parse: fixExprAttribute,
+	parse: function () {
+		if (!this.attributes.hasOwnProperty('test')) {
+			this.attributes.test = 'this';
+		}
+	},
 	body: '' +
-		'if (/*@expr*/) {' +
+		'if (/*@test*/) {' +
 			'/*!code*/' +
 		'}'
 };
 
 this.unless = {
-	parse: fixExprAttribute,
+	parse: function () {
+		if (!this.attributes.hasOwnProperty('test')) {
+			this.attributes.test = 'this';
+		}
+	},
 	body: '' +
-		'if (!(/*@expr*/)) {' +
+		'if (!(/*@test*/)) {' +
 			'/*!code*/' +
 		'}'
 };
 
 this['for'] = {
-	parse: fixExprAttribute,
+	parse: function () {
+		if (!this.attributes.hasOwnProperty('array')) {
+			this.attributes.array = 'this';
+		}
+	},
 	body: '' +
 		'(function (_array) {' +
 			'var _length = _array.length;' +
@@ -129,11 +155,15 @@ this['for'] = {
 				'_item = _array[_index++];' +
 				'/*!code*/' +
 			'}' +
-		'}).call(/*!context*/, /*@expr*/);'
+		'}).call(/*!context*/, /*@array*/);'
 };
 
 this['each'] = {
-	parse: fixExprAttribute,
+	parse: function () {
+		if (!this.attributes.hasOwnProperty('object')) {
+			this.attributes.object = 'this';
+		}
+	},
 	body: '' +
 		'(function (_object) {' +
 			'for (var _property in _object) {' +
@@ -141,7 +171,7 @@ this['each'] = {
 					'/*!code*/' +
 				'}' +
 			'}' +
-		'}).call(/*!context*/, /*@expr*/);'
+		'}).call(/*!context*/, /*@object*/);'
 };
 
 /*

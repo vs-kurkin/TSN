@@ -45,13 +45,13 @@ function onStart () {
 
 	for (var nodeName in nodeAPI) {
 		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('init')) {
-			nodeAPI[nodeName].init();
+			this.current.code += nodeAPI[nodeName].init();
 		}
 	}
 }
 
 function onText (node, text) {
-	node.code += '__output+="' + text + '";';
+	node.code += '__output += "' + text + '";';
 }
 
 function onError (error) {
@@ -90,6 +90,10 @@ function onClose (node) {
 	} else {
 		this._error('Unknown tag closing.', node);
 	}
+}
+
+function onEntity (node) {
+	node.parent.code += '__output += String(__entity.' + node.data + ');';
 }
 
 /**
@@ -148,6 +152,7 @@ TSN.compile = function (data, name, config, callback) {
 		var template = new Function ('var __output=""; ' + this.root.code + '; return __output;');
 
 		if (typeof name === 'string' && name !== '') {
+			template.name = name;
 			TSN.cache[name] = template;
 		}
 
@@ -161,11 +166,7 @@ TSN.compile = function (data, name, config, callback) {
 	parser.on('open', onOpen);
 	parser.on('close', onClose);
 	parser.on('text', onText);
-
-	parser.on('entity', function (name) {
-
-	});
-
+	parser.on('entity', onEntity);
 	parser.on('error', onError);
 
 	parser.parse(data);

@@ -1,20 +1,19 @@
 <!ELEMENT tsn:root ANY>
 <!ATTLIST tsn:root
 	xmlns:tsn CDATA #FIXED 'TSN'
-	context CDATA #IMPLIED
+	context CDATA "this"
 	>
 
 <!ELEMENT tsn:comment ANY>
 
 <!ELEMENT tsn:context ANY>
 <!ATTLIST tsn:context
-	expr CDATA #IMPLIED
-	context CDATA #IMPLIED
+	object CDATA "this"
 	>
 
 <!ELEMENT tsn:echo EMPTY>
 <!ATTLIST tsn:echo
-	expr CDATA #IMPLIED
+	text CDATA "this" #IMPLIED
 	type (json) #IMPLIED
 	escape (js|decAll|decHtml|hexAll|hexHtml|hexUrl|hexUrlAll) #IMPLIED
 	>
@@ -22,32 +21,37 @@
 <!ELEMENT tsn:var ANY>
 <!ATTLIST tsn:var
 	name CDATA #REQUIRED
-	expr CDATA #IMPLIED
-	context CDATA #IMPLIED
+	value CDATA "this"
+	context CDATA "this"
+	>
+
+<!ELEMENT tsn:entity ANY>
+<!ATTLIST tsn:entity
+	name CDATA #REQUIRED
+	value CDATA "this"
+	context CDATA "this"
 	>
 
 <!ELEMENT tsn:if ANY>
 <!ATTLIST tsn:if
-	expr CDATA #IMPLIED
-	context CDATA #IMPLIED
+	test CDATA "this"
 	>
 
 <!ELEMENT tsn:unless ANY>
 <!ATTLIST tsn:unless
-	expr CDATA #IMPLIED
-	context CDATA #IMPLIED
+	test CDATA "this"
 	>
 
 <!ELEMENT tsn:for ANY>
 <!ATTLIST tsn:for
-	expr CDATA #IMPLIED
-	context CDATA #IMPLIED
+	array CDATA "this"
+	context CDATA "this"
 	>
 
 <!ELEMENT tsn:each ANY>
 <!ATTLIST tsn:each
-	data CDATA #IMPLIED
-	key CDATA #IMPLIED
+	object CDATA "this"
+	context CDATA "this"
 	>
 
 <!ELEMENT tsn:template ANY>

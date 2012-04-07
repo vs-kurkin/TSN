@@ -1,12 +1,11 @@
 var events = require('events');
 
-var regExpEntityAttr = /\.([a-z\-_]*)/gi;
 var regExpAttr = /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:(?:\\)?"([^"]*?)(?:\\)?")|(?:(?:\\)?'([^']*?)(?:\\)?')))?/gi;
 var regExpXML = /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*(<!DOCTYPE\s+[a-z\-_]+(?::[a-z\-_]+)?(?:\s+PUBLIC\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:\[[\s\S]*?\])?)?\s*>)?/i;
 
 function Parser (config) {
 	var space = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)?';
-	var entity = '&' + config.namespace + '.([a-z\\-_]+)(.[a-z\\-_\\.]*)?;';
+	var entity = '&' + config.namespace + '.([a-z\\-_]+)?;';
 	var cdata = config.parseCDATA === true ? '' : '|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)';
 
 	if (!(config.hasOwnProperty('namespace') && (/[a-z\d\-_]+/i).test(config.namespace))) {
@@ -63,13 +62,12 @@ Parser.prototype.parse = function (data) {
 
 	while (parseResult = this.regExpNode.exec(data)) {
 		var result = parseResult[0];
-		var entityTagName = parseResult[1];
-		var entityAttrValue = parseResult[2];
-		var comment = parseResult[3];
-		var closeNodeName = parseResult[4];
-		var openNodeName = parseResult[5];
-		var attributes = parseResult[6];
-		var isEmpty = parseResult[7];
+		var entity = parseResult[1];
+		var comment = parseResult[2];
+		var closeNodeName = parseResult[3];
+		var openNodeName = parseResult[4];
+		var attributes = parseResult[5];
+		var isEmpty = parseResult[6];
 		var index = parseResult.index;
 
 		text = data.substring(lastIndex, index);
@@ -78,14 +76,13 @@ Parser.prototype.parse = function (data) {
 			this.emit('text', this.current, this._fixText(text));
 		}
 
-		if (entityTagName) {
-			openNodeName = entityTagName.toLowerCase();
-
-			this.emit('entity', openNodeName);
-
-			while (attribute = regExpEntityAttr.exec(entityAttrValue)) {
-				this.emit('entityAttribute', attribute);
-			}
+		if (entity) {
+			this.emit('entity', {
+				index: index,
+				source: result,
+				parent: this.current,
+				data: entity
+			});
 		} else if (openNodeName) {
 			var newNode = {
 				index: index,
