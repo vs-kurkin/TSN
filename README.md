@@ -43,16 +43,16 @@ API обработки шаблонов находятся в пространс
 
 	TSN.load('path/to/template.xml'); // Компиляция относительно TSN.config.templateRoot.
 
-Компиляция шаблона с использованием собственных настроек. Параметры, которые не были указаны в этом объекте, будут унаследованы от TSN.config.
+Компиляция шаблона с использованием собственных настроек. Параметры, которые не были указаны в этом объекте, будут унаследованы от `TSN.config`.
 
 	TSN.load('path/to/template.xml', null, {
 		templateRoot: 'path/to/new/template/root'
 	});
 
-Использование callback-функции при парсинге конкретного шаблона:
+Использование callback-функции:
 
 	TSN.load('path/to/template.xml', null, null, function (template) {
-		console.log(template.name === TSN.config.templateRoot + 'path/to/template.xml'); // true
+		console.log(template.name === require('path').join(TSN.config.templateRoot, 'path/to/template.xml')); // true
 	});
 
 Использование имени шаблона:
