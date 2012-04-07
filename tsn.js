@@ -218,18 +218,18 @@ LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
 	} else {
 		try {
 			var config = JSON.parse(data);
-
-			for (var property in config) {
-				if (config.hasOwnProperty(property)) {
-					TSN.config[property] = config[property];
-				}
-			}
-
-			TSN.emit('ready');
 		} catch (e) {
 			e.message = 'Format error in configuration file "' + configPath + '"';
 			TSN.emit('error', e);
 		}
+
+		for (var property in config) {
+			if (config.hasOwnProperty(property)) {
+				TSN.config[property] = config[property];
+			}
+		}
+
+		TSN.emit('ready');
 	}
 });
 

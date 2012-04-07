@@ -89,10 +89,10 @@ API обработки шаблонов находятся в пространс
 ###Теги.
 
 ####root
-Вспомогательный элемент для использования в XML-файлах в качестве корневого.
+Вспомогательный тег для использования в XML-файлах в качестве корневого.
 
 Атрибуты:
-<table cellpadding="0" cellspacing="0">
+<table>
 	<thead>
 		<tr>
 			<td><b>Имя</b></td>
@@ -120,3 +120,35 @@ API обработки шаблонов находятся в пространс
 		</tr>
 	</tbody>
 </table>
+
+Пример:
+Код шаблона:
+
+	<?xml version="1.0" encoding="UTF-8"?>
+	<!DOCTYPE tsn:root PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+	<tsn:root xmlns:tsn="TSN" context="this.contextRoot">
+		<div>
+			<span><tsn:echo text="this.first" /></span>
+		</div>
+		<div>
+			<span><tsn:echo text="this.second" /></span>
+		</div>
+	</tsn:root>
+
+Вызов:
+
+	template.call({
+	 contextRoot: {
+		 first: 'First data',
+		 second: 'Second data'
+	 }
+	});
+
+Результат:
+
+	<div>
+		<span>First data</span>
+	</div>
+	<div>
+		<span>Second data</span>
+	</div>

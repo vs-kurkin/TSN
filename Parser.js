@@ -19,7 +19,7 @@ function Parser (config) {
 	var entity = '&' + config.namespace + '.([a-z\\-_]+)?;';
 	var cdata = config.parseCDATA === true ? '' : '|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)';
 
-	if (!(config.hasOwnProperty('namespace') && (/[a-z\d\-_]+/i).test(config.namespace))) {
+	if (!(config.namespace && (/[a-z\d\-_]+/i).test(config.namespace))) {
 		this.emit('error', new Error('Invalid namespace.'));
 		config.namespace = 'tsn';
 	}
@@ -76,7 +76,7 @@ Parser.prototype.parse = function (content) {
 
 	if (xmlDeclaration) {
 		xmlDeclaration = xmlDeclaration[0];
-		content = content.substring(this.xmlDeclaration.length);
+		content = content.substring(xmlDeclaration.length);
 	} else {
 		xmlDeclaration = '';
 	}
