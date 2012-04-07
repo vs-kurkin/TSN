@@ -236,26 +236,26 @@ LIB.fileSystem.readFile(configPath, 'utf-8', function (e, data) {
 module.exports = TSN;
 
 /**
- * @name TSN#ready
  * @event
+ * @name TSN#ready
  * @description Модуль инициализирован и готов к использованию.
  */
 
 /**
- * @name TSN#error
  * @event
+ * @name TSN#error
+ * @description Ошибка инициализации или парсинга шаблона.
  * @param {error} error Объект ошибки.
  * @param {string} error.message Текстовое сообщение ошибки.
  * @param {number} error.nodeName Имя тега, сгенерировавшего ошибку.
  * @param {number} error.line Номер строки, на которой находится тег, сгенерировавший ошибку.
  * @param {number} error.char Символ, с которого начинается тег, сгенерировавший ошибку.
- * @description Ошибка инициализации или парсинга шаблона.
  */
 
 /**
- * @name TSN#compiled
  * @event
+ * @name TSN#compiled
+ * @description Завершение компиляции шаблона.
  * @param {function} template Скомпилированный шаблон.
  * @param {string} template.name Имя шаблона.
- * @description Завершение компиляции шаблона.
  */

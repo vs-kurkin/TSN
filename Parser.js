@@ -220,6 +220,7 @@ Parser.prototype._fixText = function (text) {
 	return text
 		.replace(/\\/g, '\\\\')
 		.replace(/(["'\t])/g, '\\$1')
+		.replace(/\r\n/g, '\\n')
 		.replace(/\r/g, '\\r')
 		.replace(/\n/g, '\\n')
 		.replace(/\f/g, '\\f')
@@ -261,6 +262,7 @@ module.exports = Parser;
 /**
  * @event
  * @name Parser#open
+ * @description Найден открывающийся тег.
  * @param {object} node Объект найденного тега.
  * @param {number} node.index Номер символа, с которого был найден тег.
  * @param {string} node.source Исходный код тега.
@@ -268,12 +270,12 @@ module.exports = Parser;
  * @param {boolean} node.isEmpty Флаг, указывающий на то, что тег одиночный.
  * @param {object} node.parent Ссылка на объект родительского тега.
  * @param {object} node.attributes Объект атрибутов тега.
- * @description Найден открывающийся тег.
  */
 
 /**
  * @event
  * @name Parser#close
+ * @description Найден закрывающийся тег.
  * @param {object} node Объект тега, который был закрыт.
  * @param {number} node.index Номер символа, с которого был найден тег.
  * @param {string} node.source Исходный код тега.
@@ -281,34 +283,33 @@ module.exports = Parser;
  * @param {boolean} node.isEmpty Флаг, указывающий на то, что тег одиночный.
  * @param {object} node.parent Ссылка на объект родительского тега.
  * @param {object} node.attributes Объект атрибутов тега.
- * @description Найден закрывающийся тег.
  */
 
 /**
  * @event
  * @name Parser#text
- * @param {string} text Тектовые данные.
  * @description Найдены текстовые данные (текст, CDATA, комментарий).
+ * @param {string} text Тектовые данные.
  */
 
 /**
  * @event
  * @name Parser#entity
+ * @description Найдена TSN-сущность.
  * @param {object} node Объект сущности.
  * @param {number} node.index Номер символа, с которого был найден тег.
  * @param {string} node.source Исходный код тега.
  * @param {object} node.parent Ссылка на объект родительского тега.
  * @param {string} node.name Имя TSN-сущности.
- * @description Найдена TSN-сущность.
  */
 
 /**
  * @event
  * @name Parser#error
+ * @description Ошибка парсинга шаблона.
  * @param {error} error Объект ошибки.
  * @param {string} error.message Текстовое сообщение ошибки.
  * @param {number} error.nodeName Имя тега, сгенерировавшего ошибку.
  * @param {number} error.line Номер строки, на которой находится тег, сгенерировавший ошибку.
  * @param {number} error.char Символ, с которого начинается тег, сгенерировавший ошибку.
- * @description Ошибка парсинга шаблона.
  */
