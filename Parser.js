@@ -1,8 +1,19 @@
+/**
+ * @fileOverview Парсер TSN-шаблона.
+ * @author <a href="mailto:b-vladi@cs-console.ru">Влад Куркин</a>
+ * @version 1.2.0 beta
+ */
+
 var events = require('events');
 
 var regExpAttr = /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:(?:\\)?"([^"]*?)(?:\\)?")|(?:(?:\\)?'([^']*?)(?:\\)?')))?/gi;
 var regExpXML = /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*(<!DOCTYPE\s+[a-z\-_]+(?::[a-z\-_]+)?(?:\s+PUBLIC\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:\[[\s\S]*?\])?)?\s*>)?/i;
 
+/**
+ * Парсер TSN-шаблона. Экземпляры наследуют от <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
+ * @param {object} config Объект конфигурации шаблона.
+ * @constructor
+ */
 function Parser (config) {
 	var space = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)?';
 	var entity = '&' + config.namespace + '.([a-z\\-_]+)?;';
@@ -27,40 +38,79 @@ function Parser (config) {
 		config.indent = Number(config.indent.toFixed(0));
 	}
 
+	/**
+	 * Объект конфигурации шаблона.
+	 * @type object
+	 */
 	this.config = config;
-	this.regExpNode = new RegExp('(?:' + space + entity + space + ')|(' + space + '<!--(?!\\[if [^\\]]+?\\]>)[\\s\\S]*?(?!<!\\[endif\\])-->' + space + ')' + cdata + '|(?:' + space + '<\\/\\s*' + config.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + space + '<\\s*' + config.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>)', 'gi');
+
+	/**
+	 * Регурярное выражение, которым парсится шаблон.
+	 * @type regexp
+	 */
+	this.regExp = new RegExp('(?:' + space + entity + space + ')|(' + space + '<!--(?!\\[if [^\\]]+?\\]>)[\\s\\S]*?(?!<!\\[endif\\])-->' + space + ')' + cdata + '|(?:' + space + '<\\/\\s*' + config.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + space + '<\\s*' + config.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>)', 'gi');
 }
 
 Parser.prototype = new events.EventEmitter();
 
-Parser.prototype.parse = function (data) {
+/**
+ * Парсинг шаблона.
+ * @param {string} content Тело шаблона
+ * @function
+ */
+Parser.prototype.parse = function (content) {
 	var xmlDeclaration, parseResult, attribute, text;
 	var lastIndex = 0;
 
-	if (typeof String(data) !== 'string') {
-		throw 'Invalid data type';
+	if (typeof String(content) !== 'string') {
+		throw 'Invalid content type';
 	}
 
+	/**
+	 * Текущая глубина тегов.
+	 * @type number
+	 */
 	this.depth = 0;
 
-	xmlDeclaration = data.match(regExpXML);
+	xmlDeclaration = content.match(regExpXML);
 
 	if (xmlDeclaration) {
-		this.xmlDeclaration = xmlDeclaration[0];
-		data = data.substring(this.xmlDeclaration.length);
+		xmlDeclaration = xmlDeclaration[0];
+		content = content.substring(this.xmlDeclaration.length);
 	} else {
-		this.xmlDeclaration = '';
+		xmlDeclaration = '';
 	}
 
-	this.data = data;
-	this.root = this.current = {
+	/**
+	 * Код XML-декларации шаблона.
+	 * @type string
+	 */
+	this.xmlDeclaration = xmlDeclaration;
+
+	/**
+	 * Тело шаблона без XML-декларации.
+	 * @type string
+	 */
+	this.content = content;
+
+	/**
+	 * Текущий объект тега.
+	 * @type object
+	 */
+	this.current = {
 		index: 0,
 		source: ''
 	};
 
+	/**
+	 * Объект корневого тега шаблона.
+	 * @type object
+	 */
+	this.root = this.current;
+
 	this.emit('start');
 
-	while (parseResult = this.regExpNode.exec(data)) {
+	while (parseResult = this.regExp.exec(content)) {
 		var result = parseResult[0];
 		var entity = parseResult[1];
 		var comment = parseResult[2];
@@ -70,7 +120,7 @@ Parser.prototype.parse = function (data) {
 		var isEmpty = parseResult[6];
 		var index = parseResult.index;
 
-		text = data.substring(lastIndex, index);
+		text = content.substring(lastIndex, index);
 
 		if (text) {
 			this.emit('text', this.current, this._fixText(text));
@@ -81,7 +131,7 @@ Parser.prototype.parse = function (data) {
 				index: index,
 				source: result,
 				parent: this.current,
-				data: entity
+				name: entity
 			});
 		} else if (openNodeName) {
 			var newNode = {
@@ -134,7 +184,7 @@ Parser.prototype.parse = function (data) {
 		lastIndex = index + result.length;
 	}
 
-	text = data.substring(lastIndex);
+	text = content.substring(lastIndex);
 
 	if (text) {
 		this.emit('text', this.current, this._fixText(text));
@@ -151,6 +201,12 @@ Parser.prototype.parse = function (data) {
 	this.emit('end');
 };
 
+/**
+ * Исправление текстовых данных перед добавлением в код шаблона.
+ * @param {string} text Текстовые данные.
+ * @return {string} Исправленные текстовые данные.
+ * @private
+ */
 Parser.prototype._fixText = function (text) {
 	var tabSize, spaceSize;
 
@@ -171,17 +227,88 @@ Parser.prototype._fixText = function (text) {
 		.replace(/\u2029/g, '\\u2029');
 };
 
+/**
+ * Создание ошибки парсинга тега.
+ * @param {string} message Сообщение ошибки.
+ * @param {object} node Объект тега, для коготоро генерируется ошибка.
+ * @private
+ */
 Parser.prototype._error = function (message, node) {
 	var error = new Error(message);
-	var data = (this.xmlDeclaration + this.data).substr(0, node.index + this.xmlDeclaration.length) + node.source;
+	var content = (this.xmlDeclaration + this.content).substr(0, node.index + this.xmlDeclaration.length) + node.source;
 
 	error.nodeName = node.name;
-	error.line = data.split(/(?:\r\n)|\r|\n/).length;
-	error.char = data.substring(Math.max(data.lastIndexOf('\n'), data.lastIndexOf('\r'))).lastIndexOf(node.source.replace(/^\s+/, ''));
+	error.line = content.split(/(?:\r\n)|\r|\n/).length;
+	error.char = content.substring(Math.max(content.lastIndexOf('\n'), content.lastIndexOf('\r'))).lastIndexOf(node.source.replace(/^\s+/, ''));
 
 	this.emit('error', error);
-
-	return this;
 };
 
 module.exports = Parser;
+
+/**
+ * @event
+ * @name Parser#start
+ * @description Начало парсинга шаблона.
+ */
+
+/**
+ * @event
+ * @name Parser#end
+ * @description Завершение парсинга шаблона.
+ */
+
+/**
+ * @event
+ * @name Parser#open
+ * @param {object} node Объект найденного тега.
+ * @param {number} node.index Номер символа, с которого был найден тег.
+ * @param {string} node.source Исходный код тега.
+ * @param {string} node.name Имя тега.
+ * @param {boolean} node.isEmpty Флаг, указывающий на то, что тег одиночный.
+ * @param {object} node.parent Ссылка на объект родительского тега.
+ * @param {object} node.attributes Объект атрибутов тега.
+ * @description Найден открывающийся тег.
+ */
+
+/**
+ * @event
+ * @name Parser#close
+ * @param {object} node Объект тега, который был закрыт.
+ * @param {number} node.index Номер символа, с которого был найден тег.
+ * @param {string} node.source Исходный код тега.
+ * @param {string} node.name Имя тега.
+ * @param {boolean} node.isEmpty Флаг, указывающий на то, что тег одиночный.
+ * @param {object} node.parent Ссылка на объект родительского тега.
+ * @param {object} node.attributes Объект атрибутов тега.
+ * @description Найден закрывающийся тег.
+ */
+
+/**
+ * @event
+ * @name Parser#text
+ * @param {string} text Тектовые данные.
+ * @description Найдены текстовые данные (текст, CDATA, комментарий).
+ */
+
+/**
+ * @event
+ * @name Parser#entity
+ * @param {object} node Объект сущности.
+ * @param {number} node.index Номер символа, с которого был найден тег.
+ * @param {string} node.source Исходный код тега.
+ * @param {object} node.parent Ссылка на объект родительского тега.
+ * @param {string} node.name Имя TSN-сущности.
+ * @description Найдена TSN-сущность.
+ */
+
+/**
+ * @event
+ * @name Parser#error
+ * @param {error} error Объект ошибки.
+ * @param {string} error.message Текстовое сообщение ошибки.
+ * @param {number} error.nodeName Имя тега, сгенерировавшего ошибку.
+ * @param {number} error.line Номер строки, на которой находится тег, сгенерировавший ошибку.
+ * @param {number} error.char Символ, с которого начинается тег, сгенерировавший ошибку.
+ * @description Ошибка парсинга шаблона.
+ */

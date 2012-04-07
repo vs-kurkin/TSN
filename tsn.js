@@ -1,13 +1,12 @@
 /**
- * @fileOverview Templateting System for Node.JS.
+ * @fileOverview Templating System for Node.JS.
  * @author <a href="mailto:b-vladi@cs-console.ru">Влад Куркин</a>
- * @version 1.2 beta
+ * @version 1.2.0 beta
  */
 
 /**
  * @ignore
  */
-
 var LIB = {
 	fileSystem: require('fs'),
 	path: require('path'),
@@ -93,24 +92,33 @@ function onClose (node) {
 }
 
 function onEntity (node) {
-	node.parent.code += '__output += String(__entity.' + node.data + ');';
+	node.parent.code += '__output += String(__entity.' + node.name + ');';
 }
 
 /**
- * @namespace TSN
+ * @name TSN
+ * @namespace Templating System for NodeJS.
+ * @description Экземпляр конструктора <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
  */
 var TSN = new LIB.event.EventEmitter();
 
 /**
- * Кеш. Содержит все созданные объекты шаблона, загруженные из файла.
+ * Кеш скомпилированных шаблонов.
  */
 TSN.cache = {};
 
 /**
- * Стандартные настройки шаблонизатора.
+ * Стандартные настройки шаблонизатора, загруженный из config.json.
  */
 TSN.config = {};
 
+/**
+ * Компилирует файл шаблона по указанному пути.
+ * @param {string} path Путь к файлу шаблона относительно <i>TSN.config.templateRoot</i>.
+ * @param {string} [name] Имя шаблона, по которому он будет храниться в кеше. Если параметр не передан, в качестве имени будет использоваться абсолютный путь к шаблону.
+ * @param {object} [config] Объект конфигурации шаблона.
+ * @param {function} [callback] Функция, которая будет вызвана по окончании компиляции шаблона.
+ */
 TSN.load = function (path, name, config, callback) {
 	config = config || TSN.config;
 
@@ -138,6 +146,13 @@ TSN.load = function (path, name, config, callback) {
 	TSN.compile(data, name || fullPath, config, callback);
 };
 
+/**
+ * Компилирует код шаблона, переданного параметром @param data.
+ * @param {string} data Тело шаблона
+ * @param {string} [name] Имя шаблона. Если имя не указано - шаблон не будет сохранен в кеше.
+ * @param {object} [config] Объект конфигурации шаблона.
+ * @param {function} [callback] Функция, которая будет вызвана по окончании компиляции шаблона.
+ */
 TSN.compile = function (data, name, config, callback) {
 	config = config || TSN.config;
 
@@ -172,6 +187,11 @@ TSN.compile = function (data, name, config, callback) {
 	parser.parse(data);
 };
 
+/**
+ * Рендеринг шаблона на основе переданных данных.
+ * @param {function} template Скомпилированный шаблон.
+ * @param {object} data Данные, на основе которых будет рендериться шаблон.
+ */
 TSN.render = function (template, data) {
 	return template.call(data);
 };
@@ -203,21 +223,24 @@ module.exports = TSN;
 /**
  * @name TSN#ready
  * @event
- * @param {Object} event
  * @description Модуль инициализирован и готов к использованию.
  */
 
 /**
  * @name TSN#error
  * @event
- * @param {string} message
- * @param {Object} event
+ * @param {error} error Объект ошибки.
+ * @param {string} error.message Текстовое сообщение ошибки.
+ * @param {number} error.nodeName Имя тега, сгенерировавшего ошибку.
+ * @param {number} error.line Номер строки, на которой находится тег, сгенерировавший ошибку.
+ * @param {number} error.char Символ, с которого начинается тег, сгенерировавший ошибку.
  * @description Ошибка инициализации или парсинга шаблона.
  */
 
 /**
  * @name TSN#compiled
  * @event
- * @param {function} template
+ * @param {function} template Скомпилированный шаблон.
+ * @param {string} template.name Имя шаблона.
  * @description Завершение компиляции шаблона.
  */
