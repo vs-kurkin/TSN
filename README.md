@@ -624,7 +624,7 @@ API обработки шаблонов находятся в пространс
 </table>
 
 ####Include
-Вставляет код шаблона на своё место. Создает локальнюу область видимости. Одиночный тег.
+Вставляет код шаблона на своё место. Создает локальную область видимости. Одиночный тег.
 
 <b>Атрибуты:</b>
 <table>
@@ -661,3 +661,45 @@ API обработки шаблонов находятся в пространс
 		</tr>
 	</tbody>
 </table>
+
+Обязательно должен присутствовать тег name или src.
+
+<b>Пример:</b>
+
+Код шаблона:
+
+	<?xml version="1.0" encoding="UTF-8"?>
+	<tsn:root xmlns:tsn="TSN">
+		<tsn:template name="tmpl">
+			<tsn:echo />
+		</tsn:template>
+		<div>
+			<tsn:include src="template.xml" />
+		</div>
+		<div>
+			<tsn:include name="tmpl" />
+		</div>
+	</tsn:root>
+
+Код файла template.xml:
+
+	<?xml version="1.0" encoding="UTF-8"?>
+	<tsn:root xmlns:tsn="TSN">
+		<tsn:include name="tmpl" />
+		<tsn:template name="tmpl">
+			Included data.
+		</tsn:template>
+		<tsn:include name="tmpl" />
+	</tsn:root>
+
+Вызов:
+
+	template.call('Parent data.');
+
+Результат:
+
+	<div>Parent data.
+	Included data.
+	</div>
+	<div>Parent data.
+	</div>
