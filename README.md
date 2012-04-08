@@ -79,6 +79,101 @@ API обработки шаблонов находятся в пространс
 
 ###Теги.
 
+####Comment
+Комментарий. Содержимое тега будет удалено из результирующего кода шаблона.
+
+<b>Атрибуты:</b> нет.
+
+####Echo
+Выводит текстовые данные в результат рендеринга.
+
+<b>Атрибуты:</b>
+<table>
+	<thead>
+		<tr>
+			<th>Имя</th>
+			<th>Значение по-умолчанию</th>
+			<th>Варианты значений</th>
+			<th>Обязательный</th>
+			<th>Описание</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>text</td>
+			<td>this</td>
+			<td>JavaScript выражение</td>
+			<td>нет</td>
+			<td>Выражение, результат которого будет вставлен на место тега.</td>
+		</tr>
+		<tr>
+			<td>type</td>
+			<td></td>
+			<td>`json`: значение выражения text будет преобразовано в строку функцией JSON.stringify.</td>
+			<td>нет</td>
+			<td>Тип выводимых данных.
+			</td>
+		</tr>
+		<tr>
+			<td>escape</td>
+			<td></td>
+			<td>
+				<div>`js`: подготавливает данные, предназначенные для вставки в JavaScript-строку.</div>
+				<div>`decAll`: заменяет все символы, кроме `a-z 0-9 - _ .` на десятиричные HTML-коды.</div>
+				<div>`decHtml`: заменяет символы `&amp;&lt;&gt;&quot;'` на десятиричные HTML-коды.</div>
+				<div>`hexAll`: заменяет все символы, кроме `a-z 0-9 - _ .` на шестнадцатеричные HTML-коды.</div>
+				<div>`hexHtml`: заменяет символы `&amp;&lt;&gt;&quot;'` на шестнадцатеричные HTML-коды.</div>
+				<div>`hexUrl`: кодирует URL-строку функцией encodeURI.
+				<div>`hexUrlAll`: кодирует URL-строку функцией encodeURIComponent.
+			</td>
+			<td>нет</td>
+			<td>Метод экранирования, которое будет применено к результату выражения text после преобразования type, если оно было указано.
+			</td>
+		</tr>
+	</tbody>
+</table>
+
+<b>Пример:</b>
+
+Код шаблона:
+
+	<?xml version="1.0" encoding="UTF-8"?>
+	<tsn:root xmlns:tsn="TSN">
+		<div>
+			<tsn:echo text="this.string" />
+		</div>
+		<div>
+			<tsn:echo text="this.string" escape="decAll" />
+		</div>
+		<div>
+			<tsn:echo type="json" />
+		</div>
+		<script>
+			var data = '<tsn:echo text="this.string" escape="js"/>';
+		</script>
+	</tsn:root>
+
+Вызов:
+
+	template.call({
+		string: '\'Stiff Opposition Expected to \nCasketless Funeral Plan\'',
+		array: [1, 2, 3]
+	});
+
+Результат:
+
+		<div>'Stiff Opposition Expected to
+		Casketless Funeral Plan'
+		</div>
+		<div>&#39;Stiff&#32;Opposition&#32;Expected&#32;to&#32;&#10;Casketless&#32;Funeral&#32;Plan&#39;
+		</div>
+		<div>{"string":"'Stiff Opposition Expected to \nCasketless Funeral Plan'","array":[1,2,3]}
+		</div>
+		<script>
+			var data = '\'Stiff Opposition Expected to \
+		Casketless Funeral Plan\'';
+		</script>
+
 ####Root
 Вспомогательный тег для использования в XML-файлах в качестве корневого.
 
@@ -189,11 +284,6 @@ API обработки шаблонов находятся в пространс
 Результат:
 
 	<div>Context data</div>
-
-####Comment
-Комментарий. Содержимое тега будет удалено из результирующего кода шаблона.
-
-<b>Атрибуты:</b> нет.
 
 
 ####Var
