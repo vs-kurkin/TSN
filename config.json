@@ -2,6 +2,8 @@
 	"namespace": "tsn",
 	"templateRoot": "",
 	"encoding": "utf-8",
-	"parseIncluded": true,
-	"saveComments": true
+	"saveComments": true,
+	"parseCDATA": false,
+	"tabSize": 2,
+	"indent": 2
 }
