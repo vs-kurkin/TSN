@@ -194,3 +194,77 @@ API обработки шаблонов находятся в пространс
 Комментарий. Содержимое тега будет удалено из результирующего кода шаблона.
 
 <b>Атрибуты:</b> нет.
+
+####VAR
+Создает переменную в текущей области видимости.
+
+<b>Атрибуты:</b>
+<table>
+	<thead>
+		<tr>
+			<th>Имя</th>
+			<th>Значение по-умолчанию</th>
+			<th>Варианты значений</th>
+			<th>Обязательный</th>
+			<th>Описание</th>
+		</tr>
+	</thead>
+
+	<tbody>
+		<tr>
+			<td>name</td>
+			<td></td>
+			<td>Корректное JavaScript имя переменной.</td>
+			<td>да</td>
+			<td>Имя переменной.</td>
+		</tr>
+		<tr>
+			<td>value</td>
+			<td></td>
+			<td>JavaScript выражение.</td>
+			<td>нет</td>
+			<td>Значение переменной. Если атрибут не указан, значением переменной будет вычисленное содержимое тега. В последнем случае создается локальная область видимости.</td>
+		</tr>
+		<tr>
+			<td>context</td>
+			<td>true</td>
+			<td>JavaScript выражение.</td>
+			<td>нет</td>
+			<td>Устанавливает контекст для дочерних элементов, если не был указан атрибут value.</td>
+		</tr>
+	</tbody>
+</table>
+
+<b>Пример:</b>
+
+Код шаблона:
+
+	<?xml version="1.0" encoding="UTF-8"?>
+	<tsn:root>
+		<tsn:var name="firstData" value="this.firstData" />
+		<tsn:var name="secondData">
+			[start] <tsn:echo text="this.secondData" /> [end]
+		</tsn:var>
+
+		<div>
+			<tsn:echo text="firstData" />
+		</div>
+		<div>
+			<tsn:echo text="secondData" />
+		</div>
+	</tsn:root>
+
+Вызов:
+
+	template.call({
+		firstData: 'First data',
+		secondData: 'Second data'
+	});
+
+Результат:
+
+	<div>First data
+	</div>
+	<div>
+	[start] Second data [end]
+	</div>
