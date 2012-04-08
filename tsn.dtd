@@ -63,5 +63,5 @@
 <!ATTLIST tsn:include
 	name CDATA #IMPLIED
 	src CDATA #IMPLIED
-	context CDATA #IMPLIED
+	context CDATA "this"
 	>
