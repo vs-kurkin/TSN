@@ -150,10 +150,9 @@ this['for'] = {
 		'(function (_array) {' +
 			'var _length = _array.length;' +
 			'var _index = 0;' +
-			'var _item;' +
 			'while (_index < _length) {' +
-				'_item = _array[_index++];' +
 				'/*!code*/' +
+				'_index++;' +
 			'}' +
 		'}).call(/*!context*/, /*@array*/);'
 };
