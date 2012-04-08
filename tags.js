@@ -93,7 +93,7 @@ this['var'] = {
 				'}).call(/*!context*/, "");';
 		}
 	},
-	body: 'var/*@name*/ = /*@value*/;'
+	body: 'var /*@name*/ = /*@value*/;'
 };
 
 this['entity'] = {

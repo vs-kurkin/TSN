@@ -218,7 +218,7 @@ try {
 	var config = LIB.fileSystem.readFileSync(configPath, 'utf-8');
 
 	try {
-		config = JSON.parse(data);
+		config = JSON.parse(config);
 
 		for (var property in config) {
 			if (config.hasOwnProperty(property)) {
