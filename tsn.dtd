@@ -13,7 +13,7 @@
 
 <!ELEMENT tsn:echo EMPTY>
 <!ATTLIST tsn:echo
-	text CDATA "this" #IMPLIED
+	text CDATA "this"
 	type (json) #IMPLIED
 	escape (js|decAll|decHtml|hexAll|hexHtml|hexUrl|hexUrlAll) #IMPLIED
 	>
