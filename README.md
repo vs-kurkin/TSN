@@ -77,6 +77,8 @@ API обработки шаблонов находятся в пространс
 
 	var result = template.call(data);
 
+Более подробная информация по API находится здесь: https://github.com/B-Vladi/TSN/blob/dev/jsdoc/TSN.html.
+
 ###Теги.
 
 ####Comment
