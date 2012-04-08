@@ -244,15 +244,15 @@ API обработки шаблонов находятся в пространс
 	<tsn:root>
 		<tsn:var name="firstData" value="this.firstData" />
 		<tsn:var name="secondData">
-			[start] <tsn:echo text="this.secondData" /> [end]
+			<div>
+				<tsn:echo text="this.secondData" />
+			</div>
 		</tsn:var>
 
 		<div>
 			<tsn:echo text="firstData" />
 		</div>
-		<div>
-			<tsn:echo text="secondData" />
-		</div>
+		<tsn:echo text="secondData" />
 	</tsn:root>
 
 Вызов:
@@ -264,8 +264,7 @@ API обработки шаблонов находятся в пространс
 
 Результат:
 
-	<div>First data
-	</div>
-	<div>
-	[start] Second data [end]
-	</div>
+<div>First data
+</div>
+<div>Second data
+</div>
