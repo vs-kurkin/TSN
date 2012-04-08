@@ -7,6 +7,7 @@
 /**
  * @ignore
  */
+
 var LIB = {
 	fileSystem: require('fs'),
 	path: require('path'),
@@ -16,11 +17,72 @@ var LIB = {
 var Parser = require(LIB.path.join(__dirname, 'parser.js'));
 var nodeAPI = require(LIB.path.join(__dirname, 'tags.js'));
 
-var configPath = LIB.path.join(__dirname, 'config.json');
-var regExpBody = /\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi;
+/*
+* Event listeners
+* */
+Parser.prototype.onStart = function () {
+	var code;
+	this.current.code = '';
+
+	for (var nodeName in nodeAPI) {
+		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('init')) {
+			code = nodeAPI[nodeName].init(this);
+
+			if (typeof code == 'string') {
+				this.current.code += code;
+			}
+		}
+	}
+};
+
+Parser.prototype.onText = function (text, node) {
+	node.code += '__output += "' + text + '";';
+};
+
+Parser.prototype.onError = function (error) {
+	TSN.emit('error', error);
+};
+
+Parser.prototype.onOpen = function (node) {
+	if (nodeAPI.hasOwnProperty(node.name)) {
+		node.body = nodeAPI[node.name].body;
+		node.parse = nodeAPI[node.name].parse;
+		node.code = '';
+
+		if (node.isEmpty) {
+			var parseResult = typeof node.parse === 'function' ? node.parse(this) : true;
+
+			if (parseResult && parseResult.constructor === Error) {
+				this._error(parseResult.message, node);
+			} else {
+				node.parent.code += compileNode(node);
+			}
+		}
+	} else {
+		this._error(node.isEmpty ? 'Unknown empty tag.' : 'Unknown tag opening.', node);
+	}
+};
+
+Parser.prototype.onClose = function (node) {
+	if (nodeAPI.hasOwnProperty(node.name)) {
+		var parseResult = typeof node.parse === 'function' ? node.parse(this) : true;
+
+		if (parseResult && parseResult.constructor === Error) {
+			this._error(parseResult.message, node);
+		} else {
+			node.parent.code += compileNode(node);
+		}
+	} else {
+		this._error('Unknown tag closing.', node);
+	}
+};
+
+Parser.prototype.onEntity = function (node) {
+	node.parent.code += '__output += String(__entity.' + node.name + ');';
+};
 
 function compileNode(node) {
-	return node.body.replace(regExpBody, function (result, type, name) {
+	return node.body.replace(/\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi, function (result, type, name) {
 		switch (type) {
 			case '!':
 				switch (name) {
@@ -36,65 +98,6 @@ function compileNode(node) {
 	});
 }
 
-/*
-* Event listeners
-* */
-function onStart () {
-	this.current.code = '';
-
-	for (var nodeName in nodeAPI) {
-		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('init')) {
-			this.current.code += nodeAPI[nodeName].init();
-		}
-	}
-}
-
-function onText (node, text) {
-	node.code += '__output += "' + text + '";';
-}
-
-function onError (error) {
-	TSN.emit('error', error);
-}
-
-function onOpen (node) {
-	if (nodeAPI.hasOwnProperty(node.name)) {
-		node.body = nodeAPI[node.name].body;
-		node.parse = nodeAPI[node.name].parse;
-		node.code = '';
-
-		if (node.isEmpty) {
-			var parseResult = typeof node.parse === 'function' ? node.parse() : true;
-
-			if (parseResult && parseResult.constructor === Error) {
-				this._error(parseResult.message, node);
-			} else {
-				node.parent.code += compileNode(node);
-			}
-		}
-	} else {
-		this._error(node.isEmpty ? 'Unknown empty tag.' : 'Unknown tag opening.', node);
-	}
-}
-
-function onClose (node) {
-	if (nodeAPI.hasOwnProperty(node.name)) {
-		var parseResult = typeof node.parse === 'function' ? node.parse() : true;
-
-		if (parseResult && parseResult.constructor === Error) {
-			this._error(parseResult.message, node);
-		} else {
-			node.parent.code += compileNode(node);
-		}
-	} else {
-		this._error('Unknown tag closing.', node);
-	}
-}
-
-function onEntity (node) {
-	node.parent.code += '__output += String(__entity.' + node.name + ');';
-}
-
 /**
  * @name TSN
  * @namespace Templating System for NodeJS.
@@ -108,44 +111,27 @@ var TSN = new LIB.event.EventEmitter();
 TSN.cache = {};
 
 /**
- * Стандартные настройки шаблонизатора, загруженный из config.json.
+ * Стандартные настройки шаблонизатора, загруженные из config.json.
  */
-TSN.config = {};
+TSN.config = JSON.parse(LIB.fileSystem.readFileSync(LIB.path.join(__dirname, 'config.json'), 'utf-8'));
 
 /**
  * Компилирует файл шаблона по указанному пути.
  * @param {string} path Путь к файлу шаблона относительно <i>TSN.config.templateRoot</i>.
  * @param {string} [name] Имя шаблона, по которому он будет храниться в кеше. Если параметр не передан, в качестве имени будет использоваться абсолютный путь к шаблону.
  * @param {object} [config] Объект конфигурации шаблона.
- * @param {function} [callback] Функция, которая будет вызвана по окончании компиляции шаблона.
+ * @return {function} Скомпилированный шаблон.
  */
-TSN.load = function (path, name, config, callback) {
+TSN.load = function (path, name, config) {
 	config = new Config(config);
 
 	var fullPath = LIB.path.join(config.templateRoot, path);
-	var data;
 
 	if (TSN.cache.hasOwnProperty(fullPath)) {
 		return TSN.cache[fullPath];
 	}
 
-	try {
-		LIB.fileSystem.realpathSync(fullPath);
-	} catch (error) {
-		TSN.emit('error', error);
-		return;
-	}
-
-	try {
-		data = LIB.fileSystem.readFileSync(fullPath, config.encoding);
-	} catch (error) {
-		TSN.emit('error', error);
-		return;
-	}
-
-	TSN.compile(data, name || fullPath, config, callback);
-
-	return this;
+	return TSN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), name || fullPath, config);
 };
 
 /**
@@ -153,9 +139,9 @@ TSN.load = function (path, name, config, callback) {
  * @param {string} data Тело шаблона
  * @param {string} [name] Имя шаблона. Если имя не указано - шаблон не будет сохранен в кеше.
  * @param {object} [config] Объект конфигурации шаблона.
- * @param {function} [callback] Функция, которая будет вызвана по окончании компиляции шаблона.
+ * @return {function} Скомпилированный шаблон.
  */
-TSN.compile = function (data, name, config, callback) {
+TSN.compile = function (data, name, config) {
 	config = new Config(config);
 
 	if (TSN.cache.hasOwnProperty(name)) {
@@ -163,35 +149,19 @@ TSN.compile = function (data, name, config, callback) {
 	}
 
 	var parser = new Parser(config);
-
-	parser.once('start', onStart);
-	parser.once('end', function () {
-		var source = 'var __output=""; ' + this.root.code + '; return __output;';
-		var template = new Function (source);
-
-		template.source = source;
-
-		if (typeof name === 'string' && name !== '') {
-			template.name = name;
-			TSN.cache[name] = template;
-		}
-
-		if (typeof callback === 'function') {
-			callback.call(TSN, template);
-		}
-
-		TSN.emit('compiled', template);
-	});
-
-	parser.on('open', onOpen);
-	parser.on('close', onClose);
-	parser.on('text', onText);
-	parser.on('entity', onEntity);
-	parser.on('error', onError);
-
 	parser.parse(data);
 
-	return this;
+	var source = 'var __output=""; ' + parser.root.code + '; return __output;';
+	var template = new Function (source);
+
+	template.source = source;
+
+	if (typeof name === 'string' && name !== '') {
+		template.name = name;
+		TSN.cache[name] = template;
+	}
+
+	return template;
 };
 
 /**
@@ -214,44 +184,15 @@ function Config (options) {
 
 Config.prototype = TSN.config;
 
-try {
-	var config = LIB.fileSystem.readFileSync(configPath, 'utf-8');
-
-	try {
-		config = JSON.parse(config);
-
-		for (var property in config) {
-			if (config.hasOwnProperty(property)) {
-				TSN.config[property] = config[property];
-			}
-		}
-	} catch (e) {
-		e.message = 'Format error in configuration file "' + configPath + '"';
-		TSN.emit('error', e);
-	}
-} catch (e) {
-	e.message = 'Can not read configuration file "' + configPath + '"';
-	TSN.emit('error', e);
-}
-
 module.exports = TSN;
 
 /**
  * @event
  * @name TSN#error
- * @description Ошибка инициализации или парсинга шаблона.
+ * @description Ошибка парсинга шаблона.
  * @param {error} error Объект ошибки.
  * @param {string} error.message Текстовое сообщение ошибки.
  * @param {number} error.nodeName Имя тега, сгенерировавшего ошибку.
  * @param {number} error.line Номер строки, на которой находится тег, сгенерировавший ошибку.
  * @param {number} error.char Символ, с которого начинается тег, сгенерировавший ошибку.
- */
-
-/**
- * @event
- * @name TSN#compiled
- * @description Завершение компиляции шаблона.
- * @param {function} template Скомпилированный шаблон.
- * @param {string} [template.name] Имя шаблона.
- * @param {string} template.source Исходный код шаблона.
  */
