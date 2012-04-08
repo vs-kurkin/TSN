@@ -173,78 +173,48 @@ this['each'] = {
 		'}).call(/*!context*/, /*@object*/);'
 };
 
-/*
-(function (API) {
-	function Template() {
-	}
+function Template () {}
 
-	function init(instance) {
-		if (!instance.cache.hasOwnProperty('template')) {
-			Template.prototype = ('parent' in instance) ? instance.parent.cache.template : {};
-			instance.cache.template = new Template;
+this.template = {
+	parse: function (parser) {
+		if (this.attributes.hasOwnProperty('name')) {
+			parser._template[this.attributes.name] = '(function () {' + this.code + '}).call(/*!context*/);';
+		} else {
+			return new Error('Attribute "name" is not defined.');
+		}
+	},
+	body: ''
+};
+
+this.include = {
+	init: function (parser) {
+		var prototype = parser.constructor.prototype;
+
+		if (!prototype.hasOwnProperty('_template')) {
+			prototype._template = {};
+		}
+	},
+	parse: function (parser) {
+		var attributes = this.attributes;
+		var prototype;
+		var template;
+
+		if (attributes.hasOwnProperty('src')) {
+			prototype = parser.constructor.prototype;
+			Template.prototype = prototype._template;
+			prototype._template = new Template;
+			template = module.parent.exports.load(attributes.src);
+			prototype._template = Object.getPrototypeOf(prototype._template);
+
+			this.body = '__output += (function () {' + template.source + '}).call(/*!context*/);';
+		} else if (attributes.hasOwnProperty('name')) {
+			if (parser._template[attributes.name]) {
+				this.body = parser._template[attributes.name];
+			} else {
+				return new Error('Template with the name "' + attributes.name + '" is not defined.');
+			}
+		} else {
+			return new Error('Attribute "name" or "src" is not defined.');
 		}
 	}
-
-	API.template = {
-		parse: function (instance) {
-			var attribute = this.attribute;
-
-			if (attribute.hasOwnProperty('name')) {
-				if (typeof attribute.name == 'string') {
-					instance.cache.template[attribute.name] = this.children;
-					return '';
-				} else {
-					return new Error('Attribute "name" can not contain TSN-entity.');
-				}
-			} else {
-				return new Error('Attribute "name" is not defined.');
-			}
-		},
-		init: init
-	};
-
-	API.include = {
-		parse: function (instance) {
-			var attribute = this.attribute, parent;
-
-			if (attribute.hasOwnProperty('name')) {
-				var name = attribute.name;
-
-				if (typeof name != 'string') {
-					return new Error('Attribute "name" can not contain TSN-entity.');
-				}
-
-				if (instance.cache.template[name]) {
-					this.children = instance.cache.template[name];
-					delete this.input;
-					delete this.output;
-				} else {
-					return new Error('Template with the name "' + name + '" is not defined.')
-				}
-			} else if (attribute.hasOwnProperty('src')) {
-				if (typeof attribute.src != 'string') {
-					return new Error('Attribute "src" can not contain TSN-entity.');
-				}
-
-				parent = TSN.prototype.parent;
-				TSN.prototype.parent = instance;
-				this.template = new TSN(attribute.src);
-				this.children = this.template.children;
-				TSN.prototype.parent = parent;
-			} else {
-				return new Error('Attribute "name" or "src" is not defined.');
-			}
-		},
-		input: function (instance) {
-			this.cache = instance.cache;
-			instance.cache = {};
-		},
-		output: function (instance) {
-			instance.cache = this.cache;
-			delete this.cache;
-		},
-		entity: ['name', 'src'],
-		init: init
-	};
-
-})(this);*/
+};

@@ -5,7 +5,7 @@
 	<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
 	<meta name="generator" content="JsDoc Toolkit" />
 
-	<title>JsDoc Reference - TSN</title>
+	<title>TSN</title>
 
 	<style type="text/css">
 			/* default.css */
@@ -200,7 +200,7 @@
 		<td class="attributes">&nbsp;</td>
 		<td class="nameDescription">
 			<div class="fixedFont">
-				<b><a href="TSN.html#constructor">TSN</a></b>
+				<b><a href="#constructor">TSN</a></b>
 			</div>
 			<div class="description">Экземпляр конструктора <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
 			</div>
@@ -225,7 +225,7 @@
 		<td class="attributes">&lt;static&gt; &nbsp;</td>
 		<td class="nameDescription">
 			<div class="fixedFont">
-				TSN.<b><a href="TSN.html#.cache">cache</a></b>
+				TSN.<b><a href="#.cache">cache</a></b>
 			</div>
 			<div class="description">Кеш скомпилированных шаблонов.</div>
 		</td>
@@ -235,9 +235,9 @@
 		<td class="attributes">&lt;static&gt; &nbsp;</td>
 		<td class="nameDescription">
 			<div class="fixedFont">
-				TSN.<b><a href="TSN.html#.config">config</a></b>
+				TSN.<b><a href="#.config">config</a></b>
 			</div>
-			<div class="description">Стандартные настройки шаблонизатора, загруженный из config.json.</div>
+			<div class="description">Стандартные настройки шаблонизатора, загруженные из config.json.</div>
 		</td>
 	</tr>
 
@@ -259,7 +259,7 @@
 	<tr>
 		<td class="attributes">&lt;static&gt; &nbsp;</td>
 		<td class="nameDescription">
-			<div class="fixedFont">TSN.<b><a href="TSN.html#.compile">compile</a></b>(data, name, config, callback)
+			<div class="fixedFont">TSN.<b><a href="#.compile">compile</a></b>(data, name, config)
 			</div>
 			<div class="description">Компилирует код шаблона, переданного параметром data.</div>
 		</td>
@@ -268,7 +268,7 @@
 	<tr>
 		<td class="attributes">&lt;static&gt; &nbsp;</td>
 		<td class="nameDescription">
-			<div class="fixedFont">TSN.<b><a href="TSN.html#.load">load</a></b>(path, name, config, callback)
+			<div class="fixedFont">TSN.<b><a href="#.load">load</a></b>(path, name, config)
 			</div>
 			<div class="description">Компилирует файл шаблона по указанному пути.</div>
 		</td>
@@ -277,7 +277,7 @@
 	<tr>
 		<td class="attributes">&lt;static&gt; &nbsp;</td>
 		<td class="nameDescription">
-			<div class="fixedFont">TSN.<b><a href="TSN.html#.render">render</a></b>(template, data)
+			<div class="fixedFont">TSN.<b><a href="#.render">render</a></b>(template, data)
 			</div>
 			<div class="description">Рендеринг шаблона на основе переданных данных.</div>
 		</td>
@@ -301,18 +301,9 @@
 	<tr>
 		<td class="attributes">&nbsp;</td>
 		<td class="nameDescription">
-			<div class="fixedFont"><b><a href="TSN.html#event:compiled">compiled</a></b>(template)
+			<div class="fixedFont"><b><a href="#event:error">error</a></b>(error)
 			</div>
-			<div class="description">Завершение компиляции шаблона.</div>
-		</td>
-	</tr>
-
-	<tr>
-		<td class="attributes">&nbsp;</td>
-		<td class="nameDescription">
-			<div class="fixedFont"><b><a href="TSN.html#event:error">error</a></b>(error)
-			</div>
-			<div class="description">Ошибка инициализации или парсинга шаблона.</div>
+			<div class="description">Ошибка парсинга шаблона.</div>
 		</td>
 	</tr>
 
@@ -366,7 +357,7 @@
 
 </div>
 <div class="description">
-	Стандартные настройки шаблонизатора, загруженный из config.json.
+	Стандартные настройки шаблонизатора, загруженные из config.json.
 
 </div>
 
@@ -380,7 +371,7 @@
 
 <div class="fixedFont">&lt;static&gt;
 
-	<span class="light">TSN.</span><b>compile</b>(data, name, config, callback)
+	<span class="light">{function}</span> <span class="light">TSN.</span><b>compile</b>(data, name, config)
 
 </div>
 <div class="description">
@@ -407,10 +398,12 @@
 	</dt>
 	<dd>Объект конфигурации шаблона.</dd>
 
-	<dt>
-		<span class="light fixedFont">{function}</span> <b>callback</b> <i>Optional</i>
-	</dt>
-	<dd>Функция, которая будет вызвана по окончании компиляции шаблона.</dd>
+</dl>
+
+<dl class="detailList">
+	<dt class="heading">Returns:</dt>
+
+	<dd><span class="light fixedFont">{function}</span> Скомпилированный шаблон.</dd>
 
 </dl>
 
@@ -420,7 +413,7 @@
 
 <div class="fixedFont">&lt;static&gt;
 
-	<span class="light">TSN.</span><b>load</b>(path, name, config, callback)
+	<span class="light">{function}</span> <span class="light">TSN.</span><b>load</b>(path, name, config)
 
 </div>
 <div class="description">
@@ -447,10 +440,12 @@
 	</dt>
 	<dd>Объект конфигурации шаблона.</dd>
 
-	<dt>
-		<span class="light fixedFont">{function}</span> <b>callback</b> <i>Optional</i>
-	</dt>
-	<dd>Функция, которая будет вызвана по окончании компиляции шаблона.</dd>
+</dl>
+
+<dl class="detailList">
+	<dt class="heading">Returns:</dt>
+
+	<dd><span class="light fixedFont">{function}</span> Скомпилированный шаблон.</dd>
 
 </dl>
 
@@ -498,42 +493,6 @@
 	Event Detail
 </div>
 
-<a name="event:compiled"> </a>
-
-<div class="fixedFont">
-
-	<b>compiled</b>(template)
-
-</div>
-<div class="description">
-	Завершение компиляции шаблона.
-
-</div>
-
-<dl class="detailList">
-	<dt class="heading">Parameters:</dt>
-
-	<dt>
-		<span class="light fixedFont">{function}</span> <b>template</b>
-
-	</dt>
-	<dd>Скомпилированный шаблон.</dd>
-
-	<dt>
-		<span class="light fixedFont">{string}</span> <b>template.name</b> <i>Optional</i>
-	</dt>
-	<dd>Имя шаблона.</dd>
-
-	<dt>
-		<span class="light fixedFont">{string}</span> <b>template.source</b>
-
-	</dt>
-	<dd>Исходный код шаблона.</dd>
-
-</dl>
-
-<hr />
-
 <a name="event:error"> </a>
 
 <div class="fixedFont">
@@ -542,7 +501,7 @@
 
 </div>
 <div class="description">
-	Ошибка инициализации или парсинга шаблона.
+	Ошибка парсинга шаблона.
 
 </div>
 
@@ -588,7 +547,7 @@
 <div class="fineprint" style="clear:both">
 
 	Documentation generated by
-	<a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Sun Apr 08 2012 15:41:12 GMT+0400 (MSD)
+	<a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Sun Apr 08 2012 22:38:03 GMT+0400 (MSD)
 </div>
 </body>
 </html>

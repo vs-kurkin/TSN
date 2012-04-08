@@ -3,14 +3,11 @@
  * @author <a href="mailto:b-vladi@cs-console.ru">Влад Куркин</a>
  * @version 1.2.0 beta
  */
-
-var events = require('events');
-
 var regExpAttr = /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:(?:\\)?"([^"]*?)(?:\\)?")|(?:(?:\\)?'([^']*?)(?:\\)?')))?/gi;
 var regExpXML = /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*(<!DOCTYPE\s+[a-z\-_]+(?::[a-z\-_]+)?(?:\s+PUBLIC\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:\[[\s\S]*?\])?)?\s*>)?/i;
 
 /**
- * Парсер TSN-шаблона. Экземпляры наследуют от <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
+ * Парсер TSN-шаблона.
  * @param {object} config Объект конфигурации шаблона.
  * @constructor
  */
@@ -21,19 +18,19 @@ function Parser (config) {
 	var cdata = config.parseCDATA === true ? '' : '|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)';
 
 	if (!(config.namespace && (/[a-z\d\-_]+/i).test(config.namespace))) {
-		this.emit('error', new Error('Invalid namespace.'));
+		this.onError(new Error('Invalid namespace.'));
 		config.namespace = 'tsn';
 	}
 
 	if (typeof config.tabSize !== 'number' || config.tabSize < 1) {
-		this.emit('error', new Error('Invalid tab size.'));
+		this.onError(new Error('Invalid tab size.'));
 		config.tabSize = 2;
 	} else {
 		config.tabSize = Number(config.tabSize.toFixed(0));
 	}
 
 	if (typeof config.indent !== 'number' || config.indent < 1) {
-		this.emit('error', new Error('Invalid indent.'));
+		this.onError(new Error('Invalid indent.'));
 		config.indent = 2;
 	} else {
 		config.indent = Number(config.indent.toFixed(0));
@@ -51,8 +48,6 @@ function Parser (config) {
 	 */
 	this.regExp = new RegExp('(?:' + entity + ')|(' + comment + ')' + cdata + '|(?:' + space + '<\\/\\s*' + config.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + space + '<\\s*' + config.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>)', 'gi');
 }
-
-Parser.prototype = new events.EventEmitter();
 
 /**
  * Парсинг шаблона.
@@ -109,7 +104,7 @@ Parser.prototype.parse = function (content) {
 	 */
 	this.root = this.current;
 
-	this.emit('start');
+	this.onStart();
 
 	while (parseResult = this.regExp.exec(content)) {
 		var result = parseResult[0];
@@ -124,11 +119,11 @@ Parser.prototype.parse = function (content) {
 		text = content.substring(lastIndex, index);
 
 		if (text) {
-			this.emit('text', this.current, this._fixText(text));
+			this.onText(this._fixText(text), this.current);
 		}
 
 		if (entity) {
-			this.emit('entity', {
+			this.onEntity({
 				index: index,
 				source: result,
 				parent: this.current,
@@ -148,7 +143,7 @@ Parser.prototype.parse = function (content) {
 				newNode.attributes[attribute[1]] = attribute[2] || attribute[3];
 			}
 
-			this.emit('open', newNode);
+			this.onOpen(newNode);
 
 			if (!isEmpty) {
 				this.depth++;
@@ -160,7 +155,7 @@ Parser.prototype.parse = function (content) {
 			closeNodeName = closeNodeName.toLowerCase();
 
 			if (this.current.name === closeNodeName) {
-				this.emit('close', this.current);
+				this.onClose(this.current);
 				this.depth--;
 				this.current = parent;
 			} else if (parent && closeNodeName === parent.name) {
@@ -176,10 +171,10 @@ Parser.prototype.parse = function (content) {
 			}
 		} else if (comment) {
 			if (this.config.saveComments === true) {
-				this.emit('text', this.current, this._fixText(result));
+				this.onText(this._fixText(result), this.current);
 			}
 		} else { // CDATA
-			this.emit('text', this.current, this._fixText(result));
+			this.onText(this._fixText(result), this.current);
 		}
 
 		lastIndex = index + result.length;
@@ -188,7 +183,7 @@ Parser.prototype.parse = function (content) {
 	text = content.substring(lastIndex);
 
 	if (text) {
-		this.emit('text', this.current, this._fixText(text));
+		this.onText(this._fixText(text), this.current);
 	}
 
 	if (this.depth) {
@@ -199,7 +194,7 @@ Parser.prototype.parse = function (content) {
 		} while (this.current = this.current.parent);
 	}
 
-	this.emit('end');
+	return this;
 };
 
 /**
@@ -243,74 +238,7 @@ Parser.prototype._error = function (message, node) {
 	error.line = content.split(/(?:\r\n)|\r|\n/).length;
 	error.char = content.substring(Math.max(content.lastIndexOf('\n'), content.lastIndexOf('\r'))).lastIndexOf(node.source.replace(/^\s+/, ''));
 
-	this.emit('error', error);
+	this.onError(error);
 };
 
 module.exports = Parser;
-
-/**
- * @event
- * @name Parser#start
- * @description Начало парсинга шаблона.
- */
-
-/**
- * @event
- * @name Parser#end
- * @description Завершение парсинга шаблона.
- */
-
-/**
- * @event
- * @name Parser#open
- * @description Найден открывающийся тег.
- * @param {object} node Объект найденного тега.
- * @param {number} node.index Номер символа, с которого был найден тег.
- * @param {string} node.source Исходный код тега.
- * @param {string} node.name Имя тега.
- * @param {boolean} node.isEmpty Флаг, указывающий на то, что тег одиночный.
- * @param {object} node.parent Ссылка на объект родительского тега.
- * @param {object} node.attributes Объект атрибутов тега.
- */
-
-/**
- * @event
- * @name Parser#close
- * @description Найден закрывающийся тег.
- * @param {object} node Объект тега, который был закрыт.
- * @param {number} node.index Номер символа, с которого был найден тег.
- * @param {string} node.source Исходный код тега.
- * @param {string} node.name Имя тега.
- * @param {boolean} node.isEmpty Флаг, указывающий на то, что тег одиночный.
- * @param {object} node.parent Ссылка на объект родительского тега.
- * @param {object} node.attributes Объект атрибутов тега.
- */
-
-/**
- * @event
- * @name Parser#text
- * @description Найдены текстовые данные (текст, CDATA, комментарий).
- * @param {string} text Тектовые данные.
- */
-
-/**
- * @event
- * @name Parser#entity
- * @description Найдена TSN-сущность.
- * @param {object} node Объект сущности.
- * @param {number} node.index Номер символа, с которого был найден тег.
- * @param {string} node.source Исходный код тега.
- * @param {object} node.parent Ссылка на объект родительского тега.
- * @param {string} node.name Имя TSN-сущности.
- */
-
-/**
- * @event
- * @name Parser#error
- * @description Ошибка парсинга шаблона.
- * @param {error} error Объект ошибки.
- * @param {string} error.message Текстовое сообщение ошибки.
- * @param {number} error.nodeName Имя тега, сгенерировавшего ошибку.
- * @param {number} error.line Номер строки, на которой находится тег, сгенерировавший ошибку.
- * @param {number} error.char Символ, с которого начинается тег, сгенерировавший ошибку.
- */

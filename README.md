@@ -32,34 +32,19 @@ API обработки шаблонов находятся в пространс
 ###Компиляция шаблона.
 Компиляция из файла:
 
-	TSN.load('path/to/template.xml'); // Компиляция относительно TSN.config.templateRoot.
-
-Компиляция шаблона с использованием собственных настроек. Параметры, которые не были указаны в этом объекте, будут унаследованы от `TSN.config`.
-
-	TSN.load('path/to/template.xml', null, {
-		templateRoot: 'path/to/new/template/root'
-	});
-
-Использование callback-функции:
-
-	TSN.load('path/to/template.xml', null, null, function (template) {
-		console.log(template.name === require('path').join(TSN.config.templateRoot, 'path/to/template.xml')); // true
-	});
+	var template = TSN.load('path/to/template.xml'); // Компиляция относительно TSN.config.templateRoot.
 
 Использование имени шаблона:
 
-	TSN.load('path/to/template.xml', 'My name', null, function (template) {
-		console.log(template.name === 'My name'); // true
-		console.log(this.cache['My name'] === template); // true
+	var template = TSN.load('path/to/template.xml', 'My name');
+	console.log(template.name === 'My name'); // true
+	console.log(this.cache['My name'] === template); // true
+
+Компиляция шаблона с использованием собственных настроек. Параметры, которые не были указаны в этом объекте, будут унаследованы от `TSN.config`.
+
+	var template = TSN.load('path/to/template.xml', null, {
+		templateRoot: 'path/to/new/template/root'
 	});
-
-Использование события compiled:
-
-	TSN
-		.once('compiled', function (template) {
-			console.log(template); // [Function]
-		})
-		.load('path/to/template.xml');
 
 Компиляция шаблона из данных:
 
@@ -612,3 +597,67 @@ API обработки шаблонов находятся в пространс
 Результат:
 
 	123
+
+####Template
+Регистрирует inline-шаблон.
+
+<b>Атрибуты:</b>
+<table>
+	<thead>
+		<tr>
+			<th>Имя</th>
+			<th>Значение по-умолчанию</th>
+			<th>Варианты значений</th>
+			<th>Обязательный</th>
+			<th>Описание</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>name</td>
+			<td></td>
+			<td></td>
+			<td>да</td>
+			<td>Имя шаблона.</td>
+		</tr>
+	</tbody>
+</table>
+
+####Include
+Вставляет код шаблона на своё место. Создает локальнюу область видимости. Одиночный тег.
+
+<b>Атрибуты:</b>
+<table>
+	<thead>
+		<tr>
+			<th>Имя</th>
+			<th>Значение по-умолчанию</th>
+			<th>Варианты значений</th>
+			<th>Обязательный</th>
+			<th>Описание</th>
+		</tr>
+	</thead>
+	<tbody>
+		<tr>
+			<td>name</td>
+			<td></td>
+			<td></td>
+			<td>нет</td>
+			<td>Имя inline-шаблона.</td>
+		</tr>
+		<tr>
+			<td>src</td>
+			<td></td>
+			<td>Путь.</td>
+			<td>нет</td>
+			<td>Путь к файлу шаблона относительно базовой дирректории текущего шаблона. Подключаемый шаблон наследует inline-шаблоны и перемнные из родительских шаблонов.</td>
+		</tr>
+		<tr>
+			<td>context</td>
+			<td>this</td>
+			<td>JavaScript выражение.</td>
+			<td>нет</td>
+			<td>Устанавливает контекст для дочерних элементов.</td>
+		</tr>
+	</tbody>
+</table>
