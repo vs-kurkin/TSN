@@ -162,17 +162,17 @@ API обработки шаблонов находятся в пространс
 
 Результат:
 
-		<div>'Stiff Opposition Expected to
-		Casketless Funeral Plan'
-		</div>
-		<div>&#39;Stiff&#32;Opposition&#32;Expected&#32;to&#32;&#10;Casketless&#32;Funeral&#32;Plan&#39;
-		</div>
-		<div>{"string":"'Stiff Opposition Expected to \nCasketless Funeral Plan'","array":[1,2,3]}
-		</div>
-		<script>
-			var data = '\'Stiff Opposition Expected to \
-		Casketless Funeral Plan\'';
-		</script>
+	<div>'Stiff Opposition Expected to
+	Casketless Funeral Plan'
+	</div>
+	<div>&#39;Stiff&#32;Opposition&#32;Expected&#32;to&#32;&#10;Casketless&#32;Funeral&#32;Plan&#39;
+	</div>
+	<div>{"string":"'Stiff Opposition Expected to \nCasketless Funeral Plan'","array":[1,2,3]}
+	</div>
+	<script>
+		var data = '\'Stiff Opposition Expected to \
+	Casketless Funeral Plan\'';
+	</script>
 
 ####Root
 Вспомогательный тег для использования в XML-файлах в качестве корневого.
