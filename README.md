@@ -264,7 +264,7 @@ API обработки шаблонов находятся в пространс
 
 Результат:
 
-<div>First data
-</div>
-<div>Second data
-</div>
+	<div>First data
+	</div>
+	<div>Second data
+	</div>
