@@ -33,11 +33,12 @@ Parser.prototype.onStart = function () {
 };
 
 Parser.prototype.onText = function (text, node) {
-	if (this.addedText == true) {
-		node.code += ' + "' + text + '"';
-	} else {
-		node.code += '__output += "' + text + '"';
-	}
+	node.code += (this.addedText == true ? ' + ' : '__output += ') + '"' + text + '"';
+	this.addedText = true;
+};
+
+Parser.prototype.onEntity = function (node) {
+	node.code += ((this.addedText == true ? ' + ' : '') + '__entity.') + node.name;
 	this.addedText = true;
 };
 
@@ -77,15 +78,6 @@ Parser.prototype.onClose = function (node) {
 	} else {
 		this._error('Unknown tag closing.', node);
 	}
-};
-
-Parser.prototype.onEntity = function (node) {
-	if (this.addedText == true) {
-		node.code +=  ' + __entity.' + node.name;
-	} else {
-		node.code += '__entity.' + node.name;
-	}
-	this.addedText = true;
 };
 
 function compileNode(node, parser) {
