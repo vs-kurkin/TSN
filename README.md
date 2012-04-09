@@ -38,7 +38,7 @@ API обработки шаблонов находятся в пространс
 
 	var template = TSN.load('path/to/template.xml', 'My name');
 	console.log(template.name === 'My name'); // true
-	console.log(this.cache['My name'] === template); // true
+	console.log(TSN.cache['My name'] === template); // true
 
 Компиляция шаблона с использованием собственных настроек. Параметры, которые не были указаны в этом объекте, будут унаследованы от `TSN.config`.
 
