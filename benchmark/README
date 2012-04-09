@@ -1,0 +1,11 @@
+Тест аналогичен: https://github.com/vflash/FestLB
+
+С JSON-парсингом:
+fps 26455.026455026455
+time: 0.0378mc
+full time:0.378sec
+
+Без парсинга:
+fps 227272.7272727273
+time: 0.0044mc
+full time:0.044sec
