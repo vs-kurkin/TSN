@@ -28,6 +28,8 @@
                     <tsn:for array="this.adverts">
                         <tsn:var name="item"
                                  value="_array[_index]" />
+                        <tsn:entity name="href"
+                                    value="item.url" />
                         <td valign="top"
                             width="200">
                             <table bgcolor="#000000"
@@ -48,8 +50,6 @@
                                     <tr>
                                         <td bgcolor="#ffffff">
                                             <small>
-                                                <tsn:entity name="href"
-                                                            value="item.url" />
                                                 <a href="&TSN.href;">
                                                     <tsn:echo text="item.text" />
                                                 </a>
@@ -122,6 +122,8 @@
                         <tsn:for array="this.news">
                             <tsn:var name="item"
                                      value="_array[_index]" />
+                            <tsn:entity name="href"
+                                        value="'http://lb/news.html?id=' + item.id" />
                             <b>
                                 <tsn:echo text="item.time + ' ' + item.title" />
                             </b>
@@ -129,8 +131,6 @@
 
                             <small>
                                 <tsn:echo text="item.text" />
-                                <tsn:entity name="href"
-                                            value="'http://lb/news.html?id=' + item.id" />
                                 <a href="&TSN.href;">
                                     [ read full story ]
                                 </a>
