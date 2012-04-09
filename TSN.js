@@ -38,7 +38,7 @@ Parser.prototype.onText = function (text, node) {
 };
 
 Parser.prototype.onEntity = function (node) {
-	node.code += ((this.addedText == true ? ' + ' : '') + '__entity.') + node.name;
+	node.parent.code += (this.addedText == true ? ' + ' : '') + '__entity.' + node.name;
 	this.addedText = true;
 };
 

@@ -122,7 +122,6 @@ Parser.prototype.parse = function (content) {
 			this.onText(this._fixText(text), this.current);
 		}
 
-		delete this.addedText;
 		if (entity) {
 			this.onEntity({
 				index: index,
@@ -144,6 +143,7 @@ Parser.prototype.parse = function (content) {
 				newNode.attributes[attribute[1]] = attribute[2] || attribute[3];
 			}
 
+			delete this.addedText;
 			this.onOpen(newNode);
 
 			if (!isEmpty) {
@@ -156,6 +156,7 @@ Parser.prototype.parse = function (content) {
 			closeNodeName = closeNodeName.toLowerCase();
 
 			if (this.current.name === closeNodeName) {
+				delete this.addedText;
 				this.onClose(this.current);
 				this.depth--;
 				this.current = parent;
