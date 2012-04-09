@@ -17,9 +17,6 @@ var LIB = {
 var Parser = require(LIB.path.join(__dirname, 'parser.js'));
 var nodeAPI = require(LIB.path.join(__dirname, 'tags.js'));
 
-/*
-* Event listeners
-* */
 Parser.prototype.onStart = function () {
 	var code;
 	this.current.code = '';
@@ -36,7 +33,12 @@ Parser.prototype.onStart = function () {
 };
 
 Parser.prototype.onText = function (text, node) {
-	node.code += '__output += "' + text + '";';
+	if (this.addedText == true) {
+		node.code += ' + "' + text + '"';
+	} else {
+		node.code += '__output += "' + text + '"';
+	}
+	this.addedText = true;
 };
 
 Parser.prototype.onError = function (error) {
@@ -47,7 +49,7 @@ Parser.prototype.onOpen = function (node) {
 	if (nodeAPI.hasOwnProperty(node.name)) {
 		node.body = nodeAPI[node.name].body;
 		node.parse = nodeAPI[node.name].parse;
-		node.code = '';
+		node.code = ';';
 
 		if (node.isEmpty) {
 			var parseResult = typeof node.parse === 'function' ? node.parse(this) : true;
@@ -55,7 +57,7 @@ Parser.prototype.onOpen = function (node) {
 			if (parseResult && parseResult.constructor === Error) {
 				this._error(parseResult.message, node);
 			} else {
-				node.parent.code += compileNode(node);
+				node.parent.code += compileNode(node, this);
 			}
 		}
 	} else {
@@ -70,7 +72,7 @@ Parser.prototype.onClose = function (node) {
 		if (parseResult && parseResult.constructor === Error) {
 			this._error(parseResult.message, node);
 		} else {
-			node.parent.code += compileNode(node);
+			node.parent.code += compileNode(node, this);
 		}
 	} else {
 		this._error('Unknown tag closing.', node);
@@ -78,15 +80,24 @@ Parser.prototype.onClose = function (node) {
 };
 
 Parser.prototype.onEntity = function (node) {
-	node.parent.code += '__output += String(__entity.' + node.name + ');';
+	if (this.addedText == true) {
+		node.code +=  ' + __entity.' + node.name;
+	} else {
+		node.code += '__entity.' + node.name;
+	}
+	this.addedText = true;
 };
 
-function compileNode(node) {
-	return node.body.replace(/\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi, function (result, type, name) {
+function compileNode(node, parser) {
+	return (parser.addedText === true? '' : ';') + node.body.replace(/\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi, function (result, type, name) {
 		switch (type) {
 			case '!':
 				switch (name) {
 					case 'code':
+						if (parser.addedText !== true) {
+							node.code += ';';
+						}
+
 						return node.code;
 					case 'context':
 						return node.attributes.hasOwnProperty('context') ? node.attributes.context : 'this';
@@ -183,6 +194,7 @@ function Config (options) {
 }
 
 Config.prototype = TSN.config;
+Config.prototype.constructor = Config;
 
 module.exports = TSN;
 

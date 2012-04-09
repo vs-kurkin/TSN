@@ -122,6 +122,7 @@ Parser.prototype.parse = function (content) {
 			this.onText(this._fixText(text), this.current);
 		}
 
+		delete this.addedText;
 		if (entity) {
 			this.onEntity({
 				index: index,
@@ -210,7 +211,7 @@ Parser.prototype._fixText = function (text) {
 		tabSize = this.depth * (this.config.indent / this.config.tabSize);
 		spaceSize = this.depth * this.config.indent;
 
-		text = text.replace(new RegExp('((?:\\r\\n)|\\r|\\n)[\\t]{' + tabSize + '}|[ ]{' + spaceSize + '}', 'g'), '$1');
+		text = text.replace(new RegExp('((?:\\r\\n)|\\r|\\n)[\\t]{,' + tabSize + '}|[ ]{,' + spaceSize + '}', 'g'), '$1');
 	}
 
 	return text

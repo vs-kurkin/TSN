@@ -60,7 +60,7 @@ this.echo = (function () {
 	};
 
 	return {
-		parse: function () {
+		parse: function (parser) {
 			var attributes = this.attributes;
 			var text = attributes.hasOwnProperty('text') ? attributes.text : 'this';
 
@@ -72,7 +72,8 @@ this.echo = (function () {
 				text = escape[attributes.escape].replace('/*text*/', text);
 			}
 
-			this.body = '__output += (' + text + ');';
+			parser.addedText = true;
+			this.body = ' + (' + text + ')';
 		}
 	};
 })();
@@ -89,7 +90,7 @@ this['var'] = {
 			this.body = '' +
 				'var /*@name*/ = (function (__output) {' +
 					'/*!code*/' +
-					';return __output;' +
+					'return __output;' +
 				'}).call(/*!context*/, "");';
 		}
 	},
@@ -109,7 +110,7 @@ this['entity'] = {
 			this.body = '' +
 				'__entity./*@name*/ = (function (__output) {' +
 					'/*!code*/' +
-					';return __output;' +
+					'return __output;' +
 				'}).call(/*!context*/, "");';
 		}
 	},
@@ -178,7 +179,10 @@ function Template () {}
 this.template = {
 	parse: function (parser) {
 		if (this.attributes.hasOwnProperty('name')) {
-			parser._template[this.attributes.name] = '(function () {' + this.code + '}).call(/*!context*/);';
+			parser._template[this.attributes.name] = '' +
+				'(function () {' +
+					this.code +
+				'}).call(/*!context*/);';
 		} else {
 			return new Error('Attribute "name" is not defined.');
 		}
@@ -206,7 +210,8 @@ this.include = {
 			template = module.parent.exports.load(attributes.src);
 			prototype._template = Object.getPrototypeOf(prototype._template);
 
-			this.body = '__output += (function () {' + template.source + '}).call(/*!context*/);';
+			parser.addedText = true;
+			this.body = ' + (function () {' + template.source + '}).call(/*!context*/)';
 		} else if (attributes.hasOwnProperty('name')) {
 			if (parser._template[attributes.name]) {
 				this.body = parser._template[attributes.name];
