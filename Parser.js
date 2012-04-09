@@ -217,7 +217,7 @@ Parser.prototype._fixText = function (text) {
 
 	return text
 		.replace(/\\/g, '\\\\')
-		.replace(/(["'\t])/g, '\\$1')
+		.replace(/("|')/g, '\\$1')
 		.replace(/\r\n/g, '\\n')
 		.replace(/\r/g, '\\r')
 		.replace(/\n/g, '\\n')

@@ -51,10 +51,10 @@ this.echo = (function () {
 
 	var escape = {
 		js: '(/*text*/).replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
-		decAll: '(/*text*/).replace(' + regExpAll + ', ' + getDec + ')',
-		decHtml: '(/*text*/).replace(' + regExpHTML + ', ' + getDec + ')',
-		hexAll: '(/*text*/).replace(' + regExpAll + ', ' + getHex + ')',
-		hexHtml: '(/*text*/).replace(' + regExpHTML + ', ' + getHex + ')',
+		decAll: 'String(/*text*/).replace(' + regExpAll + ', ' + getDec + ')',
+		decHtml: 'String(/*text*/).replace(' + regExpHTML + ', ' + getDec + ')',
+		hexAll: 'String(/*text*/).replace(' + regExpAll + ', ' + getHex + ')',
+		hexHtml: 'String(/*text*/).replace(' + regExpHTML + ', ' + getHex + ')',
 		hexUrl: 'encodeURI(/*text*/)',
 		hexUrlAll: 'encodeURIComponent(/*text*/)'
 	};

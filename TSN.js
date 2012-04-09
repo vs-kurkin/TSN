@@ -14,7 +14,7 @@ var LIB = {
 	event: require('events')
 };
 
-var Parser = require(LIB.path.join(__dirname, 'parser.js'));
+var Parser = require(LIB.path.join(__dirname, 'Parser.js'));
 var nodeAPI = require(LIB.path.join(__dirname, 'tags.js'));
 
 Parser.prototype.onStart = function () {
