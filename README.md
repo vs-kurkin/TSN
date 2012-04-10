@@ -38,19 +38,25 @@ var template = TSN.load('path/to/template.xml'); // Компиляция отн�
 
 Использование имени шаблона:
 
-	var template = TSN.load('path/to/template.xml', 'My name');
-	console.log(template.name === 'My name'); // true
-	console.log(TSN.cache['My name'] === template); // true
+```js
+var template = TSN.load('path/to/template.xml', 'My name');
+console.log(template.name === 'My name'); // true
+console.log(TSN.cache['My name'] === template); // true
+```
 
 Компиляция шаблона с использованием собственных настроек. Параметры, которые не были указаны в этом объекте, будут унаследованы от `TSN.config`.
 
-	var template = TSN.load('path/to/template.xml', null, {
-		templateRoot: 'path/to/new/template/root'
-	});
+```js
+var template = TSN.load('path/to/template.xml', null, {
+	templateRoot: 'path/to/new/template/root'
+});
+```
 
 Компиляция шаблона из данных:
 
-	TSN.compile('<tsn:root xmlns:tsn="TSN">Text data</tsn:root>');
+```js
+TSN.compile('<tsn:root xmlns:tsn="TSN">Text data</tsn:root>');
+```
 
 Остальные аргументы аналогичны TSN.load.
 
@@ -58,11 +64,15 @@ var template = TSN.load('path/to/template.xml'); // Компиляция отн�
 
 С использованием API:
 
-	var result = TSN.render(template, data);
+```js
+var result = TSN.render(template, data);
+```
 
 Без использования:
 
-	var result = template.call(data);
+```js
+var result = template.call(data);
+```
 
 Более подробная информация по API находится здесь: https://github.com/B-Vladi/TSN/blob/dev/jsdoc/TSN.html.
 
@@ -145,10 +155,12 @@ var template = TSN.load('path/to/template.xml'); // Компиляция отн�
 
 Вызов:
 
-	template.call({
-		string: '\'Stiff Opposition Expected to \nCasketless Funeral Plan\'',
-		array: [1, 2, 3]
-	});
+```js
+template.call({
+	string: '\'Stiff Opposition Expected to \nCasketless Funeral Plan\'',
+	array: [1, 2, 3]
+});
+```
 
 Результат:
 
@@ -217,12 +229,14 @@ Casketless Funeral Plan\'';
 
 Вызов:
 
-	template.call({
-	 contextRoot: {
-		 first: 'First data',
-		 second: 'Second data'
-	 }
-	});
+```js
+template.call({
+ contextRoot: {
+	 first: 'First data',
+	 second: 'Second data'
+ }
+});
+```
 
 Результат:
 
@@ -273,9 +287,11 @@ Casketless Funeral Plan\'';
 
 Вызов:
 
-	template.call({
-		 context: 'Context data'
-	});
+```js
+template.call({
+	 context: 'Context data'
+});
+```
 
 Результат:
 
@@ -345,10 +361,12 @@ Casketless Funeral Plan\'';
 
 Вызов:
 
+```js
 	template.call({
 		firstData: 'First data',
 		secondData: 'Second data'
 	});
+```
 
 Результат:
 
@@ -417,9 +435,11 @@ Casketless Funeral Plan\'';
 
 Вызов:
 
-	template.call({
-		className: 'active'
-	});
+```js
+template.call({
+	className: 'active'
+});
+```
 
 Результат:
 
@@ -465,7 +485,9 @@ Casketless Funeral Plan\'';
 
 Вызов:
 
-	template.call(1);
+```js
+template.call(1);
+```
 
 Результат:
 
@@ -509,7 +531,9 @@ Casketless Funeral Plan\'';
 
 Вызов:
 
-	template.call();
+```js
+template.call();
+```
 
 Результат:
 
@@ -564,7 +588,9 @@ Casketless Funeral Plan\'';
 
 Вызов:
 
-	template.call(['a', 'b', 'c']);
+```js
+template.call(['a', 'b', 'c']);
+```
 
 Результат:
 
@@ -618,11 +644,13 @@ Casketless Funeral Plan\'';
 
 Вызов:
 
-	template.call({
-		a: '1',
-		b: '2',
-		c: '3'
-	});
+```js
+template.call({
+	a: '1',
+	b: '2',
+	c: '3'
+});
+```
 
 Результат:
 
@@ -728,7 +756,9 @@ Casketless Funeral Plan\'';
 
 Вызов:
 
-	template.call('Parent data.');
+```js
+template.call('Parent data.');
+```
 
 Результат:
 
