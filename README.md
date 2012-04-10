@@ -32,7 +32,9 @@ API обработки шаблонов находятся в пространс
 ###Компиляция шаблона.
 Компиляция из файла:
 
-	var template = TSN.load('path/to/template.xml'); // Компиляция относительно TSN.config.templateRoot.
+```js
+var template = TSN.load('path/to/template.xml'); // Компиляция относительно TSN.config.templateRoot.
+```
 
 Использование имени шаблона:
 
