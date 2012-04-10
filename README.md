@@ -123,21 +123,23 @@ API обработки шаблонов находятся в пространс
 
 Код шаблона:
 
-	<?xml version="1.0" encoding="UTF-8"?>
-	<tsn:root xmlns:tsn="TSN">
-		<div>
-			<tsn:echo text="this.string" />
-		</div>
-		<div>
-			<tsn:echo text="this.string" escape="decAll" />
-		</div>
-		<div>
-			<tsn:echo type="json" />
-		</div>
-		<script>
-			var data = '<tsn:echo text="this.string" escape="js"/>';
-		</script>
-	</tsn:root>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<tsn:root xmlns:tsn="TSN">
+	<div>
+		<tsn:echo text="this.string" />
+	</div>
+	<div>
+		<tsn:echo text="this.string" escape="decAll" />
+	</div>
+	<div>
+		<tsn:echo type="json" />
+	</div>
+	<script>
+		var data = '<tsn:echo text="this.string" escape="js"/>';
+	</script>
+</tsn:root>
+```
 
 Вызов:
 
@@ -148,17 +150,19 @@ API обработки шаблонов находятся в пространс
 
 Результат:
 
-	<div>'Stiff Opposition Expected to
-	Casketless Funeral Plan'
-	</div>
-	<div>&#39;Stiff&#32;Opposition&#32;Expected&#32;to&#32;&#10;Casketless&#32;Funeral&#32;Plan&#39;
-	</div>
-	<div>{"string":"'Stiff Opposition Expected to \nCasketless Funeral Plan'","array":[1,2,3]}
-	</div>
-	<script>
-		var data = '\'Stiff Opposition Expected to \
-	Casketless Funeral Plan\'';
-	</script>
+```xml
+<div>'Stiff Opposition Expected to
+Casketless Funeral Plan'
+</div>
+<div>&#39;Stiff&#32;Opposition&#32;Expected&#32;to&#32;&#10;Casketless&#32;Funeral&#32;Plan&#39;
+</div>
+<div>{"string":"'Stiff Opposition Expected to \nCasketless Funeral Plan'","array":[1,2,3]}
+</div>
+<script>
+	var data = '\'Stiff Opposition Expected to \
+Casketless Funeral Plan\'';
+</script>
+```
 
 ####Root
 Вспомогательный тег для использования в XML-файлах в качестве корневого.
@@ -196,16 +200,18 @@ API обработки шаблонов находятся в пространс
 
 Код шаблона:
 
-	<?xml version="1.0" encoding="UTF-8"?>
-	<!DOCTYPE tsn:root PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-	<tsn:root xmlns:tsn="TSN" context="this.contextRoot">
-		<div>
-			<span><tsn:echo text="this.first" /></span>
-		</div>
-		<div>
-			<span><tsn:echo text="this.second" /></span>
-		</div>
-	</tsn:root>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tsn:root PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<tsn:root xmlns:tsn="TSN" context="this.contextRoot">
+	<div>
+		<span><tsn:echo text="this.first" /></span>
+	</div>
+	<div>
+		<span><tsn:echo text="this.second" /></span>
+	</div>
+</tsn:root>
+```
 
 Вызов:
 
@@ -218,12 +224,14 @@ API обработки шаблонов находятся в пространс
 
 Результат:
 
-	<div>
-		<span>First data</span>
-	</div>
-	<div>
-		<span>Second data</span>
-	</div>
+```xml
+<div>
+	<span>First data</span>
+</div>
+<div>
+	<span>Second data</span>
+</div>
+```
 
 ####Context
 Устанавливает контекст для дочерних элементов.
@@ -254,10 +262,12 @@ API обработки шаблонов находятся в пространс
 
 Код шаблона:
 
-	<?xml version="1.0" encoding="UTF-8"?>
-	<tsn:context object="this.context">
-		<div><tsn:echo text="this" /></div>
-	</tsn:context>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<tsn:context object="this.context">
+	<div><tsn:echo text="this" /></div>
+</tsn:context>
+```
 
 Вызов:
 
@@ -267,7 +277,9 @@ API обработки шаблонов находятся в пространс
 
 Результат:
 
-	<div>Context data</div>
+```xml
+<div>Context data</div>
+```
 
 ####Var
 Создает переменную в текущей области видимости.
@@ -312,20 +324,22 @@ API обработки шаблонов находятся в пространс
 
 Код шаблона:
 
-	<?xml version="1.0" encoding="UTF-8"?>
-	<tsn:root>
-		<tsn:var name="firstData" value="this.firstData" />
-		<tsn:var name="secondData">
-			<div>
-				<tsn:echo text="this.secondData" />
-			</div>
-		</tsn:var>
-
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<tsn:root>
+	<tsn:var name="firstData" value="this.firstData" />
+	<tsn:var name="secondData">
 		<div>
-			<tsn:echo text="firstData" />
+			<tsn:echo text="this.secondData" />
 		</div>
-		<tsn:echo text="secondData" />
-	</tsn:root>
+	</tsn:var>
+
+	<div>
+		<tsn:echo text="firstData" />
+	</div>
+	<tsn:echo text="secondData" />
+</tsn:root>
+```
 
 Вызов:
 
@@ -336,10 +350,12 @@ API обработки шаблонов находятся в пространс
 
 Результат:
 
-	<div>First data
-	</div>
-	<div>Second data
-	</div>
+```xml
+<div>First data
+</div>
+<div>Second data
+</div>
+	```
 
 ####Entity
 Создает TSN-сущность.
@@ -389,11 +405,13 @@ API обработки шаблонов находятся в пространс
 
 Код шаблона:
 
-	<?xml version="1.0" encoding="UTF-8"?>
-	<tsn:root>
-		<tsn:entity name="className" value="this.className" />
-		<div class="&TSN.className;">Text data</div>
-	</tsn:root>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<tsn:root>
+	<tsn:entity name="className" value="this.className" />
+	<div class="&TSN.className;">Text data</div>
+</tsn:root>
+```
 
 Вызов:
 
@@ -403,7 +421,9 @@ API обработки шаблонов находятся в пространс
 
 Результат:
 
-	<div class="active">Text data</div>
+```xml
+<div class="active">Text data</div>
+```
 
 ####If
 Выполняет содержимое, если выражение test возвращает true.
@@ -434,10 +454,12 @@ API обработки шаблонов находятся в пространс
 
 Код шаблона:
 
-	<?xml version="1.0" encoding="UTF-8"?>
-	<tsn:if>
-		Context is defined.
-	</tsn:if>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<tsn:if>
+	Context is defined.
+</tsn:if>
+```
 
 Вызов:
 
@@ -476,10 +498,12 @@ API обработки шаблонов находятся в пространс
 
 Код шаблона:
 
-	<?xml version="1.0" encoding="UTF-8"?>
-	<tsn:unless>
-		Context is not defined.
-	</tsn:unless>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<tsn:unless>
+	Context is not defined.
+</tsn:unless>
+```
 
 Вызов:
 
@@ -529,10 +553,12 @@ API обработки шаблонов находятся в пространс
 
 Код шаблона:
 
-	<?xml version="1.0" encoding="UTF-8"?>
-	<tsn:for>
-		<tsn:echo text="this[_index]" />
-	</tsn:for>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<tsn:for>
+	<tsn:echo text="this[_index]" />
+</tsn:for>
+```
 
 Вызов:
 
@@ -581,10 +607,12 @@ API обработки шаблонов находятся в пространс
 
 Код шаблона:
 
-	<?xml version="1.0" encoding="UTF-8"?>
-	<tsn:each>
-		<tsn:echo text="_object[_property]" />
-	</tsn:each>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<tsn:each>
+	<tsn:echo text="_object[_property]" />
+</tsn:each>
+```
 
 Вызов:
 
@@ -668,29 +696,33 @@ API обработки шаблонов находятся в пространс
 
 Код шаблона:
 
-	<?xml version="1.0" encoding="UTF-8"?>
-	<tsn:root xmlns:tsn="TSN">
-		<tsn:template name="tmpl">
-			<tsn:echo />
-		</tsn:template>
-		<div>
-			<tsn:include src="template.xml" />
-		</div>
-		<div>
-			<tsn:include name="tmpl" />
-		</div>
-	</tsn:root>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<tsn:root xmlns:tsn="TSN">
+	<tsn:template name="tmpl">
+		<tsn:echo />
+	</tsn:template>
+	<div>
+		<tsn:include src="template.xml" />
+	</div>
+	<div>
+		<tsn:include name="tmpl" />
+	</div>
+</tsn:root>
+```
 
 Код файла template.xml:
 
-	<?xml version="1.0" encoding="UTF-8"?>
-	<tsn:root xmlns:tsn="TSN">
-		<tsn:include name="tmpl" />
-		<tsn:template name="tmpl">
-			Included data.
-		</tsn:template>
-		<tsn:include name="tmpl" />
-	</tsn:root>
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<tsn:root xmlns:tsn="TSN">
+	<tsn:include name="tmpl" />
+	<tsn:template name="tmpl">
+		Included data.
+	</tsn:template>
+	<tsn:include name="tmpl" />
+</tsn:root>
+```
 
 Вызов:
 
@@ -698,8 +730,10 @@ API обработки шаблонов находятся в пространс
 
 Результат:
 
-	<div>Parent data.
-	Included data.
-	</div>
-	<div>Parent data.
-	</div>
+```xml
+<div>Parent data.
+Included data.
+</div>
+<div>Parent data.
+</div>
+```
