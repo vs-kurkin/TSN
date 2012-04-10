@@ -355,7 +355,7 @@ Casketless Funeral Plan\'';
 </div>
 <div>Second data
 </div>
-	```
+```
 
 ####Entity
 Создает TSN-сущность.
