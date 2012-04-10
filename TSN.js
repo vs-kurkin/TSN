@@ -154,7 +154,7 @@ TSN.compile = function (data, name, config) {
 	var parser = new Parser(config);
 	parser.parse(data);
 
-	var source = 'var __output=""; ' + parser.root.code + '; return __output;';
+	var source = '"use strict"; var __output=""; ' + parser.root.code + '; return __output;';
 	var template = new Function (source);
 
 	template.source = source;

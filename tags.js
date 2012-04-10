@@ -32,18 +32,8 @@ this.context = {
 };
 
 this.echo = (function () {
-	var regExpHTML = '/[&<>"\']/g';
+	var regExpHTML = '/[&<>"]/g';
 	var regExpAll = '/[^a-z0-9\\-_\\.]/gi';
-
-	var getDec = '' +
-		'function (char) {' +
-			'return "&#" + char.charCodeAt(0) + ";";' +
-		'}';
-
-	var getHex = '' +
-		'function (char) {' +
-			'return "&#x" + char.charCodeAt(0).toString(16) + ";";' +
-		'}';
 
 	var type = {
 		json: 'JSON.stringify(/*text*/)'
@@ -51,12 +41,10 @@ this.echo = (function () {
 
 	var escape = {
 		js: '(/*text*/).replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
-		decAll: 'String(/*text*/).replace(' + regExpAll + ', ' + getDec + ')',
-		decHtml: 'String(/*text*/).replace(' + regExpHTML + ', ' + getDec + ')',
-		hexAll: 'String(/*text*/).replace(' + regExpAll + ', ' + getHex + ')',
-		hexHtml: 'String(/*text*/).replace(' + regExpHTML + ', ' + getHex + ')',
-		hexUrl: 'encodeURI(/*text*/)',
-		hexUrlAll: 'encodeURIComponent(/*text*/)'
+		html: '(/*text*/).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/\'/g, "&#39;")',
+		htmlDec: '(/*text*/).replace(/&/g, "&#38;").replace(/</g, "&#60;").replace(/>/g, "&#62;").replace(/\"/g, "&#34;").replace(/\'/g, "&#39;")',
+		htmlHex: '(/*text*/).replace(/&/g, "&#x26;").replace(/</g, "&#x3c;").replace(/>/g, "&#x3e;").replace(/\"/g, "&#x22;").replace(/\'/g, "&#x27;")',
+		url: 'encodeURI(/*text*/)'
 	};
 
 	return {

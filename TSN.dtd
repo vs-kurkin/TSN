@@ -15,7 +15,7 @@
 <!ATTLIST tsn:echo
 	text CDATA "this"
 	type (json) #IMPLIED
-	escape (js|decAll|decHtml|hexAll|hexHtml|hexUrl|hexUrlAll) #IMPLIED
+	escape (js|html|htmlDec|htmlHex|url) #IMPLIED
 	>
 
 <!ELEMENT tsn:var ANY>
