@@ -150,7 +150,7 @@ API обработки шаблонов находятся в пространс
 
 Результат:
 
-```xml
+```html
 <div>'Stiff Opposition Expected to
 Casketless Funeral Plan'
 </div>
@@ -224,7 +224,7 @@ Casketless Funeral Plan\'';
 
 Результат:
 
-```xml
+```html
 <div>
 	<span>First data</span>
 </div>
@@ -277,7 +277,7 @@ Casketless Funeral Plan\'';
 
 Результат:
 
-```xml
+```html
 <div>Context data</div>
 ```
 
@@ -350,7 +350,7 @@ Casketless Funeral Plan\'';
 
 Результат:
 
-```xml
+```html
 <div>First data
 </div>
 <div>Second data
@@ -421,7 +421,7 @@ Casketless Funeral Plan\'';
 
 Результат:
 
-```xml
+```html
 <div class="active">Text data</div>
 ```
 
@@ -730,7 +730,7 @@ Casketless Funeral Plan\'';
 
 Результат:
 
-```xml
+```html
 <div>Parent data.
 Included data.
 </div>
