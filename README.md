@@ -362,10 +362,10 @@ template.call({
 Вызов:
 
 ```js
-	template.call({
-		firstData: 'First data',
-		secondData: 'Second data'
-	});
+template.call({
+firstData: 'First data',
+secondData: 'Second data'
+});
 ```
 
 Результат:
