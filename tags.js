@@ -85,26 +85,6 @@ this['var'] = {
 	body: 'var /*@name*/ = /*@value*/;'
 };
 
-this['entity'] = {
-	init: function () {
-		return 'var __entity = {};';
-	},
-	parse: function () {
-		if (!this.attributes.hasOwnProperty('name')) {
-			return new Error('Attribute "name" is not defined.');
-		}
-
-		if (!this.attributes.hasOwnProperty('value')) {
-			this.body = '' +
-				'__entity./*@name*/ = (function (__output) {' +
-					'/*!code*/' +
-					'return __output;' +
-				'}).call(/*!context*/, "");';
-		}
-	},
-	body: '__entity./*@name*/ = /*@value*/;'
-};
-
 this['if'] = {
 	parse: function () {
 		if (!this.attributes.hasOwnProperty('test')) {

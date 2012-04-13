@@ -13,7 +13,7 @@ var regExpXML = /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\
  */
 function Parser (config) {
 	var space = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)?';
-	var entity = space + '&' + config.namespace + '.([a-z\\-_]+)?;';
+	var entity = space + '&' + config.namespace + '.([a-z\\-_\\.]+)?;';
 	var comment = space + '<!--(?!\\[if [^\\]]+?\\]>)[\\s\\S]*?(?!<!\\[endif\\])-->';
 	var cdata = config.parseCDATA === true ? '' : '|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)';
 
