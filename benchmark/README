@@ -5,7 +5,7 @@ fps 15432.098765432098
 time: 0.0648mc
 full time:0.648sec
 
-Fest (https://github.com/vflash/FestLB):
+Fest ( https://github.com/vflash/FestLB ):
 fps 14184.397163120566 (в среднем на 500-800 fps меньше TSN)
 time: 0.0705mc
 full time:0.705sec
