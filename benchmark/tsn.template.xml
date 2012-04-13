@@ -107,7 +107,7 @@
                                         <a href="http://lb/user.html?id=&TSN._index;">
                                             <tsn:echo text="_array[_index].name"
                                                       escape="html" />
-                                        </a>
+                                        </a>&nbsp;
                                     </tsn:for>
                                 </i>
                             </small>
