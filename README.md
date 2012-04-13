@@ -117,12 +117,10 @@ var result = template.call(data);
 			<td></td>
 			<td>
 				<b>js</b>: подготавливает данные, предназначенные для вставки в JavaScript-строку.<br />
-				<b>decAll</b>: заменяет все символы, кроме a-z 0-9 - _ . на десятиричные HTML-коды.<br />
-				<b>decHtml</b>: заменяет символы &amp;&lt;&gt;&quot;' на десятиричные HTML-коды.<br />
-				<b>hexAll</b>: заменяет все символы, кроме a-z 0-9 - _ . на шестнадцатеричные HTML-коды.<br />
-				<b>hexHtml</b>: заменяет символы &amp;&lt;&gt;&quot;' на шестнадцатеричные HTML-коды.<br />
-				<b>hexUrl</b>: кодирует URL-строку функцией encodeURI.<br />
-				<b>hexUrlAll</b>: кодирует URL-строку функцией encodeURIComponent.<br />
+				<b>html</b>: заменяет символы &amp;&lt;&gt;&quot;&apos; на HTML-сущности.<br />
+				<b>htmlDec</b>: заменяет символы &amp;&lt;&gt;&quot;&apos; на десятиричные HTML-коды.<br />
+				<b>htmlHex</b>: заменяет символы &amp;&lt;&gt;&quot;&apos; на шестнадцатеричные HTML-коды.<br />
+				<b>url</b>: кодирует URL-строку функцией encodeURI.<br />
 			</td>
 			<td>нет</td>
 			<td>Метод экранирования, которое будет применено к результату выражения text после преобразования type, если последнее было указано.
@@ -130,6 +128,17 @@ var result = template.call(data);
 		</tr>
 	</tbody>
 </table>
+
+Так же для вывода данных (включая атрибуты) можно использовать TSN-сущность:
+
+	&namespace.property;
+
+Здесь:
+
+`namespase`: текущее пространство имен тегов TSN
+`property`: JavaScript-выражение, представляющее собой доступ к значению свойства объекта с использованием точечной нотации. Допускаются символы `A-Za-z0-9._-`.
+
+TSN-сущности не могут использоваться в значениях атрибутов тегов TSN.
 
 <b>Пример:</b>
 
@@ -139,16 +148,16 @@ var result = template.call(data);
 <?xml version="1.0" encoding="UTF-8"?>
 <tsn:root xmlns:tsn="TSN">
 	<div>
-		<tsn:echo text="this.string" />
+		&TSN.this.string;
 	</div>
 	<div>
-		<tsn:echo text="this.string" escape="decAll" />
+		<tsn:echo text="this.string" escape="htmlDec" />
 	</div>
 	<div>
 		<tsn:echo type="json" />
 	</div>
 	<script>
-		var data = '<tsn:echo text="this.string" escape="js"/>';
+		var data = "<tsn:echo text="this.string" escape="js"/>";
 	</script>
 </tsn:root>
 ```
@@ -157,7 +166,7 @@ var result = template.call(data);
 
 ```js
 template.call({
-	string: '\'Stiff Opposition Expected to \nCasketless Funeral Plan\'',
+	string: '"Stiff Opposition Expected to \nCasketless Funeral Plan"',
 	array: [1, 2, 3]
 });
 ```
@@ -168,13 +177,14 @@ template.call({
 <div>'Stiff Opposition Expected to
 Casketless Funeral Plan'
 </div>
-<div>&#39;Stiff&#32;Opposition&#32;Expected&#32;to&#32;&#10;Casketless&#32;Funeral&#32;Plan&#39;
+<div>&qout;Stiff Opposition Expected to
+Casketless Funeral Plan&qout;
 </div>
-<div>{"string":"'Stiff Opposition Expected to \nCasketless Funeral Plan'","array":[1,2,3]}
+<div>{"string":"\"Stiff Opposition Expected to \nCasketless Funeral Plan\"","array":[1,2,3]}
 </div>
 <script>
-	var data = '\'Stiff Opposition Expected to \
-Casketless Funeral Plan\'';
+	var data = "\"Stiff Opposition Expected to \
+Casketless Funeral Plan\"";
 </script>
 ```
 
@@ -355,7 +365,7 @@ template.call({
 	<div>
 		<tsn:echo text="firstData" />
 	</div>
-	<tsn:echo text="secondData" />
+	&TSN.secondData;
 </tsn:root>
 ```
 
@@ -375,76 +385,6 @@ secondData: 'Second data'
 </div>
 <div>Second data
 </div>
-```
-
-####Entity
-Создает TSN-сущность.
-Для вывода значения сущности используется синтаксис:
-
-	&namespace.name;
-
-, где <i>namespase</i> - пространство имен тегов TSN, <i>name</i> - имя сущности. TSN-сущность не может использоваться в значениях атрибутов тегов TSN. В отличии от переменных, сущности доступны в любом месте, независимо от области видимости, в которой они определены.
-
-<b>Атрибуты:</b>
-<table>
-	<thead>
-		<tr>
-			<th>Имя</th>
-			<th>Значение по-умолчанию</th>
-			<th>Варианты значений</th>
-			<th>Обязательный</th>
-			<th>Описание</th>
-		</tr>
-	</thead>
-	<tbody>
-		<tr>
-			<td>name</td>
-			<td></td>
-			<td>Строка, состоящая из символов: a-z - _</td>
-			<td>да</td>
-			<td>Имя сущности.</td>
-		</tr>
-		<tr>
-			<td>value</td>
-			<td></td>
-			<td>JavaScript выражение.</td>
-			<td>нет</td>
-			<td>Значение сущности. Если атрибут не указан, значением переменной будет вычисленное содержимое тега. В последнем случае создается локальная область видимости.</td>
-		</tr>
-		<tr>
-			<td>context</td>
-			<td>true</td>
-			<td>JavaScript выражение.</td>
-			<td>нет</td>
-			<td>Устанавливает контекст для дочерних элементов, если не был указан атрибут value.</td>
-		</tr>
-	</tbody>
-</table>
-
-<b>Пример:</b>
-
-Код шаблона:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<tsn:root>
-	<tsn:entity name="className" value="this.className" />
-	<div class="&TSN.className;">Text data</div>
-</tsn:root>
-```
-
-Вызов:
-
-```js
-template.call({
-	className: 'active'
-});
-```
-
-Результат:
-
-```html
-<div class="active">Text data</div>
 ```
 
 ####If
