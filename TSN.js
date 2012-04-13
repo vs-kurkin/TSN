@@ -9,96 +9,96 @@
  */
 
 var LIB = {
-	fileSystem: require('fs'),
-	path: require('path'),
-	event: require('events')
+    fileSystem: require('fs'),
+    path: require('path'),
+    event: require('events')
 };
 
 var Parser = require(LIB.path.join(__dirname, 'Parser.js'));
 var nodeAPI = require(LIB.path.join(__dirname, 'tags.js'));
 
 Parser.prototype.onStart = function () {
-	var code;
-	this.current.code = '';
+    var code;
+    this.current.code = '';
 
-	for (var nodeName in nodeAPI) {
-		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('init')) {
-			code = nodeAPI[nodeName].init(this);
+    for (var nodeName in nodeAPI) {
+        if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('init')) {
+            code = nodeAPI[nodeName].init(this);
 
-			if (typeof code == 'string') {
-				this.current.code += code;
-			}
-		}
-	}
+            if (typeof code == 'string') {
+                this.current.code += code;
+            }
+        }
+    }
 };
 
 Parser.prototype.onText = function (text, node) {
-	node.code += (this.addedText == true ? ' + ' : '__output += ') + '"' + text + '"';
-	this.addedText = true;
+    node.code += (this.addedText == true ? ' + ' : '__output += ') + '"' + text + '"';
+    this.addedText = true;
 };
 
 Parser.prototype.onEntity = function (node) {
-	node.parent.code += (this.addedText == true ? ' + ' : '') + node.name;
-	this.addedText = true;
+    node.parent.code += (this.addedText == true ? ' + ' : '') + node.name;
+    this.addedText = true;
 };
 
 Parser.prototype.onError = function (error) {
-	TSN.emit('error', error);
+    TSN.emit('error', error);
 };
 
 Parser.prototype.onOpen = function (node) {
-	if (nodeAPI.hasOwnProperty(node.name)) {
-		node.body = nodeAPI[node.name].body;
-		node.parse = nodeAPI[node.name].parse;
-		node.code = ';';
+    if (nodeAPI.hasOwnProperty(node.name)) {
+        node.body = nodeAPI[node.name].body;
+        node.parse = nodeAPI[node.name].parse;
+        node.code = ';';
 
-		if (node.isEmpty) {
-			var parseResult = typeof node.parse === 'function' ? node.parse(this) : true;
+        if (node.isEmpty) {
+            var parseResult = typeof node.parse === 'function' ? node.parse(this) : true;
 
-			if (parseResult && parseResult.constructor === Error) {
-				this._error(parseResult.message, node);
-			} else {
-				node.parent.code += compileNode(node, this);
-			}
-		}
-	} else {
-		this._error(node.isEmpty ? 'Unknown empty tag.' : 'Unknown tag opening.', node);
-	}
+            if (parseResult && parseResult.constructor === Error) {
+                this._error(parseResult.message, node);
+            } else {
+                node.parent.code += compileNode(node, this);
+            }
+        }
+    } else {
+        this._error(node.isEmpty ? 'Unknown empty tag.' : 'Unknown tag opening.', node);
+    }
 };
 
 Parser.prototype.onClose = function (node) {
-	if (nodeAPI.hasOwnProperty(node.name)) {
-		var parseResult = typeof node.parse === 'function' ? node.parse(this) : true;
+    if (nodeAPI.hasOwnProperty(node.name)) {
+        var parseResult = typeof node.parse === 'function' ? node.parse(this) : true;
 
-		if (parseResult && parseResult.constructor === Error) {
-			this._error(parseResult.message, node);
-		} else {
-			node.parent.code += compileNode(node, this);
-		}
-	} else {
-		this._error('Unknown tag closing.', node);
-	}
+        if (parseResult && parseResult.constructor === Error) {
+            this._error(parseResult.message, node);
+        } else {
+            node.parent.code += compileNode(node, this);
+        }
+    } else {
+        this._error('Unknown tag closing.', node);
+    }
 };
 
-function compileNode(node, parser) {
-	return (parser.addedText === true? '' : ';') + node.body.replace(/\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi, function (result, type, name) {
-		switch (type) {
-			case '!':
-				switch (name) {
-					case 'code':
-						if (parser.addedText !== true) {
-							node.code += ';';
-						}
+function compileNode (node, parser) {
+    return (parser.addedText === true ? '' : ';') + node.body.replace(/\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi, function (result, type, name) {
+        switch (type) {
+            case '!':
+                switch (name) {
+                    case 'code':
+                        if (parser.addedText !== true) {
+                            node.code += ';';
+                        }
 
-						return node.code;
-					case 'context':
-						return node.attributes.hasOwnProperty('context') ? node.attributes.context : 'this';
-				}
-				break;
-			case '@':
-				return node.attributes[name];
-		}
-	});
+                        return node.code;
+                    case 'context':
+                        return node.attributes.hasOwnProperty('context') ? node.attributes.context : 'this';
+                }
+                break;
+            case '@':
+                return node.attributes[name];
+        }
+    });
 }
 
 /**
@@ -126,15 +126,15 @@ TSN.config = JSON.parse(LIB.fileSystem.readFileSync(LIB.path.join(__dirname, 'co
  * @return {function} Скомпилированный шаблон.
  */
 TSN.load = function (path, name, config) {
-	config = new Config(config);
+    config = new Config(config);
 
-	var fullPath = LIB.path.join(config.templateRoot, path);
+    var fullPath = LIB.path.join(config.templateRoot, path);
 
-	if (TSN.cache.hasOwnProperty(fullPath)) {
-		return TSN.cache[fullPath];
-	}
+    if (TSN.cache.hasOwnProperty(fullPath)) {
+        return TSN.cache[fullPath];
+    }
 
-	return TSN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), name || fullPath, config);
+    return TSN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), name || fullPath, config);
 };
 
 /**
@@ -145,26 +145,26 @@ TSN.load = function (path, name, config) {
  * @return {function} Скомпилированный шаблон.
  */
 TSN.compile = function (data, name, config) {
-	config = new Config(config);
+    config = new Config(config);
 
-	if (TSN.cache.hasOwnProperty(name)) {
-		return TSN.cache[name];
-	}
+    if (TSN.cache.hasOwnProperty(name)) {
+        return TSN.cache[name];
+    }
 
-	var parser = new Parser(config);
-	parser.parse(data);
+    var parser = new Parser(config);
+    parser.parse(data);
 
-	var source = '"use strict"; var __output=""; ' + parser.root.code + '; return __output;';
-	var template = new Function (source);
+    var source = '"use strict"; var __output=""; ' + parser.root.code + '; return __output;';
+    var template = new Function(source);
 
-	template.source = source;
+    template.source = source;
 
-	if (typeof name === 'string' && name !== '') {
-		template.name = name;
-		TSN.cache[name] = template;
-	}
+    if (typeof name === 'string' && name !== '') {
+        template.name = name;
+        TSN.cache[name] = template;
+    }
 
-	return template;
+    return template;
 };
 
 /**
@@ -174,15 +174,15 @@ TSN.compile = function (data, name, config) {
  * @return {text} Результат рендеринга.
  */
 TSN.render = function (template, data) {
-	return template.call(data);
+    return template.call(data);
 };
 
 function Config (options) {
-	for (var property in options) {
-		if (options.hasOwnProperty(property)) {
-			this[property] = options[property];
-		}
-	}
+    for (var property in options) {
+        if (options.hasOwnProperty(property)) {
+            this[property] = options[property];
+        }
+    }
 }
 
 Config.prototype = TSN.config;

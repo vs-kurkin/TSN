@@ -32,16 +32,13 @@ this.context = {
 };
 
 this.echo = (function () {
-	var regExpHTML = '/[&<>"]/g';
-	var regExpAll = '/[^a-z0-9\\-_\\.]/gi';
-
 	var type = {
 		json: 'JSON.stringify(/*text*/)'
 	};
 
 	var escape = {
 		js: '(/*text*/).replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
-		html: '(/*text*/).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/\'/g, "&#39;")',
+		html: '(/*text*/).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/\'/g, "&apos;")',
 		htmlDec: '(/*text*/).replace(/&/g, "&#38;").replace(/</g, "&#60;").replace(/>/g, "&#62;").replace(/\"/g, "&#34;").replace(/\'/g, "&#39;")',
 		htmlHex: '(/*text*/).replace(/&/g, "&#x26;").replace(/</g, "&#x3c;").replace(/>/g, "&#x3e;").replace(/\"/g, "&#x22;").replace(/\'/g, "&#x27;")',
 		url: 'encodeURI(/*text*/)'
