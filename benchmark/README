@@ -1,11 +1,11 @@
 Исходный тест: http://ctpp.havoc.ru/template_benchmarks.html
 
-С JSON-парсингом:
-fps 6430.868167202572
-time: 0.1555mc
-full time:1.555sec
+TSN:
+fps 15432.098765432098
+time: 0.0648mc
+full time:0.648sec
 
-Без парсинга:
-fps 8510.63829787234
-time: 0.1175mc
-full time:1.175sec
+Fest (https://github.com/vflash/FestLB):
+fps 14184.397163120566 (в среднем на 500-800 fps меньше TSN)
+time: 0.0705mc
+full time:0.705sec
