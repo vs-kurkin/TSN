@@ -1,5 +1,5 @@
-# TSN 2.0.1 #
-https://github.com/B-Vladi/TSN/tree/dev
+# TSN 2.0.2 #
+https://github.com/B-Vladi/TSN/
 
 Templating System for Node.JS.
 
@@ -9,7 +9,7 @@ MIT: https://github.com/appendto/amplify/blob/master/MIT-LICENSE.txt
 ## Документация
 ### Конфигурация.
 
-Стандартный конфиг описан в файле <a href="https://github.com/B-Vladi/TSN/blob/dev/config.json">config.json</a>.
+Стандартный конфиг описан в файле <a href="https://github.com/B-Vladi/TSN/blob/master/config.json">config.json</a>.
 
 В коде общие настройки для всех шаблонов указываются в `TSN.config`.
 
@@ -74,7 +74,7 @@ var result = TSN.render(template, data);
 var result = template.call(data);
 ```
 
-Более подробная информация по API находится здесь: https://github.com/B-Vladi/TSN/blob/dev/jsdoc/TSN.html.
+Более подробная информация по API находится здесь: https://github.com/B-Vladi/TSN/blob/master/jsdoc/TSN.html.
 
 ###Теги.
 
