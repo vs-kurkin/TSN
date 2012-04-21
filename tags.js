@@ -38,9 +38,9 @@ this.echo = (function () {
 
 	var escape = {
 		js: '(/*text*/).replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
-		html: '(/*text*/).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;").replace(/\'/g, "&apos;")',
-		htmlDec: '(/*text*/).replace(/&/g, "&#38;").replace(/</g, "&#60;").replace(/>/g, "&#62;").replace(/\"/g, "&#34;").replace(/\'/g, "&#39;")',
-		htmlHex: '(/*text*/).replace(/&/g, "&#x26;").replace(/</g, "&#x3c;").replace(/>/g, "&#x3e;").replace(/\"/g, "&#x22;").replace(/\'/g, "&#x27;")',
+		html: '(/*text*/).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;")',
+		htmlDec: '(/*text*/).replace(/&/g, "&#38;").replace(/</g, "&#60;").replace(/>/g, "&#62;").replace(/\"/g, "&#34;")',
+		htmlHex: '(/*text*/).replace(/&/g, "&#x26;").replace(/</g, "&#x3c;").replace(/>/g, "&#x3e;").replace(/\"/g, "&#x22;")',
 		url: 'encodeURI(/*text*/)'
 	};
 
@@ -58,7 +58,7 @@ this.echo = (function () {
 			}
 
 			parser.addedText = true;
-			this.body = ' + (' + text + ')';
+			this.body = '(' + text + ')';
 		}
 	};
 })();
@@ -172,11 +172,11 @@ this.include = {
 			prototype = parser.constructor.prototype;
 			Template.prototype = prototype._template;
 			prototype._template = new Template;
-			template = module.parent.exports.load(attributes.src);
+			template = module.parent.exports.load(attributes.src, parser.config);
 			prototype._template = Object.getPrototypeOf(prototype._template);
 
 			parser.addedText = true;
-			this.body = ' + (function () {' + template.source + '}).call(/*!context*/)';
+			this.body = '(function () {' + template.source + '}).call(/*!context*/)';
 		} else if (attributes.hasOwnProperty('name')) {
 			if (parser._template[attributes.name]) {
 				this.body = parser._template[attributes.name];
