@@ -175,8 +175,8 @@ template.call({
 Результат:
 
 ```html
-<div>'Stiff Opposition Expected to
-Casketless Funeral Plan'
+<div>"Stiff Opposition Expected to
+Casketless Funeral Plan"
 </div>
 <div>&qout;Stiff Opposition Expected to
 Casketless Funeral Plan&qout;
@@ -374,8 +374,8 @@ template.call({
 
 ```js
 template.call({
-firstData: 'First data',
-secondData: 'Second data'
+	firstData: 'First data',
+	secondData: 'Second data'
 });
 ```
 
