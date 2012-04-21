@@ -1,7 +1,6 @@
 /**
  * @fileOverview Templating System for Node.JS.
  * @author <a href="mailto:b-vladi@cs-console.ru">Влад Куркин</a>
- * @version 1.2.0 beta
  */
 
 /**

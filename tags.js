@@ -36,11 +36,28 @@ this.echo = (function () {
 	};
 
 	var escape = {
-		js: '(/*text*/).replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
-		html: '(/*text*/).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/\"/g, "&quot;")',
-		htmlDec: '(/*text*/).replace(/&/g, "&#38;").replace(/</g, "&#60;").replace(/>/g, "&#62;").replace(/\"/g, "&#34;")',
-		htmlHex: '(/*text*/).replace(/&/g, "&#x26;").replace(/</g, "&#x3c;").replace(/>/g, "&#x3e;").replace(/\"/g, "&#x22;")',
-		url: 'encodeURI(/*text*/)'
+		js: '(/*text*/)' +
+			'.replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
+
+		url: 'encodeURI(/*text*/)',
+
+		html: '(/*text*/)' +
+			'.replace(/&/g, "&amp;")' +
+			'.replace(/</g, "&lt;")' +
+			'.replace(/>/g, "&gt;")' +
+			'.replace(/\"/g, "&quot;")',
+
+		htmlDec: '(/*text*/)' +
+			'.replace(/&/g, "&#38;")' +
+			'.replace(/</g, "&#60;")' +
+			'.replace(/>/g, "&#62;")' +
+			'.replace(/\"/g, "&#34;")',
+
+		htmlHex: '(/*text*/)' +
+			'.replace(/&/g, "&#x26;")' +
+			'.replace(/</g, "&#x3c;")' +
+			'.replace(/>/g, "&#x3e;")' +
+			'.replace(/\"/g, "&#x22;")'
 	};
 
 	return {
@@ -138,8 +155,6 @@ this['each'] = {
 		'}).call(/*!context*/, /*@object*/);'
 };
 
-function Template () {}
-
 this.template = {
 	parse: function (parser) {
 		if (this.attributes.hasOwnProperty('name')) {
@@ -154,36 +169,40 @@ this.template = {
 	body: ''
 };
 
-this.include = {
-	init: function (parser) {
-		var prototype = parser.constructor.prototype;
+this.include = (function () {
+	function Template () {}
 
-		if (!prototype.hasOwnProperty('_template')) {
-			prototype._template = {};
-		}
-	},
-	parse: function (parser) {
-		var attributes = this.attributes;
-		var prototype;
-		var template;
+	return {
+		init: function (parser) {
+			var prototype = parser.constructor.prototype;
 
-		if (attributes.hasOwnProperty('src')) {
-			prototype = parser.constructor.prototype;
-			Template.prototype = prototype._template;
-			prototype._template = new Template;
-			template = module.parent.exports.load(attributes.src, parser.config);
-			prototype._template = Object.getPrototypeOf(prototype._template);
-
-			parser.addedText = true;
-			this.body = '(function () {' + template.source + '}).call(/*!context*/)';
-		} else if (attributes.hasOwnProperty('name')) {
-			if (parser._template[attributes.name]) {
-				this.body = parser._template[attributes.name];
-			} else {
-				return new Error('Template with the name "' + attributes.name + '" is not defined.');
+			if (!prototype.hasOwnProperty('_template')) {
+				prototype._template = new Template;
 			}
-		} else {
-			return new Error('Attribute "name" or "src" is not defined.');
+		},
+		parse: function (parser) {
+			var attributes = this.attributes;
+			var prototype;
+			var template;
+
+			if (attributes.hasOwnProperty('src')) {
+				prototype = parser.constructor.prototype;
+				Template.prototype = prototype._template;
+				prototype._template = new Template;
+				template = module.parent.exports.load(attributes.src, parser.config);
+				prototype._template = Object.getPrototypeOf(prototype._template);
+
+				parser.addedText = true;
+				this.body = '(function () {' + template.source + '}).call(/*!context*/)';
+			} else if (attributes.hasOwnProperty('name')) {
+				if (parser._template[attributes.name]) {
+					this.body = parser._template[attributes.name];
+				} else {
+					return new Error('Template with the name "' + attributes.name + '" is not defined.');
+				}
+			} else {
+				return new Error('Attribute "name" or "src" is not defined.');
+			}
 		}
-	}
-};
+	};
+})();

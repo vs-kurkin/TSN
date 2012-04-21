@@ -249,7 +249,7 @@ Parser.prototype._fixText = function (text) {
 /**
  * Создание ошибки парсинга тега.
  * @param {string} message Сообщение ошибки.
- * @param {object} node Объект тега, для коготоро генерируется ошибка.
+ * @param {object} node Объект тега, для которого генерируется ошибка.
  * @private
  */
 Parser.prototype._error = function (message, node) {
