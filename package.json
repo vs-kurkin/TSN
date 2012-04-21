@@ -1,6 +1,6 @@
 {
 	"name": "TSN",
-	"description": "Templateting System for NodeJS",
+	"description": "Templating System for NodeJS",
 	"version" : "2.0.2",
 	"homepage": "https://github.com/B-Vladi/TSN",
 	"author" : "Влад Куркин, Email: b-vladi@cs-console.ru",
