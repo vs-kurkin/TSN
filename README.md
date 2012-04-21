@@ -178,8 +178,8 @@ template.call({
 <div>"Stiff Opposition Expected to
 Casketless Funeral Plan"
 </div>
-<div>&qout;Stiff Opposition Expected to
-Casketless Funeral Plan&qout;
+<div>&#34;Stiff Opposition Expected to
+Casketless Funeral Plan&#34;
 </div>
 <div>{"string":"\"Stiff Opposition Expected to \nCasketless Funeral Plan\"","array":[1,2,3]}
 </div>
