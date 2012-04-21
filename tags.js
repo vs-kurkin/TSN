@@ -1,7 +1,7 @@
 /**
  * @fileOverview Описание тегов шаблонизатора TSN.
  * @author <a href="mailto:b-vladi@cs-console.ru">Влад Куркин</a>
- * @version 2.0.1 beta
+ * @version 2.0.2
  */
 this.root = {
 	parse: function () {
