@@ -45,7 +45,7 @@ function Parser(config) {
 	 * Регурярное выражение, которым парсится шаблон.
 	 * @type regexp
 	 */
-	this.regExp = new RegExp('(?:' + space + '&' + config.namespace + '.([a-z\\-_\\.]+)?;)|(' + comment + ')' + cdata + '|(?:' + space + '<\\/\\s*' + config.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + space + '<\\s*' + config.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>)', 'gi');
+	this.regExp = new RegExp('(?:' + space + '&' + config.namespace + '.([a-z0-9\\-_\\.]+)?;)|(' + comment + ')' + cdata + '|(?:' + space + '<\\/\\s*' + config.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + space + '<\\s*' + config.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>)', 'gi');
 }
 
 /**
