@@ -7,7 +7,7 @@ Templating System for Node.JS.
 MIT: https://github.com/appendto/amplify/blob/master/MIT-LICENSE.txt
 
 ## Описание
-TSN использует теги в качестве управляющих конструкций в шаблоне, поэтому они должны быть правильными с точки зрения синтаксиса XML. TSN-теги должны иметь префикс пространства имен (настраивается в <a href="https://github.com/B-Vladi/TSN/blob/master/config.json">конфигурационном файле</a>, либо черех <a href="https://github.com/B-Vladi/TSN/wiki/API#wiki-.config">API</a>).
+TSN использует теги в качестве управляющих конструкций в шаблоне, поэтому они должны быть правильными с точки зрения синтаксиса XML. TSN-теги должны иметь префикс пространства имен (настраивается в <a href="https://github.com/B-Vladi/TSN/blob/master/config.json">конфигурационном файле</a>, либо через <a href="https://github.com/B-Vladi/TSN/wiki/API#wiki-.config">API</a>).
 
 <b>Основные характеристики:</b>
 * <b>Простота</b> - управляющие конструкции имеют стандартный XML-синтаксис. Выражения, используемые в значениях атрибутов тегов TSN, являются JavaScript-выражениями.
