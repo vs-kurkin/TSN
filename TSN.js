@@ -198,7 +198,7 @@ module.exports = TSN;
  * @description Ошибка парсинга шаблона.
  * @param {error} error Объект ошибки.
  * @param {string} error.message Текстовое сообщение ошибки.
- * @param {number} error.nodeName Имя тега, сгенерировавшего ошибку.
+ * @param {string} error.nodeName Имя тега, сгенерировавшего ошибку.
  * @param {number} error.line Номер строки, на которой находится тег, сгенерировавший ошибку.
- * @param {number} error.char Символ, с которого начинается тег, сгенерировавший ошибку.
+ * @param {number} error.char Позиция символа в строке, с которого начинается тег, сгенерировавший ошибку.
  */

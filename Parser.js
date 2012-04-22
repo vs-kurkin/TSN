@@ -122,11 +122,11 @@ Parser.prototype.parse = function (content) {
 
 		if (entity) {
 			this.onEntity({
-											index: index,
-											source: result,
-											parent: this.current,
-											name: entity
-										});
+				index: index,
+				source: result,
+				parent: this.current,
+				name: entity
+			});
 		} else if (openNodeName) {
 			var newNode = {
 				index: index,
@@ -160,12 +160,14 @@ Parser.prototype.parse = function (content) {
 
 			if (this.current.name === closeNodeName) {
 				delete this.addedText;
+
 				this.onClose({
-											 index: index,
-											 source: result,
-											 name: closeNodeName,
-											 parent: parent
-										 });
+					index: index,
+					source: result,
+					name: closeNodeName,
+					parent: parent
+				});
+
 				this.depth--;
 				this.current = parent;
 			} else if (parent && closeNodeName === parent.name) {
@@ -178,11 +180,11 @@ Parser.prototype.parse = function (content) {
 				this.depth--;
 
 				this.onClose({
-											 index: index,
-											 source: result,
-											 name: closeNodeName,
-											 parent: parent
-										 });
+					index: index,
+					source: result,
+					name: closeNodeName,
+					parent: parent
+				});
 
 				this.current = parent.parent;
 				this.depth--;
