@@ -37,6 +37,7 @@ var template = TSN.load('path/to/template.xml', null, {
 
 ```js
 TSN.compile('<tsn:root xmlns:tsn="TSN">Text data</tsn:root>');
+```
 
 ###Примеры рендеринга шаблона.
 
