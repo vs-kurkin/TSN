@@ -95,7 +95,26 @@ this['var'] = {
 				'}).call(/*!context*/, "");';
 		}
 	},
-	body: 'var /*@name*/ = /*@value*/;'
+	body: 'var /*@name*/ = (/*@value*/);'
+};
+
+this['set'] = {
+	parse: function () {
+		var attributes = this.attributes;
+
+		if (!attributes.hasOwnProperty('name')) {
+				return new Error('Attribute "name" is not defined.');
+		}
+
+		if (!attributes.hasOwnProperty('value')) {
+			this.body = '' +
+				'/*@name*/ = (function (__output) {' +
+					'/*!code*/' +
+					'return __output;' +
+				'}).call(/*!context*/, "");';
+		}
+	},
+	body: '/*name*/ = (/*value*/);'
 };
 
 this['if'] = {
@@ -124,35 +143,43 @@ this.unless = {
 
 this['for'] = {
 	parse: function () {
-		if (!this.attributes.hasOwnProperty('array')) {
-			this.attributes.array = 'this';
+		var attributes = this.attributes;
+
+		if (!attributes.hasOwnProperty('array')) {
+			attributes.array = 'this';
 		}
-	},
-	body: '' +
-		'(function (_array) {' +
-			'var _length = _array.length;' +
-			'var _index = 0;' +
-			'while (_index < _length) {' +
-				'/*!code*/' +
-				'_index++;' +
-			'}' +
-		'}).call(/*!context*/, /*@array*/);'
+
+		this.body = '' +
+			'(function (_array) {' +
+				'var _length = _array.length;' +
+				'var _index = 0;' +
+				(attributes.hasOwnProperty('item') ? 'var /*@item*/ = _array[_index];' : '') +
+				'while (_index < _length) {' +
+					'/*!code*/' +
+					'_index++;' +
+				'}' +
+			'}).call(/*!context*/, /*@array*/);'
+	}
 };
 
 this['each'] = {
 	parse: function () {
-		if (!this.attributes.hasOwnProperty('object')) {
-			this.attributes.object = 'this';
+		var attributes = this.attributes;
+
+		if (!attributes.hasOwnProperty('object')) {
+			attributes.object = 'this';
 		}
-	},
-	body: '' +
-		'(function (_object) {' +
-			'for (var _property in _object) {' +
-				'if (_object.hasOwnProperty(_property)) {' +
-					'/*!code*/' +
+
+		this.body = '' +
+			'(function (_object) {' +
+				'for (var _property in _object) {' +
+					'if (_object.hasOwnProperty(_property)) {' +
+						(attributes.hasOwnProperty('item') ? 'var /*@item*/ = _object[_property];' : '') +
+						'/*!code*/' +
+					'}' +
 				'}' +
-			'}' +
-		'}).call(/*!context*/, /*@object*/);'
+			'}).call(/*!context*/, /*@object*/);'
+	}
 };
 
 this.template = {

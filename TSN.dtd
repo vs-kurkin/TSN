@@ -21,7 +21,14 @@
 <!ELEMENT tsn:var ANY>
 <!ATTLIST tsn:var
 	name CDATA #REQUIRED
-	value CDATA "this"
+	value CDATA #IMPLIED
+	context CDATA "this"
+	>
+
+<!ELEMENT tsn:set ANY>
+<!ATTLIST tsn:set
+	name CDATA #REQUIRED
+	value CDATA #IMPLIED
 	context CDATA "this"
 	>
 
@@ -39,12 +46,14 @@
 <!ATTLIST tsn:for
 	array CDATA "this"
 	context CDATA "this"
+	item CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:each ANY>
 <!ATTLIST tsn:each
 	object CDATA "this"
 	context CDATA "this"
+	item CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:template ANY>
