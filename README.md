@@ -1,4 +1,4 @@
-# TSN 2.0.3 #
+# TSN 2.1.0 #
 https://github.com/B-Vladi/TSN/
 
 Templating System for Node.JS.

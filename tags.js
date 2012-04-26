@@ -73,13 +73,16 @@ this.echo = (function () {
 				text = escape[attributes.escape].replace('/*text*/', text);
 			}
 
-			parser.addedText = true;
 			this.body = '(' + text + ')';
-		}
+		},
+		inline: true
 	};
 })();
 
 this['var'] = {
+	start: function () {
+		return 'var _var = {};';
+	},
 	parse: function () {
 		var attributes = this.attributes;
 
@@ -89,32 +92,13 @@ this['var'] = {
 
 		if (!attributes.hasOwnProperty('value')) {
 			this.body = '' +
-				'var /*@name*/ = (function (__output) {' +
+				'_var["/*@name*/"] = (function (__output) {' +
 					'/*!code*/' +
 					'return __output;' +
 				'}).call(/*!context*/, "");';
 		}
 	},
-	body: 'var /*@name*/ = (/*@value*/);'
-};
-
-this['set'] = {
-	parse: function () {
-		var attributes = this.attributes;
-
-		if (!attributes.hasOwnProperty('name')) {
-				return new Error('Attribute "name" is not defined.');
-		}
-
-		if (!attributes.hasOwnProperty('value')) {
-			this.body = '' +
-				'/*@name*/ = (function (__output) {' +
-					'/*!code*/' +
-					'return __output;' +
-				'}).call(/*!context*/, "");';
-		}
-	},
-	body: '/*name*/ = (/*value*/);'
+	body: '_var["/*@name*/"] = (/*@value*/);'
 };
 
 this['if'] = {
@@ -153,8 +137,8 @@ this['for'] = {
 			'(function (_array) {' +
 				'var _length = _array.length;' +
 				'var _index = 0;' +
-				(attributes.hasOwnProperty('item') ? 'var /*@item*/ = _array[_index];' : '') +
 				'while (_index < _length) {' +
+					(attributes.hasOwnProperty('item') ? 'var /*@item*/ = _array[_index];' : '') +
 					'/*!code*/' +
 					'_index++;' +
 				'}' +
@@ -183,12 +167,34 @@ this['each'] = {
 };
 
 this.template = {
+	start: function (parser) {
+		if (!parser.parent) {
+			return '' +
+				'function Template () {' +
+					'Template.prototype = this;' +
+				'}';
+		}
+	},
+	end: function (parser) {
+		if (parser.hasTemplates === true) {
+			return 'Template.prototype = Object.getPrototypeOf(Template.prototype);';
+		}
+	},
 	parse: function (parser) {
-		if (this.attributes.hasOwnProperty('name')) {
-			parser._template[this.attributes.name] = '' +
-				'(function () {' +
-					this.code +
-				'}).call(/*!context*/);';
+		var attributes = this.attributes;
+
+		if (attributes.hasOwnProperty('name')) {
+			if (attributes.name === '') {
+				return new Error('Attribute "name" is empty.');
+			} else {
+				if (parser.hasTemplates !== true) {
+					parser.root.code += 'var __template = new Template();';
+					parser.hasTemplates = true;
+				}
+				this.body = '__template["' + attributes.name + '"] = function () {' +
+						this.code +
+					'};';
+			}
 		} else {
 			return new Error('Attribute "name" is not defined.');
 		}
@@ -196,40 +202,30 @@ this.template = {
 	body: ''
 };
 
-this.include = (function () {
-	function Template () {}
+this.include = {
+	parse: function (parser) {
+		var attributes = this.attributes;
+		var prototype;
+		var template;
 
-	return {
-		init: function (parser) {
-			var prototype = parser.constructor.prototype;
+		if (attributes.hasOwnProperty('src')) {
+			prototype = parser.constructor.prototype;
+			prototype.parent = parser;
 
-			if (!prototype.hasOwnProperty('_template')) {
-				prototype._template = new Template;
-			}
-		},
-		parse: function (parser) {
-			var attributes = this.attributes;
-			var prototype;
-			var template;
+			template = module.parent.exports.load(attributes.src, null, parser.config);
 
-			if (attributes.hasOwnProperty('src')) {
-				prototype = parser.constructor.prototype;
-				Template.prototype = prototype._template;
-				prototype._template = new Template;
-				template = module.parent.exports.load(attributes.src, parser.config);
-				prototype._template = Object.getPrototypeOf(prototype._template);
+			delete prototype.parent;
 
-				parser.addedText = true;
-				this.body = '(function () {' + template.source + '}).call(/*!context*/)';
-			} else if (attributes.hasOwnProperty('name')) {
-				if (parser._template[attributes.name]) {
-					this.body = parser._template[attributes.name];
-				} else {
-					return new Error('Template with the name "' + attributes.name + '" is not defined.');
-				}
-			} else {
-				return new Error('Attribute "name" or "src" is not defined.');
-			}
+			this.inline = true;
+			this.body = '' +
+				'(function () {' +
+					template.source +
+				'}).call(/*!context*/)';
+
+		} else if (attributes.hasOwnProperty('name')) {
+			this.body = '__template["' + attributes.name + '"].call(/*!context*/)';
+		} else {
+			return new Error('Attribute "name" or "src" is not defined.');
 		}
-	};
-})();
+	}
+};

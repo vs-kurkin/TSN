@@ -25,13 +25,6 @@
 	context CDATA "this"
 	>
 
-<!ELEMENT tsn:set ANY>
-<!ATTLIST tsn:set
-	name CDATA #REQUIRED
-	value CDATA #IMPLIED
-	context CDATA "this"
-	>
-
 <!ELEMENT tsn:if ANY>
 <!ATTLIST tsn:if
 	test CDATA "this"

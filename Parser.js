@@ -146,7 +146,6 @@ Parser.prototype.parse = function (content) {
 					.replace(/&apos;/g, '\'');
 			}
 
-			delete this.addedText;
 			this.onOpen(newNode);
 
 			if (!isEmpty) {
@@ -159,7 +158,6 @@ Parser.prototype.parse = function (content) {
 			closeNodeName = closeNodeName.toLowerCase();
 
 			if (this.current.name === closeNodeName) {
-				delete this.addedText;
 
 				this.onClose({
 					index: index,
@@ -171,7 +169,6 @@ Parser.prototype.parse = function (content) {
 				this.depth--;
 				this.current = parent;
 			} else if (parent && closeNodeName === parent.name) {
-				delete this.addedText;
 				this._error('Tag is not closed.', this.current);
 
 				parent.code += this.current.code;
@@ -219,6 +216,8 @@ Parser.prototype.parse = function (content) {
 			}
 		} while (this.current = this.current.parent);
 	}
+
+	this.onEnd();
 
 	return this;
 };

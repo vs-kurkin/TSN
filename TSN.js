@@ -6,7 +6,6 @@
 /**
  * @ignore
  */
-
 var LIB = {
 	fileSystem:require('fs'),
 	path:require('path'),
@@ -21,8 +20,22 @@ Parser.prototype.onStart = function () {
 	this.current.code = '';
 
 	for (var nodeName in nodeAPI) {
-		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('init')) {
-			code = nodeAPI[nodeName].init(this);
+		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('start')) {
+			code = nodeAPI[nodeName].start(this);
+
+			if (typeof code == 'string') {
+				this.current.code += code;
+			}
+		}
+	}
+};
+
+Parser.prototype.onEnd = function () {
+	var code;
+
+	for (var nodeName in nodeAPI) {
+		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('end')) {
+			code = nodeAPI[nodeName].end(this);
 
 			if (typeof code == 'string') {
 				this.current.code += code;
@@ -32,13 +45,13 @@ Parser.prototype.onStart = function () {
 };
 
 Parser.prototype.onText = function (text, node) {
-	node.code += (this.addedText == true ? ' + ' : '__output += ') + '"' + text + '"';
-	this.addedText = true;
+	node.code += (this.inline === true ? ' + ' : '__output += ') + '"' + text + '"';
+	this.inline = true;
 };
 
 Parser.prototype.onEntity = function (node) {
-	node.parent.code += (this.addedText == true ? ' + ' : '') + node.name;
-	this.addedText = true;
+	node.parent.code += (this.inline === true ? ' + ' : '__output += ') + node.name;
+	this.inline = true;
 };
 
 Parser.prototype.onError = function (error) {
@@ -47,8 +60,10 @@ Parser.prototype.onError = function (error) {
 
 Parser.prototype.onOpen = function (node) {
 	if (nodeAPI.hasOwnProperty(node.name)) {
-		node.body = nodeAPI[node.name].body;
-		node.parse = nodeAPI[node.name].parse;
+		var API = nodeAPI[node.name];
+		node.body = API.body;
+		node.parse = API.parse;
+		node.inline = API.inline;
 		node.code = ';';
 
 		if (node.isEmpty) {
@@ -59,6 +74,8 @@ Parser.prototype.onOpen = function (node) {
 			} else {
 				node.parent.code += compileNode(node, this);
 			}
+		} else {
+			this.inline = false;
 		}
 	} else {
 		this._error(node.isEmpty ? 'Unknown empty tag.' : 'Unknown tag opening.', node);
@@ -85,7 +102,7 @@ function compileNode(node, parser) {
 			case '!':
 				switch (name) {
 					case 'code':
-						if (parser.addedText !== true) {
+						if (node.inline !== true) {
 							node.code += ';';
 						}
 
@@ -99,7 +116,15 @@ function compileNode(node, parser) {
 		}
 	});
 
-	return (parser.addedText === true ? ' + ' : ';') + code;
+	if (node.inline === true) {
+		code = parser.inline === true ? ' + ' + code : '__output += ' + code;
+	} else {
+		code = ';' + code;
+	}
+
+	parser.inline = node.inline;
+
+	return code;
 }
 
 /**
@@ -156,7 +181,7 @@ TSN.compile = function (data, name, config) {
 	var parser = new Parser(config);
 	parser.parse(data);
 
-	var source = '"use strict"; var __output=""; ' + parser.root.code + '; return __output;';
+	var source = '"use strict"; var __output = ""; ' + parser.root.code + '; return __output;';
 	var template = new Function(source);
 
 	template.source = source;
@@ -177,6 +202,15 @@ TSN.compile = function (data, name, config) {
  */
 TSN.render = function (template, data) {
 	return template.call(data);
+};
+
+/**
+ * Добавляет поддержку нового TSN-тега.
+ * @param {string} name Имя тега.
+ * @param {object} API Объект API тега.
+ */
+TSN.extend = function (name, API) {
+	nodeAPI[name] = API;
 };
 
 function Config(options) {
