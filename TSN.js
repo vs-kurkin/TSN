@@ -160,7 +160,7 @@ TSN.load = function (path, name, config) {
 		return TSN.cache[fullPath];
 	}
 
-	config.templateRoot = LIB.path.dirname(fullPath);
+	config.path = LIB.path.dirname(fullPath);
 	return TSN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), name || fullPath, config);
 };
 

@@ -1,4 +1,4 @@
-# TSN 2.1.0 #
+# TSN 2.1.1 #
 https://github.com/B-Vladi/TSN/
 
 Templating System for Node.JS.
@@ -9,6 +9,10 @@ MIT: https://github.com/appendto/amplify/blob/master/MIT-LICENSE.txt
 ## Описание
 TSN - синхронный шаблонизатор, реализован в виде <a href="http://nodejs.org/api/modules.html">модуля</a> для NodeJS.
 
+<b>Зависимости:</b>
+* <a href="http://nodejs.org/docs/latest/api/path.html">Path</a>
+* <a href="http://nodejs.org/docs/latest/api/fs.html">File System</a>
+* <a href="http://nodejs.org/docs/latest/api/events.html">Events</a>
 
 <b>Основные характеристики:</b>
 * <b>Простота</b> - управляющие конструкции имеют стандартный XML-синтаксис. Выражения, используемые в значениях атрибутов тегов TSN, являются JavaScript-выражениями.

@@ -188,7 +188,7 @@ this.template = {
 				return new Error('Attribute "name" is empty.');
 			} else {
 				if (parser.hasTemplates !== true) {
-					parser.root.code += 'var __template = new Template();';
+					parser.root.code += ';var __template = new Template();';
 					parser.hasTemplates = true;
 				}
 				this.body = '__template["' + attributes.name + '"] = function () {' +
@@ -202,30 +202,35 @@ this.template = {
 	body: ''
 };
 
-this.include = {
-	parse: function (parser) {
-		var attributes = this.attributes;
-		var prototype;
-		var template;
+this.include = (function () {
+	var path = require('path');
 
-		if (attributes.hasOwnProperty('src')) {
-			prototype = parser.constructor.prototype;
-			prototype.parent = parser;
+	return {
+		parse: function (parser) {
+			var attributes = this.attributes;
+			var prototype;
+			var template;
 
-			template = module.parent.exports.load(attributes.src, null, parser.config);
+			if (attributes.hasOwnProperty('src')) {
+				prototype = parser.constructor.prototype;
+				prototype.parent = parser;
 
-			delete prototype.parent;
+				if (attributes.src.charAt(0) !== '/') {
+					attributes.src = path.relative(parser.config.templateRoot, path.resolve(parser.config.path, attributes.src));
+				}
 
-			this.inline = true;
-			this.body = '' +
-				'(function () {' +
-					template.source +
-				'}).call(/*!context*/)';
+				template = module.parent.exports.load(attributes.src, null, parser.config);
 
-		} else if (attributes.hasOwnProperty('name')) {
-			this.body = '__template["' + attributes.name + '"].call(/*!context*/)';
-		} else {
-			return new Error('Attribute "name" or "src" is not defined.');
+				delete prototype.parent;
+
+				this.inline = true;
+				this.body = '' + '(function () {' + template.source + '}).call(/*!context*/)';
+
+			} else if (attributes.hasOwnProperty('name')) {
+				this.body = '__template["' + attributes.name + '"].call(/*!context*/)';
+			} else {
+				return new Error('Attribute "name" or "src" is not defined.');
+			}
 		}
-	}
-};
+	};
+})();
