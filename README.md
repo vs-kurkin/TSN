@@ -72,6 +72,12 @@ var result = TSN.render(template, data);
 var result = template.call(data);
 ```
 
+Запись результата в поток:
+
+```js
+template.call(data, response);
+```
+
 Документация по API находится в вики: https://github.com/B-Vladi/TSN/wiki/API.
 <br />
 Так же вы можете сгенерировать JSDoc документацию по API из исходников (файл <a href="https://github.com/B-Vladi/TSN/blob/master/TSN.js">TSN.js</a>).
