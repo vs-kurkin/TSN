@@ -209,8 +209,8 @@ TSN.compile = function (data, name, config) {
  * @param {object} data Данные, на основе которых будет рендериться шаблон.
  * @return {text} Результат рендеринга.
  */
-TSN.render = function (template, data) {
-	return template.call(data);
+TSN.render = function (template, data, stream) {
+	return template.call(data, stream);
 };
 
 /**
