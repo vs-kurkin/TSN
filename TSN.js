@@ -207,6 +207,7 @@ TSN.compile = function (data, name, config) {
  * Рендеринг шаблона на основе переданных данных.
  * @param {function} template Скомпилированный шаблон.
  * @param {object} data Данные, на основе которых будет рендериться шаблон.
+ * @param {object} stream Экземпляр конструктора <a href="http://nodejs.org/docs/latest/api/stream.html">Stream</a>, в который будет записываться результат рендеринга.
  * @return {text} Результат рендеринга.
  */
 TSN.render = function (template, data, stream) {
