@@ -45,12 +45,12 @@ Parser.prototype.onEnd = function () {
 };
 
 Parser.prototype.onText = function (text, node) {
-	node.code += (this.inline === true ? ' + ' : '__output += ') + '"' + text + '"';
+	node.code += (this.inline === true ? ' + ' : '__text = ') + '"' + text + '"';
 	this.inline = true;
 };
 
 Parser.prototype.onEntity = function (node) {
-	node.parent.code += (this.inline === true ? ' + ' : '__output += ') + node.name;
+	node.parent.code += (this.inline === true ? ' + ' : '__text = ') + node.name;
 	this.inline = true;
 };
 
@@ -103,7 +103,7 @@ function compileNode(node, parser) {
 				switch (name) {
 					case 'code':
 						if (node.inline !== true) {
-							node.code += ';';
+							node.code += '; __output += __text; hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '"); __text = "";';
 						}
 
 						return node.code;
@@ -117,9 +117,9 @@ function compileNode(node, parser) {
 	});
 
 	if (node.inline === true) {
-		code = parser.inline === true ? ' + ' + code : '__output += ' + code;
+		code = parser.inline === true ? ' + ' + code : '__text = ' + code;
 	} else {
-		code = ';' + code;
+		code = '; __output += __text; hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '"); __text = "";' + code;
 	}
 
 	parser.inline = node.inline;
@@ -181,8 +181,17 @@ TSN.compile = function (data, name, config) {
 	var parser = new Parser(config);
 	parser.parse(data);
 
-	var source = '"use strict"; var __output = ""; ' + parser.root.code + '; return __output;';
-	var template = new Function(source);
+	var source = '' +
+		'"use strict";' +
+		'var __output = "";' +
+		'var __text = "";' +
+		'var hasStream = stream !== void 0;' +
+		parser.root.code +
+		';' +
+		'hasStream && stream.end();' +
+		'return __output;';
+
+	var template = new Function('stream', source);
 
 	template.source = source;
 

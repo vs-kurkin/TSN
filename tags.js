@@ -93,6 +93,7 @@ this['var'] = {
 		if (!attributes.hasOwnProperty('value')) {
 			this.body = '' +
 				'_var["/*@name*/"] = (function (__output) {' +
+					'var hasStream = false;' +
 					'/*!code*/' +
 					'return __output;' +
 				'}).call(/*!context*/, "");';
