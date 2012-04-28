@@ -217,6 +217,9 @@ this.include = (function () {
 				prototype.parent = parser;
 
 				if (attributes.src.charAt(0) !== '/') {
+					if (!parser.config.hasOwnProperty('path')) {
+						parser.config.path = parser.config.templateRoot;
+					}
 					attributes.src = path.relative(parser.config.templateRoot, path.resolve(parser.config.path, attributes.src));
 				}
 
