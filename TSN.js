@@ -21,7 +21,7 @@ Parser.prototype.onStart = function () {
 
 	for (var nodeName in nodeAPI) {
 		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('start')) {
-			code = nodeAPI[nodeName].start(this);
+			code = nodeAPI[nodeName].start(this, TSN);
 
 			if (typeof code == 'string') {
 				this.current.code += code;
@@ -35,7 +35,7 @@ Parser.prototype.onEnd = function () {
 
 	for (var nodeName in nodeAPI) {
 		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('end')) {
-			code = nodeAPI[nodeName].end(this);
+			code = nodeAPI[nodeName].end(this, TSN);
 
 			if (typeof code == 'string') {
 				this.current.code += code;
@@ -67,7 +67,7 @@ Parser.prototype.onOpen = function (node) {
 		node.code = ';';
 
 		if (node.isEmpty) {
-			var parseResult = typeof node.parse === 'function' ? node.parse(this) : true;
+			var parseResult = typeof node.parse === 'function' ? node.parse(this, TSN) : true;
 
 			if (parseResult && parseResult.constructor === Error) {
 				this._error(parseResult.message, node);
@@ -84,7 +84,7 @@ Parser.prototype.onOpen = function (node) {
 
 Parser.prototype.onClose = function (node) {
 	if (nodeAPI.hasOwnProperty(this.current.name)) {
-		var parseResult = typeof this.current.parse === 'function' ? this.current.parse(this) : true;
+		var parseResult = typeof this.current.parse === 'function' ? this.current.parse(this, TSN) : true;
 
 		if (parseResult && parseResult.constructor === Error) {
 			this._error(parseResult.message, this.current);

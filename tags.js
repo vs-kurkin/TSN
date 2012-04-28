@@ -207,7 +207,7 @@ this.include = (function () {
 	var path = require('path');
 
 	return {
-		parse: function (parser) {
+		parse: function (parser, TSN) {
 			var attributes = this.attributes;
 			var prototype;
 			var template;
@@ -223,7 +223,7 @@ this.include = (function () {
 					attributes.src = path.relative(parser.config.templateRoot, path.resolve(parser.config.path, attributes.src));
 				}
 
-				template = module.parent.exports.load(attributes.src, null, parser.config);
+				template = TSN.load(attributes.src, null, parser.config);
 
 				delete prototype.parent;
 
