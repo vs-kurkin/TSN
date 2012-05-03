@@ -103,7 +103,9 @@ function compileNode(node, parser) {
 				switch (name) {
 					case 'code':
 						if (node.inline !== true) {
-							node.code += '; __output += __text; hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '"); __text = "";';
+							node.code += '; __output += __text;' +
+								'hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '");' +
+								'__text = "";';
 						}
 
 						return node.code;
@@ -119,7 +121,9 @@ function compileNode(node, parser) {
 	if (node.inline === true) {
 		code = parser.inline === true ? ' + ' + code : '__text = ' + code;
 	} else {
-		code = '; __output += __text; hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '"); __text = "";' + code;
+		code = '; __output += __text;' +
+			'hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '");' +
+			'__text = "";' + code;
 	}
 
 	parser.inline = node.inline;

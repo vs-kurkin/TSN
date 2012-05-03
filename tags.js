@@ -73,7 +73,7 @@ this.echo = (function () {
 				text = escape[attributes.escape].replace('/*text*/', text);
 			}
 
-			this.body = '(' + text + ')';
+			this.body = 'String(' + text + ')';
 		},
 		inline: true
 	};
@@ -177,9 +177,17 @@ this.template = {
 		}
 	},
 	end: function (parser) {
+		var code = '';
+
 		if (parser.hasTemplates === true) {
-			return 'Template.prototype = Object.getPrototypeOf(Template.prototype);';
+			code = 'Template.prototype = Object.getPrototypeOf(Template.prototype);';
 		}
+
+		if (parser.parent) {
+			code += 'hasStream = false;'
+		}
+
+		return code;
 	},
 	parse: function (parser) {
 		var attributes = this.attributes;
@@ -192,8 +200,11 @@ this.template = {
 					parser.root.code += ';var __template = new Template();';
 					parser.hasTemplates = true;
 				}
-				this.body = '__template["' + attributes.name + '"] = function () {' +
+				this.body = '__template["' + attributes.name + '"] = function (__output, __text) {' +
 						this.code +
+						'; __output += __text;' +
+						'hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '");' +
+						'; return __output;' +
 					'};';
 			}
 		} else {
@@ -220,6 +231,7 @@ this.include = (function () {
 					if (!parser.config.hasOwnProperty('path')) {
 						parser.config.path = parser.config.templateRoot;
 					}
+
 					attributes.src = path.relative(parser.config.templateRoot, path.resolve(parser.config.path, attributes.src));
 				}
 
@@ -227,11 +239,13 @@ this.include = (function () {
 
 				delete prototype.parent;
 
-				this.inline = true;
-				this.body = '' + '(function () {' + template.source + '}).call(/*!context*/)';
+				this.body = '' +
+					';__output += (function () {' +
+						template.source +
+					'}).call(/*!context*/);';
 
 			} else if (attributes.hasOwnProperty('name')) {
-				this.body = '__template["' + attributes.name + '"].call(/*!context*/)';
+				this.body = ';__output += __template["' + attributes.name + '"].call(/*!context*/, "", "");';
 			} else {
 				return new Error('Attribute "name" or "src" is not defined.');
 			}
