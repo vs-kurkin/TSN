@@ -18,8 +18,8 @@
 	escape (js|html|htmlDec|htmlHex|url) #IMPLIED
 	>
 
-<!ELEMENT tsn:var ANY>
-<!ATTLIST tsn:var
+<!ELEMENT tsn:data ANY>
+<!ATTLIST tsn:data
 	name CDATA #REQUIRED
 	value CDATA #IMPLIED
 	context CDATA "this"

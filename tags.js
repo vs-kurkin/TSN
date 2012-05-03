@@ -79,9 +79,9 @@ this.echo = (function () {
 	};
 })();
 
-this['var'] = {
+this['data'] = {
 	start: function () {
-		return 'var _var = {};';
+		return 'var _data = {};';
 	},
 	parse: function () {
 		var attributes = this.attributes;
@@ -92,14 +92,14 @@ this['var'] = {
 
 		if (!attributes.hasOwnProperty('value')) {
 			this.body = '' +
-				'_var["/*@name*/"] = (function (__output, __text) {' +
+				'_data["/*@name*/"] = (function (__output, __text) {' +
 					'var hasStream = false;' +
 					'/*!code*/' +
 					'return __output;' +
 				'}).call(/*!context*/, "", "");';
 		}
 	},
-	body: '_var["/*@name*/"] = (/*@value*/);'
+	body: '_data["/*@name*/"] = (/*@value*/);'
 };
 
 this['if'] = {
