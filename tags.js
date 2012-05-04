@@ -5,26 +5,26 @@
 this.root = {
 	parse: function () {
 		if (this.attributes.hasOwnProperty('context')) {
-			this.body = '' +
+			this.template = '' +
 				'(function () {' +
 					'/*!code*/' +
 				'}).call(/*!context*/);';
 		}
 	},
-	body: '/*!code*/'
+	template: '/*!code*/'
 };
 
 this['comment'] = {
-	body: ''
+	template: ''
 };
 
 this.context = {
 	parse: function () {
 		if (!this.attributes.hasOwnProperty('object')) {
-			this.body = '/*!code*/';
+			this.template = '/*!code*/';
 		}
 	},
-	body: '' +
+	template: '' +
 		'(function () {' +
 			'/*!code*/' +
 		'}).call(/*@object*/);'
@@ -36,18 +36,18 @@ this.echo = (function () {
 	};
 
 	var escape = {
-		js: '(/*text*/)' +
+		js: 'String(/*text*/)' +
 			'.replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
 
 		url: 'encodeURI(/*text*/)',
 
-		html: '(/*text*/)' +
+		html: 'String(/*text*/)' +
 			'.replace(/&/g, "&amp;")' +
 			'.replace(/</g, "&lt;")' +
 			'.replace(/>/g, "&gt;")' +
 			'.replace(/\"/g, "&quot;")',
 
-		htmlDec: '(/*text*/)' +
+		htmlDec: 'String(/*text*/)' +
 			'.replace(/&/g, "&#38;")' +
 			'.replace(/</g, "&#60;")' +
 			'.replace(/>/g, "&#62;")' +
@@ -73,7 +73,7 @@ this.echo = (function () {
 				text = escape[attributes.escape].replace('/*text*/', text);
 			}
 
-			this.body = 'String(' + text + ')';
+			this.template = 'String(' + text + ')';
 		},
 		inline: true
 	};
@@ -91,7 +91,7 @@ this['data'] = {
 		}
 
 		if (!attributes.hasOwnProperty('value')) {
-			this.body = '' +
+			this.template = '' +
 				'_data["/*@name*/"] = (function (__output, __text) {' +
 					'var hasStream = false;' +
 					'/*!code*/' +
@@ -99,7 +99,7 @@ this['data'] = {
 				'}).call(/*!context*/, "", "");';
 		}
 	},
-	body: '_data["/*@name*/"] = (/*@value*/);'
+	template: '_data["/*@name*/"] = (/*@value*/);'
 };
 
 this['if'] = {
@@ -108,7 +108,7 @@ this['if'] = {
 			this.attributes.test = 'this';
 		}
 	},
-	body: '' +
+	template: '' +
 		'if (/*@test*/) {' +
 			'/*!code*/' +
 		'}'
@@ -120,10 +120,35 @@ this.unless = {
 			this.attributes.test = 'this';
 		}
 	},
-	body: '' +
+	template: '' +
 		'if (!(/*@test*/)) {' +
 			'/*!code*/' +
 		'}'
+};
+
+this['else'] = {
+	parse: function () {
+		var parent = this.parent;
+		var attributes = this.attributes;
+
+		if (parent.name !== 'if') {
+			return new Error('Tag "else" must have a parent "if".');
+		} else if (parent.hasElse) {
+			return new Error('Tag "if" should have one child "else".');
+		} else if (this.isEmpty) {
+			parent.template = parent.template.replace('/*!code*/', parent.code).slice(0, -1) + '/*!code*/}';
+			parent.code = '';
+
+			if (attributes.hasOwnProperty('if')) {
+				this.template = '} else if (' + attributes['if'] + ') {/*!code*/'
+			} else {
+				parent.hasElse = true;
+			}
+		} else {
+			return new Error('Tag else should be a single');
+		}
+	},
+	template: '} else {/*!code*/'
 };
 
 this['for'] = {
@@ -134,7 +159,7 @@ this['for'] = {
 			attributes.array = 'this';
 		}
 
-		this.body = '' +
+		this.template = '' +
 			'(function (_array) {' +
 				'var _length = _array.length;' +
 				'var _index = 0;' +
@@ -155,7 +180,7 @@ this['each'] = {
 			attributes.object = 'this';
 		}
 
-		this.body = '' +
+		this.template = '' +
 			'(function (_object) {' +
 				'for (var _property in _object) {' +
 					'if (_object.hasOwnProperty(_property)) {' +
@@ -184,7 +209,10 @@ this.template = {
 		}
 
 		if (parser.parent) {
-			code += 'hasStream = false;'
+			code += ';' +
+				'; __output += __text;' +
+				'hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '");' +
+				'hasStream = false;'
 		}
 
 		return code;
@@ -200,7 +228,7 @@ this.template = {
 					parser.root.code += ';var __template = new Template();';
 					parser.hasTemplates = true;
 				}
-				this.body = '__template["' + attributes.name + '"] = function (__output, __text) {' +
+				this.template = '__template["' + attributes.name + '"] = function (__output, __text) {' +
 						this.code +
 						'; __output += __text;' +
 						'hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '");' +
@@ -211,7 +239,7 @@ this.template = {
 			return new Error('Attribute "name" is not defined.');
 		}
 	},
-	body: ''
+	template: ''
 };
 
 this.include = (function () {
@@ -239,13 +267,13 @@ this.include = (function () {
 
 				delete prototype.parent;
 
-				this.body = '' +
+				this.template = '' +
 					';__output += (function () {' +
 						template.source +
 					'}).call(/*!context*/);';
 
 			} else if (attributes.hasOwnProperty('name')) {
-				this.body = ';__output += __template["' + attributes.name + '"].call(/*!context*/, "", "");';
+				this.template = ';__output += __template["' + attributes.name + '"].call(/*!context*/, "", "");';
 			} else {
 				return new Error('Attribute "name" or "src" is not defined.');
 			}

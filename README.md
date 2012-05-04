@@ -1,4 +1,4 @@
-# TSN 2.2.4 #
+# TSN 2.3.0 #
 https://github.com/B-Vladi/TSN/
 
 Templating System for Node.JS.
@@ -83,14 +83,178 @@ template.call(data, response);
 Так же вы можете сгенерировать JSDoc документацию по API из исходников (файл <a href="https://github.com/B-Vladi/TSN/blob/master/TSN.js">TSN.js</a>).
 
 ###Контекст данных.
-Для доступа к данным из JavaScript-выражений используется понятие контекст. Контекстом является обычный JavaScript контекст в функциях. Т.е. необходимо использовать ключевое слово this, для обращения к текущему контексту.
+В JavaScript-выражениях, используемых в значениях атрибутов тегов TSN, переданные данные доступны в виде контекста через ключевое слово this.
+<br />
+Если TSN тег влияет на контекст, это затрагивает только его дочерних элементов.
 
 ###Теги
-TSN использует теги в качестве управляющих конструкций в шаблоне, поэтому они должны быть правильными с точки зрения синтаксиса XML. TSN-теги должны иметь префикс пространства имен (настраивается в <a href="https://github.com/B-Vladi/TSN/blob/master/config.json">конфигурационном файле</a>, либо через <a href="https://github.com/B-Vladi/TSN/wiki/API#wiki-.config">API</a>).
+Управляющие конструкци TSN-шаблона представляют собой XML-теги с префиксом пространства имен `TSN`. Префикс может использоваться любой и настраивается в <a href="https://github.com/B-Vladi/TSN/blob/master/config.json">конфигурационном файле</a>, либо через <a href="https://github.com/B-Vladi/TSN/wiki/API#wiki-.config">API</a>.
+TSN-парсер не учитывает XML-окружение, поэтому явно регистрировать префикс для постранства имен `TSN` не обязательно, но рекоммендуется для комфортной работы в IDE.
 
-В значениях атрибутов тегов TSN можно использовать следующие XML-сущности: `&amp; &lt; &gt; &quot; &apos;`.
+В значениях атрибутов тегов TSN могут использоваться следующие XML-сущности: `&amp; &lt; &gt; &quot; &apos;`.
 
-Описание тегов и примеры: https://github.com/B-Vladi/TSN/wiki/Tags
+Описание тегов с примерами использования в вики: https://github.com/B-Vladi/TSN/wiki/Tags
+<hr />
+
+###Пример Web-приложения
+Файл page_name.xml:
+
+```xml
+<?xml version="1.0"?>
+<tsn:root xmlns:tsn="TSN"
+          xmlns="http://www.w3.org/1999/xhtml">
+
+    <!-- Формирование контента для тега head -->
+    <tsn:template name="head">
+        <link type="text/css"
+              rel="stylesheet"
+              href="/page.css" />
+    </tsn:template>
+
+    <!-- Сохранение данных в области видимости этого шаблона -->
+    <tsn:data name="GET"
+              value="this.request.GET" />
+
+    <!-- Формирование контента для тега body -->
+    <tsn:template name="body">
+        <!-- Вывод GET-параметра userName -->
+        <h2>Hello, <tsn:echo text="_data.GET.userName"
+                             escape="html" />!
+        </h2>
+    </tsn:template>
+
+    <!-- Добавление контента перед закрывающим тегом body -->
+    <tsn:template name="footer">
+        <script type="text/javascript"
+                src="page.js"></script>
+    </tsn:template>
+
+    <!-- Вставка базоваого шаблона разметки и формирование данных,
+            которые будут для него контекстом -->
+    <tsn:include src="/base.xml"
+                 context="({
+                     title: 'My name',
+                     navigation: this.navigation,
+                     request: {
+                        status: 200
+                     }
+                 })" />
+</tsn:root>
+```
+<br />
+Файл base.xml:
+
+```xml
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <tsn:root xmlns:tsn="TSN">
+    <head>
+        <!-- Формирование заголовка страницы -->
+        <title>
+            <tsn:echo text="this.title" /> - Hostname
+        </title>
+
+        <meta http-equiv="Content-Type"
+              content="text/html; charset=utf-8" />
+
+        <!-- Общие стили -->
+        <link type="text/css"
+              rel="stylesheet"
+              href="/base.css" />
+
+        <!-- Стили для конкретной страницы -->
+        <tsn:include name="head" />
+    </head>
+    <body>
+        <div class="wrapper">
+            <!-- Шапка -->
+            <tsn:include src="/header.xml"
+                         context="this.navigation" />
+
+            <!-- Если статус 200... -->
+            <tsn:if test="this.request.status == 200">
+                <!-- ...вставляем унаследованный контент страницы -->
+                <tsn:include name="body" />
+                <tsn:else />
+                <!-- ...иначе вставляем страницу ошибки -->
+                <tsn:include src="/error/&TSN.this.request.status;.xml" />
+            </tsn:if>
+        </div>
+
+        <tsn:include name="footer" />
+    </body>
+    </tsn:root>
+</html>
+```
+<br />
+JavaScript-код приложения:
+
+```js
+/* Подключение зависимостей */
+var http = require('http');
+var queryString = require('querystring');
+var TSN = require('TSN');
+
+/* Уберём комментарии из результата */
+TSN.config.saveComments = false;
+
+/* Компиляция шаблона */
+TSN.load('temp.xml', 'page_name', {
+	indent: 4
+});
+
+/* Создание сервера */
+http.Server(
+	function (request, response) {
+		/* Формирование данных для рендеринга */
+		var data = {
+			request: {
+				GET: queryString.parse(request.url.substring(2))
+			}
+		};
+
+		/* Рендеринг шаблона с записью результата в поток */
+		TSN.cache['page_name'].call(data, response);
+	}).listen(80, '127.0.0.1');
+```
+<br />
+Запрос:
+
+`127.0.0.1/?userName=Vasya`
+<br />
+Результат:
+```html
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>My name - Hostname
+    </title>
+
+    <meta http-equiv="Content-Type"
+          content="text/html; charset=utf-8" />
+
+    <link type="text/css"
+          rel="stylesheet"
+          href="/base.css" />
+
+<link type="text/css"
+      rel="stylesheet"
+      href="/page.css" />
+</head>
+<body>
+    <div class="wrapper">
+
+<h2>Hello, Vasya!
+</h2>
+    </div>
+
+<script type="text/javascript"
+        src="page.js"></script>
+</body>
+</html>
+```
+
+
 
 <hr />
 По всем вопросам отвечу по почте: b-vladi@cs-console.ru.

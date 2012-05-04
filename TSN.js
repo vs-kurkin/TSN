@@ -61,7 +61,7 @@ Parser.prototype.onError = function (error) {
 Parser.prototype.onOpen = function (node) {
 	if (nodeAPI.hasOwnProperty(node.name)) {
 		var API = nodeAPI[node.name];
-		node.body = API.body;
+		node.template = API.template;
 		node.parse = API.parse;
 		node.inline = API.inline;
 		node.code = ';';
@@ -97,7 +97,7 @@ Parser.prototype.onClose = function (node) {
 };
 
 function compileNode(node, parser) {
-	var code = node.body.replace(/\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi, function (result, type, name) {
+	var code = node.template.replace(/\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi, function (result, type, name) {
 		switch (type) {
 			case '!':
 				switch (name) {

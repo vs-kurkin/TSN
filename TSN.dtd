@@ -35,6 +35,11 @@
 	test CDATA "this"
 	>
 
+<!ELEMENT tsn:else ANY>
+<!ATTLIST tsn:else
+	if CDATA "this"
+	>
+
 <!ELEMENT tsn:for ANY>
 <!ATTLIST tsn:for
 	array CDATA "this"
