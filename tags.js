@@ -131,7 +131,7 @@ this['else'] = {
 		var parent = this.parent;
 		var attributes = this.attributes;
 
-		if (parent.name !== 'if') {
+		if (!(parent.name === 'if' && parent.name === 'unless')) {
 			return new Error('Tag "else" must have a parent "if".');
 		} else if (parent.hasElse) {
 			return new Error('Tag "if" should have one child "else".');
