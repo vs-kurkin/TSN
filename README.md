@@ -181,6 +181,7 @@ TSN-парсер не учитывает XML-окружение, поэтому 
             </tsn:if>
         </div>
 
+        <!-- Подключение скриптов для текущей страницы -->
         <tsn:include name="footer" />
     </body>
     </tsn:root>
@@ -199,7 +200,7 @@ var TSN = require('TSN');
 TSN.config.saveComments = false;
 
 /* Компиляция шаблона */
-TSN.load('temp.xml', 'page_name', {
+TSN.load('page_name.xml', 'page_name', {
 	indent: 4
 });
 
@@ -220,7 +221,9 @@ http.Server(
 <br />
 Запрос:
 
-`127.0.0.1/?userName=Vasya`
+`http://127.0.0.1/?userName=Vasya`
+
+<br />
 <br />
 Результат:
 ```html
