@@ -104,7 +104,7 @@ function compileNode(node, parser) {
 					case 'code':
 						if (node.inline !== true) {
 							node.code += '; __output += __text;' +
-								'hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '");' +
+								'__hasStream && __text !== "" && __stream.write(__text, "' + parser.config.encoding + '");' +
 								'__text = "";';
 						}
 
@@ -122,13 +122,21 @@ function compileNode(node, parser) {
 		code = parser.inline === true ? ' + ' + code : '__text = ' + code;
 	} else {
 		code = '; __output += __text;' +
-			'hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '");' +
+			'__hasStream && __text !== "" && __stream.write(__text, "' + parser.config.encoding + '");' +
 			'__text = "";' + code;
 	}
 
 	parser.inline = node.inline;
 
 	return code;
+}
+
+function call(data, stream) {
+	return Function.prototype.call.call(this, data, stream, TSN);
+}
+
+function apply (data, stream) {
+	return Function.prototype.apply.call(this, data, stream, TSN);
 }
 
 /**
@@ -189,18 +197,20 @@ TSN.compile = function (data, name, config) {
 		'"use strict";' +
 		'var __output = "";' +
 		'var __text = "";' +
-		'var hasStream = stream !== void 0;' +
+		'var __hasStream = __stream !== void 0;' +
 		parser.root.code +
 		';' +
-		'hasStream && stream.end();' +
+		'__hasStream && __stream.end();' +
 		'return __output;';
 
-	var template = new Function('stream', source);
+	var template = new Function('__stream', 'TSN', source);
 
+	template.call = call;
+	template.apply = apply;
 	template.source = source;
 
 	if (typeof name === 'string' && name !== '') {
-		template.name = name;
+		template.cacheName = name;
 		TSN.cache[name] = template;
 	}
 
@@ -215,7 +225,7 @@ TSN.compile = function (data, name, config) {
  * @return {text} Результат рендеринга.
  */
 TSN.render = function (template, data, stream) {
-	return template.call(data, stream);
+	return Function.prototype.call.call(template, data, stream, TSN);
 };
 
 /**

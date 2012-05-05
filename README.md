@@ -1,4 +1,4 @@
-# TSN 2.3.0 #
+# TSN 2.3.1 #
 https://github.com/B-Vladi/TSN/
 
 Templating System for Node.JS.
@@ -40,7 +40,8 @@ var template = TSN.load('path/to/template.xml'); // Компиляция отн�
 
 ```js
 var template = TSN.load('path/to/template.xml', 'My name');
-console.log(template.name === 'My name'); // true
+
+console.log(template.cacheName === 'My name'); // true
 console.log(TSN.cache['My name'] === template); // true
 ```
 
@@ -177,7 +178,7 @@ TSN-парсер не учитывает XML-окружение, поэтому 
                 <tsn:include name="body" />
                 <tsn:else />
                 <!-- ...иначе вставляем страницу ошибки -->
-                <tsn:include src="/error/&TSN.this.request.status;.xml" />
+                <tsn:include src="/error.xml" context="this.request.status" /
             </tsn:if>
         </div>
 

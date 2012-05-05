@@ -93,7 +93,7 @@ this['data'] = {
 		if (!attributes.hasOwnProperty('value')) {
 			this.template = '' +
 				'_data["/*@name*/"] = (function (__output, __text) {' +
-					'var hasStream = false;' +
+					'var __hasStream = false;' +
 					'/*!code*/' +
 					'return __output;' +
 				'}).call(/*!context*/, "", "");';
@@ -131,7 +131,7 @@ this['else'] = {
 		var parent = this.parent;
 		var attributes = this.attributes;
 
-		if (!(parent.name === 'if' && parent.name === 'unless')) {
+		if (!(parent.name === 'if' || parent.name === 'unless')) {
 			return new Error('Tag "else" must have a parent "if".');
 		} else if (parent.hasElse) {
 			return new Error('Tag "if" should have one child "else".');
@@ -192,64 +192,66 @@ this['each'] = {
 	}
 };
 
-this.template = {
-	start: function (parser) {
-		if (!parser.parent) {
-			return '' +
-				'function Template () {' +
-					'Template.prototype = this;' +
-				'}';
-		}
-	},
-	end: function (parser) {
-		var code = '';
-
-		if (parser.hasTemplates === true) {
-			code = 'Template.prototype = Object.getPrototypeOf(Template.prototype);';
-		}
-
-		if (parser.parent) {
-			code += ';' +
-				'; __output += __text;' +
-				'hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '");' +
-				'hasStream = false;'
-		}
-
-		return code;
-	},
-	parse: function (parser) {
-		var attributes = this.attributes;
-
-		if (attributes.hasOwnProperty('name')) {
-			if (attributes.name === '') {
-				return new Error('Attribute "name" is empty.');
-			} else {
-				if (parser.hasTemplates !== true) {
-					parser.root.code += ';var __template = new Template();';
-					parser.hasTemplates = true;
-				}
-				this.template = '__template["' + attributes.name + '"] = function (__output, __text) {' +
-						this.code +
-						'; __output += __text;' +
-						'hasStream && __text !== "" && stream.write(__text, "' + parser.config.encoding + '");' +
-						'; return __output;' +
-					'};';
-			}
-		} else {
-			return new Error('Attribute "name" is not defined.');
-		}
-	},
-	template: ''
-};
-
-this.include = (function () {
+(function (API) {
 	var path = require('path');
 
-	return {
+	function escape(text) {
+		return text.replace(/('|"|(?:\r\n)|\r|\n|\\)/g, "\\$1");
+	}
+
+	function addCode (parser) {
+		if (parser.hasTemplates !== true) {
+			parser.root.code += ';' +
+				'function __Template () {}' +
+				'__Template.prototype = TSN.parentTemplate;' +
+				'var __template = new __Template;' +
+				'delete TSN.parentTemplate;';
+
+			parser.hasTemplates = true;
+		}
+	}
+
+	API.template = {
+		end: function (parser) {
+			if (parser.parent) {
+				return ';' +
+					'__output += __text;' +
+					'__hasStream && __text !== "" && __stream.write(__text, "' + parser.config.encoding + '");' +
+					'__hasStream = false;'
+			}
+		},
+		parse: function (parser) {
+			var attributes = this.attributes;
+
+			if (attributes.hasOwnProperty('name')) {
+				if (attributes.name === '') {
+					return new Error('Attribute "name" is empty.');
+				} else {
+					addCode(parser);
+
+					this.template = '' +
+						'__template["' + escape(attributes.name) + '"] = function (__output, __text) {' +
+						this.code +
+						';' +
+						'__output += __text;' +
+						'__hasStream && __text !== "" && __stream.write(__text, "' + parser.config.encoding + '");' +
+						'; return __output;' +
+						'};';
+				}
+			} else {
+				return new Error('Attribute "name" is not defined.');
+			}
+		},
+		template: ''
+	};
+
+	API.include = {
 		parse: function (parser, TSN) {
 			var attributes = this.attributes;
 			var prototype;
 			var template;
+
+			addCode(parser);
 
 			if (attributes.hasOwnProperty('src')) {
 				prototype = parser.constructor.prototype;
@@ -267,16 +269,15 @@ this.include = (function () {
 
 				delete prototype.parent;
 
-				this.template = '' +
-					';__output += (function () {' +
-						template.source +
-					'}).call(/*!context*/);';
+				this.template = ';' +
+					'TSN.parentTemplate = __template;' +
+					'__output += TSN.cache["' + escape(template.cacheName) + '"].call(/*!context*/, __stream);';
 
 			} else if (attributes.hasOwnProperty('name')) {
-				this.template = ';__output += __template["' + attributes.name + '"].call(/*!context*/, "", "");';
+				this.template = ';__output += __template["' + escape(attributes.name) + '"].call(/*!context*/, "", "");';
 			} else {
 				return new Error('Attribute "name" or "src" is not defined.');
 			}
 		}
 	};
-})();
+})(this);
