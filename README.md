@@ -178,7 +178,7 @@ TSN-парсер не учитывает XML-окружение, поэтому 
                 <tsn:include name="body" />
                 <tsn:else />
                 <!-- ...иначе вставляем страницу ошибки -->
-                <tsn:include src="/error.xml" context="this.request.status" /
+                <tsn:include src="/error.xml" context="this.request.status" />
             </tsn:if>
         </div>
 
