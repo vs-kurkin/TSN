@@ -200,7 +200,8 @@ TSN.compile = function (data, name, config) {
 		'var __hasStream = __stream !== void 0;' +
 		parser.root.code +
 		';' +
-		'__hasStream && __stream.end();' +
+		'__output += __text;' +
+		'__hasStream && __text !== "" && __stream.write(__text, "' + config.encoding + '") && __stream.end();' +
 		'return __output;';
 
 	var template = new Function('__stream', 'TSN', source);
