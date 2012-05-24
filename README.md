@@ -1,4 +1,4 @@
-# TSN 2.3.2 #
+# TSN 2.3.3 #
 https://github.com/B-Vladi/TSN/
 
 Templating System for Node.JS.
@@ -119,7 +119,7 @@ TSN-парсер не учитывает XML-окружение, поэтому 
     <!-- Формирование контента для тега body -->
     <tsn:template name="body">
         <!-- Вывод GET-параметра userName -->
-        <h2>Hello, <tsn:echo text="_data.GET.userName"
+        <h2>Hello, <tsn:echo data="_data.GET.userName"
                              escape="html" />!
         </h2>
     </tsn:template>
@@ -152,7 +152,7 @@ TSN-парсер не учитывает XML-окружение, поэтому 
     <head>
         <!-- Формирование заголовка страницы -->
         <title>
-            <tsn:echo text="this.title" /> - Hostname
+            <tsn:echo data="this.title" /> - Hostname
         </title>
 
         <meta http-equiv="Content-Type"

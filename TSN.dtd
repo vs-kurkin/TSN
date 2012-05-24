@@ -13,8 +13,8 @@
 
 <!ELEMENT tsn:echo EMPTY>
 <!ATTLIST tsn:echo
-	text CDATA "this"
-	type (json) #IMPLIED
+	data CDATA "this"
+	format (json|text) "text"
 	escape (js|html|htmlDec|htmlHex|url) #IMPLIED
 	>
 
@@ -37,7 +37,8 @@
 
 <!ELEMENT tsn:else ANY>
 <!ATTLIST tsn:else
-	if CDATA "this"
+	if CDATA #IMPLIED
+	unless CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:for ANY>
