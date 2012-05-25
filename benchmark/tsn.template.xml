@@ -38,7 +38,7 @@
                                         <td>
                                             <font color="#ffffff">
                                                 <b>
-                                                    <tsn:echo text="item.title"
+                                                    <tsn:echo data="item.title"
                                                               escape="html" />
                                                 </b>
                                             </font>
@@ -48,7 +48,7 @@
                                         <td bgcolor="#ffffff">
                                             <small>
                                                 <a href="&TSN.item.url;">
-                                                    <tsn:echo text="item.text"
+                                                    <tsn:echo data="item.text"
                                                               escape="html" />
                                                 </a>
                                             </small>
@@ -74,7 +74,7 @@
                                                 <font color="#ffffff">
                                                     <b>
                                                         <a href="http://lb/section.html?id=&TSN.item.id;">
-                                                            <tsn:echo text="item.title"
+                                                            <tsn:echo data="item.title"
                                                                       escape="html" />
                                                         </a>
 
@@ -92,16 +92,16 @@
 
                         <p>
                             <b>Users</b>:
-                            <tsn:echo text="this.total" />
+                            <tsn:echo data="this.total" />
                             <br />
                             <b>Online</b>:
-                            <tsn:echo text="this.online ? this.online.length : 0" />
+                            <tsn:echo data="this.online ? this.online.length : 0" />
                             <br />
                             <small>
                                 <i>
                                     <tsn:for array="this.online">
                                         <a href="http://lb/user.html?id=&TSN._index;">
-                                            <tsn:echo text="_array[_index].name"
+                                            <tsn:echo data="_array[_index].name"
                                                       escape="html" />
                                         </a>&nbsp;
                                     </tsn:for>
@@ -114,13 +114,13 @@
                         width="400">
                         <tsn:for array="this.news" item="item">
                             <b>
-                                <tsn:echo text="item.time + ' ' + item.title"
+                                <tsn:echo data="item.time + ' ' + item.title"
                                           escape="html" />
                             </b>
                             <br />
 
                             <small>
-                                <tsn:echo text="item.text"
+                                <tsn:echo data="item.text"
                                           escape="html" />
                                 <a href="http://lb/news.html?id=&TSN.item.id;">[ read full story ]</a>
                             </small>

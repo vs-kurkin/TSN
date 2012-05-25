@@ -31,29 +31,29 @@ this.context = {
 };
 
 this.echo = (function () {
-	var type = {
+	var format = {
+		text: 'String(/*text*/)',
 		json: 'JSON.stringify(/*text*/)'
 	};
 
 	var escape = {
-		js: 'String(/*text*/)' +
-			'.replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
+		js: '.replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
 
 		url: 'encodeURI(/*text*/)',
 
-		html: 'String(/*text*/)' +
+		html: '' +
 			'.replace(/&/g, "&amp;")' +
 			'.replace(/</g, "&lt;")' +
 			'.replace(/>/g, "&gt;")' +
 			'.replace(/\"/g, "&quot;")',
 
-		htmlDec: 'String(/*text*/)' +
+		htmlDec: '' +
 			'.replace(/&/g, "&#38;")' +
 			'.replace(/</g, "&#60;")' +
 			'.replace(/>/g, "&#62;")' +
 			'.replace(/\"/g, "&#34;")',
 
-		htmlHex: '(/*text*/)' +
+		htmlHex: '' +
 			'.replace(/&/g, "&#x26;")' +
 			'.replace(/</g, "&#x3c;")' +
 			'.replace(/>/g, "&#x3e;")' +
@@ -61,19 +61,29 @@ this.echo = (function () {
 	};
 
 	return {
-		parse: function (parser) {
+		parse: function () {
 			var attributes = this.attributes;
-			var text = attributes.hasOwnProperty('text') ? attributes.text : 'this';
+			var template = attributes.hasOwnProperty('data') ? attributes.data : 'this';
 
-			if (attributes.hasOwnProperty('type') && type.hasOwnProperty(attributes.type)) {
-				text = type[attributes.type].replace('/*text*/', text);
+			if (!attributes.hasOwnProperty('format')) {
+				attributes.format = 'text';
 			}
 
-			if (attributes.hasOwnProperty('escape') && escape.hasOwnProperty(attributes.escape)) {
-				text = escape[attributes.escape].replace('/*text*/', text);
+			if (format.hasOwnProperty(attributes.format)) {
+				template = format[attributes.format].replace('/*text*/', template);
+			} else {
+				return Error('Invalid value of "' + attributes.escape + '" attribute "format"');
 			}
 
-			this.template = 'String(' + text + ')';
+			if (attributes.hasOwnProperty('escape')) {
+				if (escape.hasOwnProperty(attributes.escape)) {
+					template += escape[attributes.escape];
+				} else {
+					return Error('Invalid value of "' + attributes.escape + '" attribute "escape"');
+				}
+			}
+
+			this.template = template;
 		},
 		inline: true
 	};
@@ -141,6 +151,8 @@ this['else'] = {
 
 			if (attributes.hasOwnProperty('if')) {
 				this.template = '} else if (' + attributes['if'] + ') {/*!code*/'
+			} else if (attributes.hasOwnProperty('unless')) {
+				this.template = '} else if (!(' + attributes['unless'] + ')) {/*!code*/'
 			} else {
 				parent.hasElse = true;
 			}
@@ -245,7 +257,7 @@ this['each'] = {
 		template: ''
 	};
 
-	API.include = {
+	API['include'] = {
 		parse: function (parser, TSN) {
 			var attributes = this.attributes;
 			var prototype;
