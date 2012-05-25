@@ -148,11 +148,13 @@ var TSN = new LIB.event.EventEmitter();
 
 /**
  * Кеш скомпилированных шаблонов.
+ * @type object
  */
 TSN.cache = {};
 
 /**
  * Стандартные настройки шаблонизатора, загруженные из config.json.
+ * @type object
  */
 TSN.config = JSON.parse(LIB.fileSystem.readFileSync(LIB.path.join(__dirname, 'config.json'), 'utf-8'));
 
