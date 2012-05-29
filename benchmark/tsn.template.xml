@@ -25,7 +25,7 @@
                         </table>
                     </td>
 
-                    <tsn:for array="this.adverts" item="item">
+                    <tsn:each array="this.adverts" item="item">
                         <td valign="top"
                             width="200">
                             <table bgcolor="#000000"
@@ -57,7 +57,7 @@
                                 </tbody>
                             </table>
                         </td>
-                    </tsn:for>
+                    </tsn:each>
                 </tr>
 
                 <tr valign="top">
@@ -66,7 +66,7 @@
                             <table cellpadding="3"
                                    width="100%">
                                 <tbody>
-                                    <tsn:for array="this.sections" item="item">
+                                    <tsn:each array="this.sections" item="item">
                                         <tsn:var name="bgColor"
                                                  value="_index % 2 ? '#dddddd' : '#eeeeee'" />
                                         <tr>
@@ -85,7 +85,7 @@
                                                 </font>
                                             </td>
                                         </tr>
-                                    </tsn:for>
+                                    </tsn:each>
                                 </tbody>
                             </table>
                         </tsn:if>
@@ -99,12 +99,12 @@
                             <br />
                             <small>
                                 <i>
-                                    <tsn:for array="this.online">
+                                    <tsn:each array="this.online">
                                         <a href="http://lb/user.html?id=&TSN._index;">
                                             <tsn:echo data="_array[_index].name"
                                                       escape="html" />
                                         </a>&nbsp;
-                                    </tsn:for>
+                                    </tsn:each>
                                 </i>
                             </small>
                         </p>
@@ -112,7 +112,7 @@
 
                     <td colspan="3"
                         width="400">
-                        <tsn:for array="this.news" item="item">
+                        <tsn:each array="this.news" item="item">
                             <b>
                                 <tsn:echo data="item.time + ' ' + item.title"
                                           escape="html" />
@@ -125,7 +125,7 @@
                                 <a href="http://lb/news.html?id=&TSN.item.id;">[ read full story ]</a>
                             </small>
                             <br />
-                        </tsn:for>
+                        </tsn:each>
                     </td>
                 </tr>
                 <tr>

@@ -163,46 +163,38 @@ this['else'] = {
 	template: '} else {/*!code*/'
 };
 
-this['for'] = {
-	parse: function () {
-		var attributes = this.attributes;
-
-		if (!attributes.hasOwnProperty('array')) {
-			attributes.array = 'this';
-		}
-
-		this.template = '' +
-			'(function (_array) {' +
-				'var _length = _array.length;' +
-				'var _index = 0;' +
-				'while (_index < _length) {' +
-					(attributes.hasOwnProperty('item') ? 'var /*@item*/ = _array[_index];' : '') +
-					'/*!code*/' +
-					'_index++;' +
-				'}' +
-			'}).call(/*!context*/, /*@array*/);'
-	}
-};
-
 this['each'] = {
 	parse: function () {
 		var attributes = this.attributes;
+		var hasItem = attributes.hasOwnProperty('item');
 
-		if (!attributes.hasOwnProperty('object')) {
-			attributes.object = 'this';
-		}
-
-		this.template = '' +
-			'(function (_object) {' +
-				'for (var _property in _object) {' +
-					'if (_object.hasOwnProperty(_property)) {' +
-						(attributes.hasOwnProperty('item') ? 'var /*@item*/ = _object[_property];' : '') +
+		if (attributes.hasOwnProperty('array')) {
+			this.template = '' +
+				'(function (_array) {' +
+					'var _length = _array.length;' +
+					'var _index = 0;' +
+					'while (_index < _length) {' +
+						(hasItem ? 'var /*@item*/ = _array[_index];' : '') +
 						'/*!code*/' +
+						'_index++;' +
 					'}' +
-				'}' +
-			'}).call(/*!context*/, /*@object*/);'
+				'}).call(/*!context*/, /*@array*/);';
+		} else if (attributes.hasOwnProperty('object')) {
+			this.template = '' +
+				'(function (_object) {' +
+					'for (var _property in _object) {' +
+						'if (_object.hasOwnProperty(_property)) {' +
+							(hasItem ? 'var /*@item*/ = _object[_property];' : '') +
+							'/*!code*/' +
+						'}' +
+					'}' +
+				'}).call(/*!context*/, /*@object*/);';
+		} else {
+			return new Error('Attribute "array" or "object" is not defined.');
+		}
 	}
 };
+
 
 (function (API) {
 	var path = require('path');

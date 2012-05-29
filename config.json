@@ -5,5 +5,6 @@
 	"saveComments": true,
 	"parseCDATA": false,
 	"tabSize": 2,
-	"indent": 2
+	"indent": 2,
+	"cache": true
 }

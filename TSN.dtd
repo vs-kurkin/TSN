@@ -41,16 +41,10 @@
 	unless CDATA #IMPLIED
 	>
 
-<!ELEMENT tsn:for ANY>
-<!ATTLIST tsn:for
-	array CDATA "this"
-	context CDATA "this"
-	item CDATA #IMPLIED
-	>
-
 <!ELEMENT tsn:each ANY>
 <!ATTLIST tsn:each
-	object CDATA "this"
+	array CDATA #IMPLIED
+	object CDATA #IMPLIED
 	context CDATA "this"
 	item CDATA #IMPLIED
 	>

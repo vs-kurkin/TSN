@@ -170,7 +170,7 @@ TSN.load = function (path, name, config) {
 
 	var fullPath = LIB.path.join(config.templateRoot, path);
 
-	if (TSN.cache.hasOwnProperty(fullPath)) {
+	if (config.cache === true && TSN.cache.hasOwnProperty(fullPath)) {
 		return TSN.cache[fullPath];
 	}
 
@@ -181,14 +181,14 @@ TSN.load = function (path, name, config) {
 /**
  * Компилирует код шаблона, переданного параметром data.
  * @param {string} data Тело шаблона
- * @param {string} [name] Имя шаблона. Если имя не указано - шаблон не будет сохранен в кеше.
+ * @param {string} [name] Имя шаблона. Если имя не указано или отключено кеширование - шаблон не будет сохранен в кеше.
  * @param {object} [config] Объект конфигурации шаблона.
  * @return {function} Скомпилированный шаблон.
  */
 TSN.compile = function (data, name, config) {
 	config = new Config(config);
 
-	if (TSN.cache.hasOwnProperty(name)) {
+	if (config.cache === true && TSN.cache.hasOwnProperty(name)) {
 		return TSN.cache[name];
 	}
 
@@ -212,7 +212,7 @@ TSN.compile = function (data, name, config) {
 	template.apply = apply;
 	template.source = source;
 
-	if (typeof name === 'string' && name !== '') {
+	if (config.cache === true && typeof name === 'string' && name !== '') {
 		template.cacheName = name;
 		TSN.cache[name] = template;
 	}
