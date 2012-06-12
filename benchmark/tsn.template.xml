@@ -70,7 +70,7 @@
                                         <tsn:var name="bgColor"
                                                  value="_index % 2 ? '#dddddd' : '#eeeeee'" />
                                         <tr>
-                                            <td bgcolor="&TSN._var.bgColor;">
+                                            <td bgcolor="${_var.bgColor}">
                                                 <font color="#ffffff">
                                                     <b>
                                                         <a href="http://lb/section.html?id=&TSN.item.id;">

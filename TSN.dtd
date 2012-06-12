@@ -22,23 +22,18 @@
 <!ATTLIST tsn:data
 	name CDATA #REQUIRED
 	value CDATA #IMPLIED
+	action (append|prepend|replace) "replace"
 	context CDATA "this"
 	>
 
 <!ELEMENT tsn:if ANY>
 <!ATTLIST tsn:if
-	test CDATA "this"
-	>
-
-<!ELEMENT tsn:unless ANY>
-<!ATTLIST tsn:unless
-	test CDATA "this"
+	expr CDATA "this"
 	>
 
 <!ELEMENT tsn:else ANY>
 <!ATTLIST tsn:else
 	if CDATA #IMPLIED
-	unless CDATA #IMPLIED
 	>
 
 <!ELEMENT tsn:each ANY>
@@ -49,14 +44,18 @@
 	item CDATA #IMPLIED
 	>
 
-<!ELEMENT tsn:template ANY>
-<!ATTLIST tsn:template
+<!ELEMENT tsn:block ANY>
+<!ATTLIST tsn:block
 	name CDATA #REQUIRED
+	type (global|default|local) "global"
 	>
 
-<!ELEMENT tsn:include EMPTY>
-<!ATTLIST tsn:include
-	name CDATA #IMPLIED
-	src CDATA #IMPLIED
+<!ELEMENT tsn:render EMPTY>
+<!ATTLIST tsn:render
+	file CDATA #IMPLIED
+	config CDATA "null"
+	block CDATA #IMPLIED
 	context CDATA "this"
 	>
+
+<!ELEMENT tsn:script ANY>

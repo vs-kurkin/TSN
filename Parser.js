@@ -7,12 +7,12 @@ var regExpXML = /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\
 
 /**
  * Парсер TSN-шаблона.
+ * @param {string} source Исходный код шаблона.
  * @param {object} config Объект конфигурации шаблона.
  * @constructor
  */
-function Parser(config) {
+function Parser (source, config) {
 	var space = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)?';
-	var comment = space + '<!--(?!\\[if [^\\]]+?\\]>)[\\s\\S]*?(?!<!\\[endif\\])-->';
 	var cdata = config.parseCDATA === true ? '' : '|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)';
 
 	if (!(config.namespace && (/[a-z\d\-_]+/i).test(config.namespace))) {
@@ -40,23 +40,12 @@ function Parser(config) {
 	 */
 	this.config = config;
 
-	/**
-	 * Регурярное выражение, которым парсится шаблон.
-	 * @type regexp
-	 */
-	this.regExp = new RegExp('(?:' + space + '&' + config.namespace + '.([a-z0-9\\-_\\.]+)?;)|(' + comment + ')' + cdata + '|(?:' + space + '<\\/\\s*' + config.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + space + '<\\s*' + config.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>)', 'gi');
-}
+	var regExp = new RegExp('(?:' + space + '&' + config.namespace + '.([a-z0-9\\-_\\.]+)?;)|(' + space + '<!--(?!\\[if [^\\]]+?\\]>)[\\s\\S]*?(?!<!\\[endif\\])-->)' + cdata + '|(?:' + space + '<\\/\\s*' + config.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + space + '<\\s*' + config.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>)', 'gi');
 
-/**
- * Парсинг шаблона.
- * @param {string} content Тело шаблона
- * @function
- */
-Parser.prototype.parse = function (content) {
 	var xmlDeclaration, parseResult, attribute, text;
 	var lastIndex = 0;
 
-	if (typeof String(content) !== 'string') {
+	if (typeof String(source) !== 'string') {
 		throw 'Invalid content type';
 	}
 
@@ -66,11 +55,11 @@ Parser.prototype.parse = function (content) {
 	 */
 	this.depth = 0;
 
-	xmlDeclaration = content.match(regExpXML);
+	xmlDeclaration = source.match(regExpXML);
 
 	if (xmlDeclaration) {
 		xmlDeclaration = xmlDeclaration[0];
-		content = content.substring(xmlDeclaration.length);
+		source = source.substring(xmlDeclaration.length);
 	} else {
 		xmlDeclaration = '';
 	}
@@ -85,7 +74,7 @@ Parser.prototype.parse = function (content) {
 	 * Тело шаблона без XML-декларации.
 	 * @type string
 	 */
-	this.content = content;
+	this.content = source;
 
 	/**
 	 * Текущий объект тега.
@@ -104,7 +93,7 @@ Parser.prototype.parse = function (content) {
 
 	this.onStart();
 
-	while (parseResult = this.regExp.exec(content)) {
+	while (parseResult = regExp.exec(source)) {
 		var result = parseResult[0];
 		var entity = parseResult[1];
 		var comment = parseResult[2];
@@ -114,10 +103,10 @@ Parser.prototype.parse = function (content) {
 		var isEmpty = parseResult[6];
 		var index = parseResult.index;
 
-		text = content.substring(lastIndex, index);
+		text = source.substring(lastIndex, index);
 
 		if (text) {
-			this.onText(this._fixText(text), this.current);
+			this.onText(text, this.current);
 		}
 
 		if (entity) {
@@ -138,8 +127,7 @@ Parser.prototype.parse = function (content) {
 			};
 
 			while (attribute = regExpAttr.exec(attributes)) {
-				newNode.attributes[attribute[1]] = (attribute[2] || attribute[3])
-					.replace(/&amp;/g, '&')
+				newNode.attributes[attribute[1]] = (attribute[2] || attribute[3]).replace(/&amp;/g, '&')
 					.replace(/&lt;/g, '<')
 					.replace(/&gt;/g, '>')
 					.replace(/&quot;/g, '"')
@@ -194,19 +182,19 @@ Parser.prototype.parse = function (content) {
 			}
 		} else if (comment) {
 			if (this.config.saveComments === true) {
-				this.onText(this._fixText(result), this.current);
+				this.onText(result, this.current);
 			}
 		} else { // CDATA
-			this.onText(this._fixText(result), this.current);
+			this.onText(result, this.current);
 		}
 
 		lastIndex = index + result.length;
 	}
 
-	text = content.substring(lastIndex);
+	text = source.substring(lastIndex);
 
 	if (text) {
-		this.onText(this._fixText(text), this.current);
+		this.onText(text, this.current);
 	}
 
 	if (this.depth) {
@@ -220,32 +208,7 @@ Parser.prototype.parse = function (content) {
 	this.onEnd();
 
 	return this;
-};
-
-/**
- * Исправление текстовых данных перед добавлением в код шаблона.
- * @param {string} text Текстовые данные.
- * @return {string} Исправленные текстовые данные.
- * @private
- */
-Parser.prototype._fixText = function (text) {
-	var tabSize, spaceSize;
-
-	if (this.depth) {
-		tabSize = this.depth * (this.config.indent / this.config.tabSize);
-		spaceSize = this.depth * this.config.indent;
-
-		text = text.replace(new RegExp('(?:(?:\\r\\n)|\\r|\\n)(?:[\\t]{' + tabSize + '}|[ ]{' + spaceSize + '})', 'g'), '\n');
-	}
-
-	return text
-		.replace(/\\/g, '\\\\')
-		.replace(/("|')/g, '\\$1')
-		.replace(/(?:\r\n)|\r|\n/g, '\\n')
-		.replace(/\f/g, '\\f')
-		.replace(/\u2028/g, '\\u2028')
-		.replace(/\u2029/g, '\\u2029');
-};
+}
 
 /**
  * Создание ошибки парсинга тега.
@@ -259,7 +222,9 @@ Parser.prototype._error = function (message, node) {
 
 	error.nodeName = node.name;
 	error.line = content.split(/(?:\r\n)|\r|\n/).length;
-	error.char = content.substring(Math.max(content.lastIndexOf('\n'), content.lastIndexOf('\r'))).lastIndexOf(node.source.replace(/^\s+/, ''));
+	error.char = content
+		.substring(Math.max(content.lastIndexOf('\n'), content.lastIndexOf('\r')))
+		.lastIndexOf(node.source.replace(/^\s+/, ''));
 
 	this.onError(error);
 };

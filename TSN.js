@@ -7,9 +7,9 @@
  * @ignore
  */
 var LIB = {
-	fileSystem:require('fs'),
-	path:require('path'),
-	event:require('events')
+	fileSystem: require('fs'),
+	path: require('path'),
+	event: require('events')
 };
 
 var Parser = require(LIB.path.join(__dirname, 'Parser.js'));
@@ -45,7 +45,9 @@ Parser.prototype.onEnd = function () {
 };
 
 Parser.prototype.onText = function (text, node) {
-	node.code += (this.inline === true ? ' + ' : '__text = ') + '"' + text + '"';
+	node.text += text.replace(/^<!\[CDATA\[([\s\S]*?)\]\]>$/i, '$1');
+	node.code += (this.inline === true ? ' + ' : '__text = ') + '"' + this.fixText(text) + '"';
+
 	this.inline = true;
 };
 
@@ -65,6 +67,7 @@ Parser.prototype.onOpen = function (node) {
 		node.parse = API.parse;
 		node.inline = API.inline;
 		node.code = ';';
+		node.text = '';
 
 		if (node.isEmpty) {
 			var parseResult = typeof node.parse === 'function' ? node.parse(this, TSN) : true;
@@ -96,14 +99,34 @@ Parser.prototype.onClose = function (node) {
 	}
 };
 
-function compileNode(node, parser) {
+Parser.prototype.fixText = function (text) {
+	var tabSize, spaceSize;
+
+	if (this.depth) {
+		tabSize = this.depth * (this.config.indent / this.config.tabSize);
+		spaceSize = this.depth * this.config.indent;
+
+		text = text.replace(new RegExp('(?:(?:\\r\\n)|\\r|\\n)(?:[\\t]{' + tabSize + '}|[ ]{' + spaceSize + '})', 'g'), '\n');
+	}
+
+	return text
+		.replace(/\\/g, '\\\\')
+		.replace(/("|')/g, '\\$1')
+		.replace(/(?:\r\n)|\r|\n/g, '\\n')
+		.replace(/\f/g, '\\f')
+		.replace(/\u2028/g, '\\u2028')
+		.replace(/\u2029/g, '\\u2029');
+};
+
+function compileNode (node, parser) {
 	var code = node.template.replace(/\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi, function (result, type, name) {
 		switch (type) {
 			case '!':
 				switch (name) {
 					case 'code':
 						if (node.inline !== true) {
-							node.code += '; __output += __text;' +
+							node.code += ';' +
+								'__output += __text;' +
 								'__hasStream && __text !== "" && __stream.write(__text, "' + parser.config.encoding + '");' +
 								'__text = "";';
 						}
@@ -121,7 +144,8 @@ function compileNode(node, parser) {
 	if (node.inline === true) {
 		code = parser.inline === true ? ' + ' + code : '__text = ' + code;
 	} else {
-		code = '; __output += __text;' +
+		code = ';' +
+			'__output += __text;' +
 			'__hasStream && __text !== "" && __stream.write(__text, "' + parser.config.encoding + '");' +
 			'__text = "";' + code;
 	}
@@ -131,12 +155,12 @@ function compileNode(node, parser) {
 	return code;
 }
 
-function call(data, stream) {
-	return Function.prototype.call.call(this, data, stream, TSN);
+function call (context, stream) {
+	return Function.prototype.call.call(this, context, stream, TSN);
 }
 
-function apply (data, stream) {
-	return Function.prototype.apply.call(this, data, stream, TSN);
+function apply (context, stream) {
+	return Function.prototype.apply.call(this, context, stream, TSN);
 }
 
 /**
@@ -161,11 +185,10 @@ TSN.config = JSON.parse(LIB.fileSystem.readFileSync(LIB.path.join(__dirname, 'co
 /**
  * Компилирует файл шаблона по указанному пути.
  * @param {string} path Путь к файлу шаблона относительно <i>TSN.config.templateRoot</i>.
- * @param {string} [name] Имя шаблона, по которому он будет храниться в кеше. Если параметр не передан, в качестве имени будет использоваться абсолютный путь к шаблону.
  * @param {object} [config] Объект конфигурации шаблона.
  * @return {function} Скомпилированный шаблон.
  */
-TSN.load = function (path, name, config) {
+TSN.load = function (path, config) {
 	config = new Config(config);
 
 	var fullPath = LIB.path.join(config.templateRoot, path);
@@ -174,28 +197,30 @@ TSN.load = function (path, name, config) {
 		return TSN.cache[fullPath];
 	}
 
+	if (!config.hasOwnProperty('name')) {
+		config.name = fullPath;
+	}
+
 	config.path = LIB.path.dirname(fullPath);
-	return TSN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), name || fullPath, config);
+	return TSN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), config);
 };
 
 /**
- * Компилирует код шаблона, переданного параметром data.
- * @param {string} data Тело шаблона
- * @param {string} [name] Имя шаблона. Если имя не указано или отключено кеширование - шаблон не будет сохранен в кеше.
+ * Компиляция шаблона.
+ * @param {string} source Исходный код шаблона.
  * @param {object} [config] Объект конфигурации шаблона.
  * @return {function} Скомпилированный шаблон.
  */
-TSN.compile = function (data, name, config) {
+TSN.compile = function (source, config) {
 	config = new Config(config);
 
-	if (config.cache === true && TSN.cache.hasOwnProperty(name)) {
-		return TSN.cache[name];
+	if (config.cache === true && config.hasOwnProperty('name') && TSN.cache.hasOwnProperty(config.name)) {
+		return TSN.cache[config.name];
 	}
 
-	var parser = new Parser(config);
-	parser.parse(data);
+	var parser = new Parser(source, config);
 
-	var source = '' +
+	source = '' +
 		'"use strict";' +
 		'var __output = "";' +
 		'var __text = "";' +
@@ -203,7 +228,7 @@ TSN.compile = function (data, name, config) {
 		parser.root.code +
 		';' +
 		'__output += __text;' +
-		'__hasStream && __text !== "" && __stream.write(__text, "' + config.encoding + '") && __stream.end();' +
+		'__hasStream && __text !== "" && __stream.write(__text, "' + config.encoding + '")' +
 		'return __output;';
 
 	var template = new Function('__stream', 'TSN', source);
@@ -212,23 +237,23 @@ TSN.compile = function (data, name, config) {
 	template.apply = apply;
 	template.source = source;
 
-	if (config.cache === true && typeof name === 'string' && name !== '') {
-		template.cacheName = name;
-		TSN.cache[name] = template;
+	if (config.cache === true && typeof config.name === 'string' && config.name !== '') {
+		template.cacheName = config.name;
+		TSN.cache[config.name] = template;
 	}
 
 	return template;
 };
 
 /**
- * Рендеринг шаблона на основе переданных данных.
+ * Рендеринг шаблона.
  * @param {function} template Скомпилированный шаблон.
- * @param {object} data Данные, на основе которых будет рендериться шаблон.
+ * @param {object} context Контекст шаблона.
  * @param {object} stream Экземпляр конструктора <a href="http://nodejs.org/docs/latest/api/stream.html">Stream</a>, в который будет записываться результат рендеринга.
  * @return {text} Результат рендеринга.
  */
-TSN.render = function (template, data, stream) {
-	return Function.prototype.call.call(template, data, stream, TSN);
+TSN.render = function (template, context, stream) {
+	return Function.prototype.call.call(template, context, stream, TSN);
 };
 
 /**
@@ -240,7 +265,7 @@ TSN.extend = function (name, API) {
 	nodeAPI[name] = API;
 };
 
-function Config(options) {
+function Config (options) {
 	for (var property in options) {
 		if (options.hasOwnProperty(property)) {
 			this[property] = options[property];
