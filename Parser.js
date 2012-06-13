@@ -12,7 +12,7 @@ var regExpXML = /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\
  * @constructor
  */
 function Parser (source, config) {
-	var space = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)?';
+	var space = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)*';
 	var cdata = config.parseCDATA === true ? '' : '|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)';
 
 	if (!(config.namespace && (/[a-z\d\-_]+/i).test(config.namespace))) {
@@ -127,7 +127,8 @@ function Parser (source, config) {
 			};
 
 			while (attribute = regExpAttr.exec(attributes)) {
-				newNode.attributes[attribute[1]] = (attribute[2] || attribute[3]).replace(/&amp;/g, '&')
+				newNode.attributes[attribute[1]] = (attribute[2] || attribute[3])
+					.replace(/&amp;/g, '&')
 					.replace(/&lt;/g, '<')
 					.replace(/&gt;/g, '>')
 					.replace(/&quot;/g, '"')

@@ -96,20 +96,31 @@ this['data'] = {
 	parse: function () {
 		var attributes = this.attributes;
 
-		if (!attributes.hasOwnProperty('name')) {
-			return new Error('Attribute "name" is not defined.');
+		if (!attributes.hasOwnProperty('key')) {
+			return new Error('Attribute "key" is not defined.');
 		}
 
 		if (!attributes.hasOwnProperty('value')) {
 			this.template = '' +
-				'__data["/*@name*/"] = (function (__output, __text) {' +
-					'var __hasStream = false;' +
+				'(function (__output, __text, __hasStream) {' +
 					'/*!code*/' +
 					'return __output;' +
-				'}).call(/*!context*/, "", "");';
+				'}).call(/*!context*/, "", "", false)';
 		}
+
+		switch (attributes.action) {
+			case 'append':
+				this.template = '(__data["/*@key*/"] || "") + ' + this.template;
+				break;
+			case 'prepend':
+				this.template = this.template + ' + (__data["/*@key*/"] || "")';
+				break;
+			case 'replace':
+		}
+
+		this.template = '__data["/*@key*/"] = ' + this.template + ';';
 	},
-	template: '__data["/*@name*/"] = String(/*@value*/);'
+	template: 'String(/*@value*/)'
 };
 
 this['if'] = {
@@ -119,7 +130,7 @@ this['if'] = {
 		}
 	},
 	template: '' +
-		'if (/*@test*/) {' +
+		'if (/*@expr*/) {' +
 			'/*!code*/' +
 		'}'
 };
@@ -129,7 +140,7 @@ this['else'] = {
 		var parent = this.parent;
 		var attributes = this.attributes;
 
-		if (!(parent.name === 'if')) {
+		if (parent.name !== 'if') {
 			return new Error('Tag "else" must have a parent "if".');
 		} else if (parent.hasElse) {
 			return new Error('Tag "if" should have one child "else".');
@@ -201,7 +212,7 @@ this['each'] = {
 					switch (attributes.type) {
 						case 'default':
 							this.template = ';' +
-								'if (!__block.hasOwnProperty(attributes.name)) {' +
+								'if (!__block.hasOwnProperty("' + attributes.name + '")) {' +
 									'__block["' + attributes.name + '"] = ' + this.template +
 								'}';
 							break;
@@ -220,7 +231,7 @@ this['each'] = {
 			}
 		},
 		template: '' +
-			'function (__output, __text) {' +
+			'function (__output, __text, __hasStream) {' +
 				'/*!code*/;' +
 				'return __output;' +
 			'};'
@@ -258,17 +269,17 @@ this['each'] = {
 						'.call(/*!context*/, __stream);' +
 					'delete TSN.parent;';
 
-			} else if (attributes.hasOwnProperty('template')) {
-				var templateName = escape(attributes.template);
+			} else if (attributes.hasOwnProperty('block')) {
+				var blockName = escape(attributes.block);
 
 				this.template = ';' +
 					'__output += ' +
-					'(__localBlock.hasOwnProperty("' + templateName + '") ? ' +
-						'__localBlock["' + templateName + '"] : ' +
-						'__block["' + templateName + '"])' +
-							'.call(/*!context*/, "", "");';
+					'(__localBlock.hasOwnProperty("' + blockName + '") ? ' +
+						'__localBlock["' + blockName + '"] : ' +
+						'__block["' + blockName + '"])' +
+							'.call(/*!context*/, "", "", __hasStream);';
 			} else {
-				return new Error('Attribute "template" or "file" is not defined.');
+				return new Error('Attribute "block" or "file" is not defined.');
 			}
 		}
 	};

@@ -63,6 +63,7 @@ Parser.prototype.onError = function (error) {
 Parser.prototype.onOpen = function (node) {
 	if (nodeAPI.hasOwnProperty(node.name)) {
 		var API = nodeAPI[node.name];
+
 		node.template = API.template;
 		node.parse = API.parse;
 		node.inline = API.inline;
@@ -160,7 +161,7 @@ function call (context, stream) {
 }
 
 function apply (context, stream) {
-	return Function.prototype.apply.call(this, context, stream, TSN);
+	return Function.prototype.apply.call(this, context, [stream, TSN]);
 }
 
 /**
@@ -218,20 +219,20 @@ TSN.compile = function (source, config) {
 		return TSN.cache[config.name];
 	}
 
-	var parser = new Parser(source, config);
+	var template = new Parser(source, config);
 
 	source = '' +
 		'"use strict";' +
 		'var __output = "";' +
 		'var __text = "";' +
 		'var __hasStream = __stream !== void 0;' +
-		parser.root.code +
+		template.root.code +
 		';' +
 		'__output += __text;' +
-		'__hasStream && __text !== "" && __stream.write(__text, "' + config.encoding + '")' +
+		'__hasStream && __text !== "" && __stream.write(__text, "' + config.encoding + '");' +
 		'return __output;';
 
-	var template = new Function('__stream', 'TSN', source);
+	template = new Function('__stream', 'TSN', source);
 
 	template.call = call;
 	template.apply = apply;

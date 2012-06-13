@@ -20,7 +20,7 @@
 
 <!ELEMENT tsn:data ANY>
 <!ATTLIST tsn:data
-	name CDATA #REQUIRED
+	key CDATA #REQUIRED
 	value CDATA #IMPLIED
 	action (append|prepend|replace) "replace"
 	context CDATA "this"
