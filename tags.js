@@ -204,26 +204,26 @@ this['each'] = {
 			var attributes = this.attributes;
 
 			if (attributes.hasOwnProperty('name')) {
-				if (attributes.name === '') {
+				var name = escape(attributes.name);
+
+				if (name === '') {
 					return new Error('Attribute "name" is empty.');
 				} else {
-					attributes.name = escape(attributes.name);
-
 					switch (attributes.type) {
 						case 'default':
 							this.template = ';' +
-								'if (!__block.hasOwnProperty("' + attributes.name + '")) {' +
-									'__block["' + attributes.name + '"] = ' + this.template +
+								'if (!__block.hasOwnProperty("' + name + '")) {' +
+									'__block["' + name + '"] = ' + this.template +
 								'}';
 							break;
 						case 'local':
 							this.template = ';' +
-								'__localBlock["' + attributes.name + '"] = ' + this.template;
+								'__localBlock["' + name + '"] = ' + this.template;
 							break;
 						case 'global':
 						default:
 							this.template = ';' +
-								'__block["' + attributes.name + '"] = ' + this.template;
+								'__block["' + name + '"] = ' + this.template;
 					}
 				}
 			} else {
