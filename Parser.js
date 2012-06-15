@@ -2,8 +2,12 @@
  * @fileOverview Парсер TSN-шаблона.
  * @author <a href="mailto:b-vladi@cs-console.ru">Влад Куркин</a>
  */
+var regExpSpace = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)*';
 var regExpAttr = /\s*([a-z\-_]+(?::[a-z\-_]+)?)\s*(?:=\s*(?:(?:(?:\\)?"([^"]*?)(?:\\)?")|(?:(?:\\)?'([^']*?)(?:\\)?')))?/gi;
-var regExpXML = /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\s*(<!DOCTYPE\s+[a-z\-_]+(?::[a-z\-_]+)?(?:\s+PUBLIC\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:(?:"[^"]*")|(?:'[^']*'))?\s*(?:\[[\s\S]*?\])?)?\s*>)?/i;
+var regExpDTD = '\x3c!DOCTYPE\\s+[a-z\\-_]+(?::[a-z\\-_]+)?(?:(?:\\s+PUBLIC\\s*(?:(?:"[^"]*")|(?:\'[^\']*\'))?\\s*(?:(?:"[^"]*")|(?:\'[^\']*\'))?(?:\\s*\\[[\\s\\S]*?\\])?)|(?:\\s+SYSTEM\\s*(?:(?:"[^"]*")|(?:\'[^\']*\'))?(?:\\[[\\s\\S]*?\\])?)|(?:\\s*\\[[\\s\\S]*?\\]))?\\s*>';
+var regExpXML = new RegExp(regExpSpace + '^\\s*<\\?xml(?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*"[^"]*")*\\s*\\?>\\s*(' + regExpSpace + regExpDTD + ')?');
+var regExpCDATA = '|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)';
+var regExpComment = regExpSpace + '<!--(?!\\[if [^\\]]+?\\]>)[\\s\\S]*?(?!<!\\[endif\\])-->';
 
 /**
  * Парсер TSN-шаблона.
@@ -12,8 +16,7 @@ var regExpXML = /^\s*<\?xml(?:\s+[a-z\-_]+(?::[a-z\-_]+)?\s*=\s*"[^"]*")*\s*\?>\
  * @constructor
  */
 function Parser (source, config) {
-	var space = '(?:(?:(?:\\r\\n)|\\r|\\n)[^\\S\\r\\n]*)*';
-	var cdata = config.parseCDATA === true ? '' : '|(?:<!\\[CDATA\\[[\\s\\S]*?\\]\\]>)';
+	var cdata = config.parseCDATA === true ? '' : regExpCDATA;
 
 	if (!(config.namespace && (/[a-z\d\-_]+/i).test(config.namespace))) {
 		this.onError(new Error('Invalid namespace.'));
@@ -40,7 +43,7 @@ function Parser (source, config) {
 	 */
 	this.config = config;
 
-	var regExp = new RegExp('(?:' + space + '&' + config.namespace + '.([a-z0-9\\-_\\.]+)?;)|(' + space + '<!--(?!\\[if [^\\]]+?\\]>)[\\s\\S]*?(?!<!\\[endif\\])-->)' + cdata + '|(?:' + space + '<\\/\\s*' + config.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + space + '<\\s*' + config.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>)', 'gi');
+	var regExp = new RegExp('(?:' + regExpSpace + '&' + config.namespace + '.([a-z0-9\\-_\\.]+)?;)|(' + regExpComment + ')' + cdata + '|(?:' + regExpSpace + '(' + regExpDTD + '))|(?:' + regExpSpace + '<\\/\\s*' + config.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + regExpSpace + '<\\s*' + config.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>)', 'gi');
 
 	var xmlDeclaration, parseResult, attribute, text;
 	var lastIndex = 0;
@@ -55,7 +58,7 @@ function Parser (source, config) {
 	 */
 	this.depth = 0;
 
-	xmlDeclaration = source.match(regExpXML);
+	xmlDeclaration = config.removeXMLDeclaration !== false && source.match(regExpXML);
 
 	if (xmlDeclaration) {
 		xmlDeclaration = xmlDeclaration[0];
@@ -97,10 +100,11 @@ function Parser (source, config) {
 		var result = parseResult[0];
 		var entity = parseResult[1];
 		var comment = parseResult[2];
-		var closeNodeName = parseResult[3];
-		var openNodeName = parseResult[4];
-		var attributes = parseResult[5];
-		var isEmpty = parseResult[6];
+		var dtd = parseResult[3];
+		var closeNodeName = parseResult[4];
+		var openNodeName = parseResult[5];
+		var attributes = parseResult[6];
+		var isEmpty = parseResult[7];
 		var index = parseResult.index;
 
 		text = source.substring(lastIndex, index);
@@ -120,14 +124,14 @@ function Parser (source, config) {
 			var newNode = {
 				index: index,
 				source: result,
-				name: openNodeName,
+				name: openNodeName.toLowerCase(),
 				isEmpty: isEmpty,
 				parent: this.current,
 				attributes: {}
 			};
 
 			while (attribute = regExpAttr.exec(attributes)) {
-				newNode.attributes[attribute[1]] = (attribute[2] || attribute[3])
+				newNode.attributes[attribute[1].toLowerCase()] = (attribute[2] || attribute[3])
 					.replace(/&amp;/g, '&')
 					.replace(/&lt;/g, '<')
 					.replace(/&gt;/g, '>')
@@ -185,8 +189,8 @@ function Parser (source, config) {
 			if (this.config.saveComments === true) {
 				this.onText(result, this.current);
 			}
-		} else { // CDATA
-			this.onText(result, this.current);
+		} else { // CDATA or DTD
+			this.onText(dtd || result, this.current);
 		}
 
 		lastIndex = index + result.length;

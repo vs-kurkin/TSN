@@ -91,7 +91,7 @@ this.echo = (function () {
 
 this['data'] = {
 	start: function () {
-		return 'var __data = TSN.hasOwnProperty("parent") ? TSN.parent.__data : {};';
+		return 'var _data = TSN.hasOwnProperty("parent") ? TSN.parent._data : {};';
 	},
 	parse: function () {
 		var attributes = this.attributes;
@@ -110,15 +110,15 @@ this['data'] = {
 
 		switch (attributes.action) {
 			case 'append':
-				this.template = '(__data["/*@key*/"] || "") + ' + this.template;
+				this.template = '(_data["/*@key*/"] || "") + ' + this.template;
 				break;
 			case 'prepend':
-				this.template = this.template + ' + (__data["/*@key*/"] || "")';
+				this.template = this.template + ' + (_data["/*@key*/"] || "")';
 				break;
 			case 'replace':
 		}
 
-		this.template = '__data["/*@key*/"] = ' + this.template + ';';
+		this.template = '_data["/*@key*/"] = ' + this.template + ';';
 	},
 	template: 'String(/*@value*/)'
 };
@@ -262,7 +262,7 @@ this['each'] = {
 				this.template = ';' +
 					'TSN.parent = {' +
 						'__block: __block,' +
-						'__data: __data' +
+						'_data: _data' +
 					'};' +
 					'__output += TSN' +
 						'.load("/*@file*/", /*@config*/)' +

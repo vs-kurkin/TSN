@@ -6,5 +6,6 @@
 	"parseCDATA": false,
 	"tabSize": 2,
 	"indent": 2,
-	"cache": true
+	"cache": true,
+	"removeXMLDeclaration": true
 }

@@ -57,6 +57,7 @@ Parser.prototype.onEntity = function (node) {
 };
 
 Parser.prototype.onError = function (error) {
+	error.type = 'ParseError';
 	TSN.emit('error', error);
 };
 
@@ -184,29 +185,6 @@ TSN.cache = {};
 TSN.config = JSON.parse(LIB.fileSystem.readFileSync(LIB.path.join(__dirname, 'config.json'), 'utf-8'));
 
 /**
- * Компилирует файл шаблона по указанному пути.
- * @param {string} path Путь к файлу шаблона относительно <i>TSN.config.templateRoot</i>.
- * @param {object} [config] Объект конфигурации шаблона.
- * @return {function} Скомпилированный шаблон.
- */
-TSN.load = function (path, config) {
-	config = new Config(config);
-
-	var fullPath = LIB.path.join(config.templateRoot, path);
-
-	if (config.cache === true && TSN.cache.hasOwnProperty(fullPath)) {
-		return TSN.cache[fullPath];
-	}
-
-	if (!config.hasOwnProperty('name')) {
-		config.name = fullPath;
-	}
-
-	config.path = LIB.path.dirname(fullPath);
-	return TSN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), config);
-};
-
-/**
  * Компиляция шаблона.
  * @param {string} source Исходный код шаблона.
  * @param {object} [config] Объект конфигурации шаблона.
@@ -243,7 +221,128 @@ TSN.compile = function (source, config) {
 		TSN.cache[config.name] = template;
 	}
 
+	TSN.emit('compile', template);
+
 	return template;
+};
+
+/**
+ * Компилирует шаблон из файла.
+ * @param {string} path Путь к файлу шаблона относительно <i>TSN.config.templateRoot</i>.
+ * @param {object} [config] Объект конфигурации шаблона.
+ * @return {function} Скомпилированный шаблон.
+ */
+TSN.compileFromFile = function (path, config) {
+	config = new Config(config);
+
+	var fullPath = LIB.path.join(config.templateRoot, path);
+
+	if (config.cache === true && TSN.cache.hasOwnProperty(fullPath)) {
+		return TSN.cache[fullPath];
+	}
+
+	if (!config.hasOwnProperty('name')) {
+		config.name = fullPath;
+	}
+
+	config.path = LIB.path.dirname(fullPath);
+	return TSN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), config);
+};
+
+/**
+ * Рекурсивная компиляция файлов
+ * @param {RegExp} [pattern] Ругелярное выражение, которому должно соответствовать имя файла для компиляции.
+ * @param {string} [path=TSN.config.templateRoot] Путь к дирректории, в которой необходимо компилировать файлы.
+ * @return {Callback}
+ */
+TSN.compileFromDir = function (pattern, path) {
+	if (!(pattern instanceof RegExp)) {
+		pattern = /.*/;
+	}
+
+	if (typeof path !== 'string') {
+		path = TSN.config.templateRoot;
+	}
+
+	var instance = {
+		state: 'start',
+		path: path,
+		dirsLength: 0
+	};
+
+	LIB.fileSystem.stat(path, callback);
+
+	function callback (error, data) {
+		if (error) {
+			error.type = 'CompileError';
+			TSN.emit('error', error);
+			return;
+		}
+
+		switch (instance.state) {
+			case 'start':
+				if (data.isDirectory()) {
+					instance.state = 'read';
+
+					LIB.fileSystem.readdir(instance.path, callback);
+				} else {
+					error = new Error('Path ' + instance.path + ' is not a directory.');
+					error.type = 'CompileError';
+
+					TSN.emit('compileError', error);
+				}
+				break;
+			case 'read':
+				instance.files = data;
+				instance.state = 'status';
+
+				if (data.length) {
+					instance.currentFile = data.shift();
+
+					LIB.fileSystem.stat(LIB.path.join(instance.path, instance.currentFile), callback);
+				} else {
+					callback(error, new LIB.fileSystem.Stats);
+				}
+				break;
+			case 'status':
+				var path = LIB.path.join(instance.path, instance.currentFile);
+
+				if (data.isFile()) {
+					if (pattern.test(instance.currentFile)) {
+						TSN.load(LIB.path.relative(instance.root || instance.path, path));
+					}
+				} else if (data.isDirectory()) {
+					var child = TSN.compileDir(pattern, path);
+
+					child.root = instance.root || instance.path;
+					child.parent = instance;
+
+					instance.dirsLength++;
+				}
+
+				if (instance.files.length) {
+					instance.currentFile = instance.files.shift();
+					LIB.fileSystem.stat(LIB.path.join(instance.path, instance.currentFile), callback);
+				} else {
+					var dir = instance;
+					instance.state = 'end';
+
+					while (!dir.dirsLength) {
+						if (dir.parent) {
+							dir = dir.parent;
+							dir.dirsLength--;
+						} else if (dir.state === 'end') {
+							TSN.emit('compileEnd');
+							break;
+						}
+					}
+
+				}
+				break;
+		}
+	}
+
+	return instance;
 };
 
 /**
