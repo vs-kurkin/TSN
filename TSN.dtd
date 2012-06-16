@@ -14,7 +14,6 @@
 <!ELEMENT tsn:echo EMPTY>
 <!ATTLIST tsn:echo
 	data CDATA "this"
-	format (json|text) "text"
 	escape (js|html|htmlDec|htmlHex|url) #IMPLIED
 	>
 

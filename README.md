@@ -33,24 +33,19 @@ var TSN = require('TSN');
 Компиляция из файла:
 
 ```js
-var template = TSN.load('path/to/template.xml'); // Компиляция относительно TSN.config.templateRoot.
+var template = TSN.compileFromFile('path/to/template.xml'); // Компиляция относительно TSN.config.templateRoot.
 ```
 
-Использование имени шаблона:
+Компиляция шаблона с использованием кастомных настроек. Параметры, которые не были указаны в этом объекте, будут унаследованы от `TSN.config`.
 
 ```js
-var template = TSN.load('path/to/template.xml', 'My name');
+var template = TSN.compileFromFile('path/to/template.xml', {
+	templateRoot: 'path/to/new/template/root',
+	name: 'My name'
+});
 
 console.log(template.cacheName === 'My name'); // true
 console.log(TSN.cache['My name'] === template); // true
-```
-
-Компиляция шаблона с использованием собственных настроек. Параметры, которые не были указаны в этом объекте, будут унаследованы от `TSN.config`.
-
-```js
-var template = TSN.load('path/to/template.xml', null, {
-	templateRoot: 'path/to/new/template/root'
-});
 ```
 
 Компиляция шаблона из данных:
@@ -64,24 +59,22 @@ TSN.compile('<tsn:root xmlns:tsn="TSN">Text data</tsn:root>');
 С использованием API:
 
 ```js
-var result = TSN.render(template, data);
+var result = TSN.render(template, context);
 ```
 
 Без использования:
 
 ```js
-var result = template.call(data);
+var result = template.call(context);
 ```
 
 Запись результата в поток:
 
 ```js
-template.call(data, response);
+template.call(context, response);
 ```
 
-Документация по API находится в вики: https://github.com/B-Vladi/TSN/wiki/API.
-<br />
-Так же вы можете сгенерировать JSDoc документацию по API из исходников (файл <a href="https://github.com/B-Vladi/TSN/blob/master/TSN.js">TSN.js</a>).
+Полная документация по API находится в <a href="https://github.com/B-Vladi/TSN/wiki/API">вики</a> и в <a href="https://github.com/B-Vladi/TSN/jsdoc/index.html">JSDoc</a> .
 
 ###Контекст данных.
 В JavaScript-выражениях, используемых в значениях атрибутов тегов TSN, переданные данные доступны в виде контекста через ключевое слово this.
@@ -94,171 +87,11 @@ TSN-парсер не учитывает XML-окружение, поэтому 
 
 В значениях атрибутов тегов TSN могут использоваться следующие XML-сущности: `&amp; &lt; &gt; &quot; &apos;`.
 
-Описание тегов с примерами использования в вики: https://github.com/B-Vladi/TSN/wiki/Tags
+Описание тегов с примерами использования в <a href="https://github.com/B-Vladi/TSN/wiki/Tags">вики</a>.
 <hr />
 
 ###Пример Web-приложения
-Файл page_name.xml:
-
-```xml
-<?xml version="1.0"?>
-<tsn:root xmlns:tsn="TSN"
-          xmlns="http://www.w3.org/1999/xhtml">
-
-    <!-- Формирование контента для тега head -->
-    <tsn:template name="head">
-        <link type="text/css"
-              rel="stylesheet"
-              href="/page.css" />
-    </tsn:template>
-
-    <!-- Сохранение данных в области видимости этого шаблона -->
-    <tsn:data name="GET"
-              value="this.request.GET" />
-
-    <!-- Формирование контента для тега body -->
-    <tsn:template name="body">
-        <!-- Вывод GET-параметра userName -->
-        <h2>Hello, <tsn:echo data="_data.GET.userName"
-                             escape="html" />!
-        </h2>
-    </tsn:template>
-
-    <!-- Добавление контента перед закрывающим тегом body -->
-    <tsn:template name="footer">
-        <script type="text/javascript"
-                src="page.js"></script>
-    </tsn:template>
-
-    <!-- Вставка базоваого шаблона разметки и формирование данных,
-            которые будут для него контекстом -->
-    <tsn:include src="/base.xml"
-                 context="({
-                     title: 'My name',
-                     navigation: this.navigation,
-                     request: {
-                        status: 200
-                     }
-                 })" />
-</tsn:root>
-```
-<br />
-Файл base.xml:
-
-```xml
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
-    <tsn:root xmlns:tsn="TSN">
-    <head>
-        <!-- Формирование заголовка страницы -->
-        <title>
-            <tsn:echo data="this.title" /> - Hostname
-        </title>
-
-        <meta http-equiv="Content-Type"
-              content="text/html; charset=utf-8" />
-
-        <!-- Общие стили -->
-        <link type="text/css"
-              rel="stylesheet"
-              href="/base.css" />
-
-        <!-- Стили для конкретной страницы -->
-        <tsn:include name="head" />
-    </head>
-    <body>
-        <div class="wrapper">
-            <!-- Шапка -->
-            <tsn:include src="/header.xml"
-                         context="this.navigation" />
-
-            <!-- Если статус 200... -->
-            <tsn:if test="this.request.status == 200">
-                <!-- ...вставляем унаследованный контент страницы -->
-                <tsn:include name="body" />
-                <tsn:else />
-                <!-- ...иначе вставляем страницу ошибки -->
-                <tsn:include src="/error.xml" context="this.request.status" />
-            </tsn:if>
-        </div>
-
-        <!-- Подключение скриптов для текущей страницы -->
-        <tsn:include name="footer" />
-    </body>
-    </tsn:root>
-</html>
-```
-<br />
-JavaScript-код приложения:
-
-```js
-/* Подключение зависимостей */
-var http = require('http');
-var queryString = require('querystring');
-var TSN = require('TSN');
-
-/* Уберём комментарии из результата */
-TSN.config.saveComments = false;
-
-/* Компиляция шаблона */
-TSN.load('page_name.xml', 'page_name', {
-	indent: 4
-});
-
-/* Создание сервера */
-http.Server(
-	function (request, response) {
-		/* Формирование данных для рендеринга */
-		var data = {
-			request: {
-				GET: queryString.parse(request.url.substring(2))
-			}
-		};
-
-		/* Рендеринг шаблона с записью результата в поток */
-		TSN.cache['page_name'].call(data, response);
-	}).listen(80, '127.0.0.1');
-```
-<br />
-Запрос:
-
-`http://127.0.0.1/?userName=Vasya`
-
-<br />
-<br />
-Результат:
-```html
-<!DOCTYPE html>
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <title>My name - Hostname
-    </title>
-
-    <meta http-equiv="Content-Type"
-          content="text/html; charset=utf-8" />
-
-    <link type="text/css"
-          rel="stylesheet"
-          href="/base.css" />
-
-<link type="text/css"
-      rel="stylesheet"
-      href="/page.css" />
-</head>
-<body>
-    <div class="wrapper">
-
-<h2>Hello, Vasya!
-</h2>
-    </div>
-
-<script type="text/javascript"
-        src="page.js"></script>
-</body>
-</html>
-```
-
-
+В папке example.
 
 <hr />
 По всем вопросам отвечу по почте: b-vladi@cs-console.ru.

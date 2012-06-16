@@ -26,16 +26,11 @@ this.context = {
 	},
 	template: '' +
 		'(function () {' +
-		'/*!code*/' +
+			'/*!code*/' +
 		'}).call(/*@object*/);'
 };
 
 this.echo = (function () {
-	var format = {
-		text: 'String(/*text*/)',
-		json: 'JSON.stringify(/*text*/)'
-	};
-
 	var escape = {
 		js: '.replace(/(\'|"|(?:\\r\\n)|\\r|\\n|\\\\)/g, "\\\\$1")',
 
@@ -63,23 +58,13 @@ this.echo = (function () {
 	return {
 		parse: function () {
 			var attributes = this.attributes;
-			var template = attributes.hasOwnProperty('data') ? attributes.data : 'this';
-
-			if (!attributes.hasOwnProperty('format')) {
-				attributes.format = 'text';
-			}
-
-			if (format.hasOwnProperty(attributes.format)) {
-				template = format[attributes.format].replace('/*text*/', template);
-			} else {
-				return Error('Invalid value of "' + attributes.escape + '" attribute "format"');
-			}
+			var template = 'String(' + (attributes.hasOwnProperty('data') ? attributes.data : 'this') + ')';
 
 			if (attributes.hasOwnProperty('escape')) {
 				if (escape.hasOwnProperty(attributes.escape)) {
 					template += escape[attributes.escape];
 				} else {
-					return Error('Invalid value of "' + attributes.escape + '" attribute "escape"');
+					return Error('Invalid value of attribute "escape"');
 				}
 			}
 
@@ -100,6 +85,10 @@ this['data'] = {
 			return new Error('Attribute "key" is not defined.');
 		}
 
+		if (!attributes.hasOwnProperty('action')) {
+			attributes.action = 'replace';
+		}
+
 		if (!attributes.hasOwnProperty('value')) {
 			this.template = '' +
 				'(function (__output, __text, __hasStream) {' +
@@ -116,6 +105,9 @@ this['data'] = {
 				this.template = this.template + ' + (_data["/*@key*/"] || "")';
 				break;
 			case 'replace':
+				break;
+			default:
+				return new Error('Invalid value of attribute "action"');
 		}
 
 		this.template = '_data["/*@key*/"] = ' + this.template + ';';
@@ -209,6 +201,10 @@ this['each'] = {
 				if (name === '') {
 					return new Error('Attribute "name" is empty.');
 				} else {
+					if (!attributes.hasOwnProperty('type')) {
+						attributes.type = 'global';
+					}
+
 					switch (attributes.type) {
 						case 'default':
 							this.template = ';' +
@@ -221,9 +217,11 @@ this['each'] = {
 								'__localBlock["' + name + '"] = ' + this.template;
 							break;
 						case 'global':
-						default:
 							this.template = ';' +
 								'__block["' + name + '"] = ' + this.template;
+							break;
+						default:
+							return new Error('Invalid value of attribute "type"');
 					}
 				}
 			} else {
@@ -264,9 +262,11 @@ this['each'] = {
 						'__block: __block,' +
 						'_data: _data' +
 					'};' +
+
 					'__output += TSN' +
 						'.load("/*@file*/", /*@config*/)' +
 						'.call(/*!context*/, __stream);' +
+
 					'delete TSN.parent;';
 
 			} else if (attributes.hasOwnProperty('block')) {

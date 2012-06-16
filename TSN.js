@@ -57,7 +57,6 @@ Parser.prototype.onEntity = function (node) {
 };
 
 Parser.prototype.onError = function (error) {
-	error.type = 'ParseError';
 	TSN.emit('error', error);
 };
 
@@ -168,8 +167,9 @@ function apply (context, stream) {
 /**
  * @name TSN
  * @namespace Templating System for NodeJS.
- * @description Экземпляр конструктора <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
+ * @description Пространство имен API шаблонизатора, декорирован свойствами прототипа <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
  */
+
 var TSN = new LIB.event.EventEmitter();
 
 /**
@@ -179,7 +179,10 @@ var TSN = new LIB.event.EventEmitter();
 TSN.cache = {};
 
 /**
- * Стандартные настройки шаблонизатора, загруженные из config.json.
+ * @name TSN.config
+ * @namespace Объект конфигурации {@link TSN}.
+ * @description Объект конфигурации {@link TSN}. Значения по-умолчанию берутся из config.json.
+ * @static
  * @type object
  */
 TSN.config = JSON.parse(LIB.fileSystem.readFileSync(LIB.path.join(__dirname, 'config.json'), 'utf-8'));
@@ -187,7 +190,7 @@ TSN.config = JSON.parse(LIB.fileSystem.readFileSync(LIB.path.join(__dirname, 'co
 /**
  * Компиляция шаблона.
  * @param {string} source Исходный код шаблона.
- * @param {object} [config] Объект конфигурации шаблона.
+ * @param {object} [config] Объект конфигурации шаблона: {@link TSN.config}.
  * @return {function} Скомпилированный шаблон.
  */
 TSN.compile = function (source, config) {
@@ -201,13 +204,24 @@ TSN.compile = function (source, config) {
 
 	source = '' +
 		'"use strict";' +
+
+		'var __name = "' + config.name.replace(/('|"|(?:\r\n)|\r|\n|\\)/g, "\\$1") + '";' +
 		'var __output = "";' +
 		'var __text = "";' +
 		'var __hasStream = __stream !== void 0;' +
-		template.root.code +
-		';' +
-		'__output += __text;' +
-		'__hasStream && __text !== "" && __stream.write(__text, "' + config.encoding + '");' +
+
+		'try {' +
+			template.root.code +
+			';' +
+			'__output += __text;' +
+			'__hasStream && __text !== "" && __stream.write(__text, "' + config.encoding + '");' +
+		'} catch (error) {' +
+			'error.templateName = __name;' +
+			'error.TypeError = "RenderError";' +
+
+			'TSN.emit("error", error);' +
+		'}' +
+
 		'return __output;';
 
 	template = new Function('__stream', 'TSN', source);
@@ -227,9 +241,9 @@ TSN.compile = function (source, config) {
 };
 
 /**
- * Компилирует шаблон из файла.
+ * Синхронная компиляция шаблона из файла.
  * @param {string} path Путь к файлу шаблона относительно <i>TSN.config.templateRoot</i>.
- * @param {object} [config] Объект конфигурации шаблона.
+ * @param {object} [config] Объект конфигурации шаблона: {@link TSN.config}.
  * @return {function} Скомпилированный шаблон.
  */
 TSN.compileFromFile = function (path, config) {
@@ -250,11 +264,10 @@ TSN.compileFromFile = function (path, config) {
 };
 
 /**
- * Рекурсивная компиляция файлов
- * @param {RegExp} [pattern] Ругелярное выражение, которому должно соответствовать имя файла для компиляции.
- * @param {string} [path=TSN.config.templateRoot] Путь к дирректории, в которой необходимо компилировать файлы.
- * @return {Callback}
- */
+* Асинхронная рекурсивная компиляция файлов.
+* @param {RegExp} [pattern=/.* /] Ругелярное выражение, которому должно соответствовать имя файла для компиляции.
+* @param {string} [path=TSN.config.templateRoot] Путь к дирректории, в которой необходимо компилировать файлы.
+*/
 TSN.compileFromDir = function (pattern, path) {
 	if (!(pattern instanceof RegExp)) {
 		pattern = /.*/;
@@ -264,7 +277,7 @@ TSN.compileFromDir = function (pattern, path) {
 		path = TSN.config.templateRoot;
 	}
 
-	var instance = {
+	var directory = {
 		state: 'start',
 		path: path,
 		dirsLength: 0
@@ -274,65 +287,65 @@ TSN.compileFromDir = function (pattern, path) {
 
 	function callback (error, data) {
 		if (error) {
-			error.type = 'CompileError';
+			error.TypeError = 'CompileDirError';
 			TSN.emit('error', error);
 			return;
 		}
 
-		switch (instance.state) {
+		switch (directory.state) {
 			case 'start':
 				if (data.isDirectory()) {
-					instance.state = 'read';
+					directory.state = 'read';
 
-					LIB.fileSystem.readdir(instance.path, callback);
+					LIB.fileSystem.readdir(directory.path, callback);
 				} else {
-					error = new Error('Path ' + instance.path + ' is not a directory.');
-					error.type = 'CompileError';
+					error = new Error('Path ' + directory.path + ' is not a directory.');
+					error.TypeError = 'CompileDirError';
 
-					TSN.emit('compileError', error);
+					TSN.emit('error', error);
 				}
 				break;
 			case 'read':
-				instance.files = data;
-				instance.state = 'status';
+				directory.files = data;
+				directory.state = 'status';
 
 				if (data.length) {
-					instance.currentFile = data.shift();
+					directory.currentFile = data.shift();
 
-					LIB.fileSystem.stat(LIB.path.join(instance.path, instance.currentFile), callback);
+					LIB.fileSystem.stat(LIB.path.join(directory.path, directory.currentFile), callback);
 				} else {
 					callback(error, new LIB.fileSystem.Stats);
 				}
 				break;
 			case 'status':
-				var path = LIB.path.join(instance.path, instance.currentFile);
+				var path = LIB.path.join(directory.path, directory.currentFile);
 
 				if (data.isFile()) {
-					if (pattern.test(instance.currentFile)) {
-						TSN.load(LIB.path.relative(instance.root || instance.path, path));
+					if (pattern.test(directory.currentFile)) {
+						TSN.load(LIB.path.relative(directory.root || directory.path, path));
 					}
 				} else if (data.isDirectory()) {
 					var child = TSN.compileDir(pattern, path);
 
-					child.root = instance.root || instance.path;
-					child.parent = instance;
+					child.root = directory.root || directory.path;
+					child.parent = directory;
 
-					instance.dirsLength++;
+					directory.dirsLength++;
 				}
 
-				if (instance.files.length) {
-					instance.currentFile = instance.files.shift();
-					LIB.fileSystem.stat(LIB.path.join(instance.path, instance.currentFile), callback);
+				if (directory.files.length) {
+					directory.currentFile = directory.files.shift();
+					LIB.fileSystem.stat(LIB.path.join(directory.path, directory.currentFile), callback);
 				} else {
-					var dir = instance;
-					instance.state = 'end';
+					var dir = directory;
+					directory.state = 'end';
 
 					while (!dir.dirsLength) {
 						if (dir.parent) {
 							dir = dir.parent;
 							dir.dirsLength--;
 						} else if (dir.state === 'end') {
-							TSN.emit('compileEnd');
+							TSN.emit('compileDirEnd');
 							break;
 						}
 					}
@@ -342,14 +355,14 @@ TSN.compileFromDir = function (pattern, path) {
 		}
 	}
 
-	return instance;
+	return directory;
 };
 
 /**
- * Рендеринг шаблона.
+ * Синхронный рендеринг шаблона.
  * @param {function} template Скомпилированный шаблон.
- * @param {object} context Контекст шаблона.
- * @param {object} stream Экземпляр конструктора <a href="http://nodejs.org/docs/latest/api/stream.html">Stream</a>, в который будет записываться результат рендеринга.
+ * @param {object} [context=undefined] Контекст шаблона.
+ * @param {object} [stream=undefined] Экземпляр конструктора <a href="http://nodejs.org/docs/latest/api/stream.html">Stream</a>, в который будет записываться результат рендеринга.
  * @return {text} Результат рендеринга.
  */
 TSN.render = function (template, context, stream) {
@@ -361,7 +374,7 @@ TSN.render = function (template, context, stream) {
  * @param {string} name Имя тега.
  * @param {object} API Объект API тега.
  */
-TSN.extend = function (name, API) {
+TSN.extendDTD = function (name, API) {
 	nodeAPI[name] = API;
 };
 
@@ -381,10 +394,92 @@ module.exports = TSN;
 /**
  * @event
  * @name TSN#error
- * @description Ошибка парсинга шаблона.
+ * @description Ошибка.
  * @param {error} error Объект ошибки.
- * @param {string} error.message Текстовое сообщение ошибки.
+ * @param {string} error.TypeError Тип ошибки:
+ * <ul>
+ *   <li><i>CompileError</i> - Ошибка компиляции. Объект ошибки этого типа имеет дополнительные свойства: <b>message</b>, <b>nodeName</b>, <b>line</b>, <b>char</b>.<br /><br /></li>
+ *   <li><i>RenderError</i> - Ошибка рендеринга. Объект ошибки этого типа имеет дополнительное свойство <b>templateName</b>.<br /><br /></li>
+ *   <li><i>CompileDirError</i> - Ошибка компиляции из директории {@link TSN.compileFromDir}.</li>
+ * </ul>
+ *
+ * <div>
+ *   <b>Дополнительные свойства:</b>
+ * </div>
+ * <br />
+ * @param {string} error.message Текст ошибки.
  * @param {string} error.nodeName Имя тега, сгенерировавшего ошибку.
  * @param {number} error.line Номер строки, на которой находится тег, сгенерировавший ошибку.
  * @param {number} error.char Позиция символа в строке, с которого начинается тег, сгенерировавший ошибку.
+ * @param {string} error.templateName Имя шаблона.
+ */
+
+/**
+ * @name TSN.config.namespace
+ * @description Префикс пространства имен TSN
+ * @default 'tsn'
+ * @type string
+ */
+
+/**
+ * @name TSN.config.templateRoot
+ * @description Корневая директория файлов шаблонов, относительно которой будут разрешаться пути.
+ * @default ''
+ * @type string
+ */
+
+/**
+ * @name TSN.config.encoding
+ * @description Кодировка файлов шаблонов.
+ * @default 'utf-8'
+ * @type string
+ */
+
+/**
+ * @name TSN.config.saveComments
+ * @description Если значение параметра false - HTML-комментарии будут удалены из результирующего кода шаблона. <a href="http://msdn.microsoft.com/en-us/library/ms537512(v=vs.85).aspx">Условные комментарии Internet Explorer</a> не будут удалены.
+ * @default true
+ * @type boolean
+ */
+
+/**
+ * @name TSN.config.parseCDATA
+ * @description Если значение парамерта false - теги TSN не будут отрабатывать в секциях CDATA.
+ * @default false
+ * @type boolean
+ */
+
+/**
+ * @name TSN.config.tabSize
+ * @description Размер одного символа табуляции в пробелах (если используется символ табуляции).
+ * @default 2
+ * @type number
+ */
+
+/**
+ * @name TSN.config.indent
+ * @description Размер отступа в пробелах.
+ * @default 2
+ * @type number
+ */
+
+/**
+ * @name TSN.config.cache
+ * @description Разрешить или запретить кешировать скомпилированные шаблоны.
+ * @default true
+ * @type boolean
+ */
+
+/**
+ * @name TSN.config.removeXMLDeclaration
+ * @description Если значение параметра true - XML декларация и DTD в начале файла шаблона будут удалены.
+ * @default true
+ * @type boolean
+ */
+
+/**
+ * @name TSN.config.name
+ * @description Имя шаблона, по которому он будет сохранен в кеше {@link TSN.cache}.
+ * @default undefined
+ * @type string
  */

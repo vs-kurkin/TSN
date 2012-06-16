@@ -17,6 +17,16 @@ var regExpComment = regExpSpace + '<!--(?!\\[if [^\\]]+?\\]>)[\\s\\S]*?(?!<!\\[e
  */
 function Parser (source, config) {
 	var cdata = config.parseCDATA === true ? '' : regExpCDATA;
+	var xmlDeclaration = config.removeXMLDeclaration !== false && source.match(regExpXML);
+	var lastIndex = 0;
+	var parseResult, attribute, text, regExp;
+
+	if (xmlDeclaration) {
+		xmlDeclaration = xmlDeclaration[0];
+		source = source.substring(xmlDeclaration.length);
+	} else {
+		xmlDeclaration = '';
+	}
 
 	if (!(config.namespace && (/[a-z\d\-_]+/i).test(config.namespace))) {
 		this.onError(new Error('Invalid namespace.'));
@@ -37,20 +47,13 @@ function Parser (source, config) {
 		config.indent = Number(config.indent.toFixed(0));
 	}
 
+	regExp = new RegExp('(?:' + regExpSpace + '&' + config.namespace + '.([a-z0-9\\-_\\.]+)?;)|(' + regExpComment + ')' + cdata + '|(?:' + regExpSpace + '(' + regExpDTD + '))|(?:' + regExpSpace + '<\\/\\s*' + config.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + regExpSpace + '<\\s*' + config.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>)', 'gi');
+
 	/**
-	 * Объект конфигурации шаблона.
+	 * Объект конфигурации шаблона: {@link TSN.config}.
 	 * @type object
 	 */
 	this.config = config;
-
-	var regExp = new RegExp('(?:' + regExpSpace + '&' + config.namespace + '.([a-z0-9\\-_\\.]+)?;)|(' + regExpComment + ')' + cdata + '|(?:' + regExpSpace + '(' + regExpDTD + '))|(?:' + regExpSpace + '<\\/\\s*' + config.namespace + ':([a-z\\-_]+)\\s*>)|(?:' + regExpSpace + '<\\s*' + config.namespace + ':([a-z\\-_]+)((?:\\s+[a-z\\-_]+(?::[a-z\\-_]+)?\\s*=\\s*(?:(?:(?:\\\\)?"[^"]*(?:\\\\)?")|(?:(?:\\\\)?\'[^\']*(?:\\\\)?\')))*)\\s*(\\/)?>)', 'gi');
-
-	var xmlDeclaration, parseResult, attribute, text;
-	var lastIndex = 0;
-
-	if (typeof String(source) !== 'string') {
-		throw 'Invalid content type';
-	}
 
 	/**
 	 * Текущая глубина тегов.
@@ -58,23 +61,14 @@ function Parser (source, config) {
 	 */
 	this.depth = 0;
 
-	xmlDeclaration = config.removeXMLDeclaration !== false && source.match(regExpXML);
-
-	if (xmlDeclaration) {
-		xmlDeclaration = xmlDeclaration[0];
-		source = source.substring(xmlDeclaration.length);
-	} else {
-		xmlDeclaration = '';
-	}
-
 	/**
-	 * Код XML-декларации шаблона.
+	 * Код XML-декларации.
 	 * @type string
 	 */
 	this.xmlDeclaration = xmlDeclaration;
 
 	/**
-	 * Тело шаблона без XML-декларации.
+	 * Код шаблона без XML-декларации.
 	 * @type string
 	 */
 	this.content = source;
@@ -196,9 +190,7 @@ function Parser (source, config) {
 		lastIndex = index + result.length;
 	}
 
-	text = source.substring(lastIndex);
-
-	if (text) {
+	if (text = source.substring(lastIndex)) {
 		this.onText(text, this.current);
 	}
 
@@ -225,6 +217,7 @@ Parser.prototype._error = function (message, node) {
 	var error = new Error(message);
 	var content = (this.xmlDeclaration + this.content).substr(0, node.index + this.xmlDeclaration.length) + node.source;
 
+	error.TypeError = 'CompileError';
 	error.nodeName = node.name;
 	error.line = content.split(/(?:\r\n)|\r|\n/).length;
 	error.char = content
