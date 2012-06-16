@@ -43,7 +43,7 @@ TSN.on('compileDirEnd', function (path) {
 	console.log(this.config.templateRoot === path) // true
 });
 
-TSN.compileFromDir(/.*?.xml$/); // компилировать только XML-файлы
+TSN.compileFromDir(/.*?\.xml$/); // компилировать только XML-файлы
 ```
 
 Компиляция шаблона с использованием кастомных настроек. Параметры, которые не были указаны в этом объекте, будут унаследованы от `TSN.config`.
