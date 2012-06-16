@@ -238,7 +238,7 @@ ul.inheritsList
 							<div class="fixedFont">
 								<b><a href="../symbols/TSN.html#constructor">TSN</a></b>
 							</div>
-							<div class="description">Пространство имен API шаблонизатора, декорирован свойствами прототипа <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.</div>
+							<div class="description">Пространство имен API шаблонизатора, экземпляр <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.</div>
 						</td>
 					</tr>
 				</tbody>
@@ -358,6 +358,24 @@ ul.inheritsList
 						<tr>
 							<td class="attributes">&nbsp;</td>
 							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/TSN.html#event:compile">compile</a></b>(template)
+								</div>
+								<div class="description">Завершение компиляции шаблона.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
+								<div class="fixedFont"><b><a href="../symbols/TSN.html#event:compileDirEnd">compileDirEnd</a></b>(path)
+								</div>
+								<div class="description">Завершение компиляции шаблонов из директории <a href="../symbols/TSN.html#.compileFromDir">TSN.compileFromDir</a>.</div>
+							</td>
+						</tr>
+					
+						<tr>
+							<td class="attributes">&nbsp;</td>
+							<td class="nameDescription">
 								<div class="fixedFont"><b><a href="../symbols/TSN.html#event:error">error</a></b>(error)
 								</div>
 								<div class="description">Ошибка.</div>
@@ -383,7 +401,7 @@ ul.inheritsList
 				</div>
 				
 				<div class="description">
-					Пространство имен API шаблонизатора, декорирован свойствами прототипа <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
+					Пространство имен API шаблонизатора, экземпляр <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
 					
 				</div>
 				
@@ -682,6 +700,78 @@ ul.inheritsList
 					Event Detail
 				</div>
 				
+					<a name="event:compile"> </a>
+					<div class="fixedFont">
+					
+					
+					<b>compile</b>(template)
+					
+					</div>
+					<div class="description">
+						Завершение компиляции шаблона.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{function}</span> <b>template</b>
+									
+								</dt>
+								<dd>Скомпилированный шаблон.</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
+					<a name="event:compileDirEnd"> </a>
+					<div class="fixedFont">
+					
+					
+					<b>compileDirEnd</b>(path)
+					
+					</div>
+					<div class="description">
+						Завершение компиляции шаблонов из директории <a href="../symbols/TSN.html#.compileFromDir">TSN.compileFromDir</a>.
+						
+						
+					</div>
+					
+					
+					
+						
+							<dl class="detailList">
+							<dt class="heading">Parameters:</dt>
+							
+								<dt>
+									<span class="light fixedFont">{string}</span> <b>path</b>
+									
+								</dt>
+								<dd>Путь к директории, в которой компилировались шаблоны.</dd>
+							
+							</dl>
+						
+						
+						
+						
+						
+						
+						
+
+					<hr />
+				
 					<a name="event:error"> </a>
 					<div class="fixedFont">
 					
@@ -711,7 +801,17 @@ ul.inheritsList
 									<span class="light fixedFont">{string}</span> <b>error.TypeError</b>
 									
 								</dt>
-								<dd>Тип ошибки:<ul>  <li><i>CompileError</i> - Ошибка компиляции. Объект ошибки этого типа имеет дополнительные свойства: <b>message</b>, <b>nodeName</b>, <b>line</b>, <b>char</b>.<br /><br /></li>  <li><i>RenderError</i> - Ошибка рендеринга. Объект ошибки этого типа имеет дополнительное свойство <b>templateName</b>.<br /><br /></li>  <li><i>CompileDirError</i> - Ошибка компиляции из директории <a href="../symbols/TSN.html#.compileFromDir">TSN.compileFromDir</a>.</li></ul><div>  <b>Дополнительные свойства:</b></div><br /></dd>
+								<dd>Тип ошибки:
+<ul>
+  <li><i>CompileError</i> - Ошибка компиляции. Объект ошибки этого типа имеет дополнительные свойства: <b>message</b>, <b>nodeName</b>, <b>line</b>, <b>char</b>.<br /><br /></li>
+  <li><i>RenderError</i> - Ошибка рендеринга. Объект ошибки этого типа имеет дополнительное свойство <b>templateName</b>.<br /><br /></li>
+  <li><i>CompileDirError</i> - Ошибка компиляции из директории <a href="../symbols/TSN.html#.compileFromDir">TSN.compileFromDir</a>.</li>
+</ul>
+
+<div>
+  <b>Дополнительные свойства:</b>
+</div>
+<br /></dd>
 							
 								<dt>
 									<span class="light fixedFont">{string}</span> <b>error.message</b>
@@ -763,7 +863,7 @@ ul.inheritsList
 <!-- ============================== footer ================================= -->
 		<div class="fineprint" style="clear:both">
 			
-			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Sat Jun 16 2012 18:31:40 GMT+0400 (MSD)
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Sat Jun 16 2012 18:47:11 GMT+0400 (MSD)
 		</div>
 	</body>
 </html>

@@ -33,13 +33,17 @@ var TSN = require('TSN');
 Компиляция из файла:
 
 ```js
-TSN.compileFromFile('path/to/template.xml'); // Компиляция относительно TSN.config.templateRoot.
+TSN.compileFromFile('path/to/template.xml'); // относительно TSN.config.templateRoot
 ```
 
 Компиляция всех файлов в папке и подпапках:
 
 ```js
-TSN.compileFromDir(); // Компиляция относительно TSN.config.templateRoot.
+TSN.on('compileDirEnd', function (path) {
+	console.log(this.config.templateRoot === path) // true
+});
+
+TSN.compileFromDir(/.*?.xml$/); // компилировать только XML-файлы
 ```
 
 Компиляция шаблона с использованием кастомных настроек. Параметры, которые не были указаны в этом объекте, будут унаследованы от `TSN.config`.

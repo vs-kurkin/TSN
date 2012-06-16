@@ -167,7 +167,7 @@ function apply (context, stream) {
 /**
  * @name TSN
  * @namespace Templating System for NodeJS.
- * @description Пространство имен API шаблонизатора, декорирован свойствами прототипа <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
+ * @description Пространство имен API шаблонизатора, экземпляр <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
  */
 
 var TSN = new LIB.event.EventEmitter();
@@ -345,7 +345,7 @@ TSN.compileFromDir = function (pattern, path) {
 							dir = dir.parent;
 							dir.dirsLength--;
 						} else if (dir.state === 'end') {
-							TSN.emit('compileDirEnd');
+							TSN.emit('compileDirEnd', dir.root || dir.path);
 							break;
 						}
 					}
@@ -415,8 +415,22 @@ module.exports = TSN;
  */
 
 /**
+ * @event
+ * @name TSN#compile
+ * @description Завершение компиляции шаблона.
+ * @param {function} template Скомпилированный шаблон.
+ */
+
+/**
+ * @event
+ * @name TSN#compileDirEnd
+ * @description Завершение компиляции шаблонов из директории {@link TSN.compileFromDir}.
+ * @param {string} path Путь к директории, в которой компилировались шаблоны.
+ */
+
+/**
  * @name TSN.config.namespace
- * @description Префикс пространства имен TSN
+ * @description Префикс пространства имен TSN.
  * @default 'tsn'
  * @type string
  */
