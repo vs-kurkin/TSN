@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Шаблон страницы, входная точка для данных -->
+<tsn:root xmlns:tsn="TSN" xmlns="http://www.w3.org/1999/xhtml">
+	<!-- Подключение скриптов, используемых на этой странице -->
+	<tsn:data key="JS" action="append">
+		<script type="text/javascript" src="//page.js"> </script>
+	</tsn:data>
+
+	<!-- Контент страницы -->
+	<tsn:block name="CONTENT">
+		<div>
+			Hello, <tsn:echo data="this.userName" escape="html" />.
+		</div>
+	</tsn:block>
+
+	<!-- Рендеринг шаблона раздела -->
+	<tsn:render file="service.xml" />
+</tsn:root>

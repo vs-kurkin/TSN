@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Шаблон основного каркаса разметки -->
+
+<tsn:root xmlns:tsn="TSN" xmlns="http://www.w3.org/1999/xhtml">
+	<!-- Подключение общих блоков -->
+	<tsn:render file="common.xml" />
+
+	<html>
+		<head>
+			<!-- Результирующий код подключения стилей -->
+			<tsn:render block="CSS" />
+		</head>
+		<body>
+			<div class="wrapper">
+				<!-- Результирующий код страницы -->
+				<tsn:render block="CONTENT" />
+			</div>
+
+			<!-- Результирующий код подключения скриптов -->
+			<tsn:render block="JS" />
+		</body>
+	</html>
+</tsn:root>

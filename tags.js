@@ -208,17 +208,17 @@ this['each'] = {
 					switch (attributes.type) {
 						case 'default':
 							this.template = ';' +
-								'if (!__block.hasOwnProperty("' + name + '")) {' +
-									'__block["' + name + '"] = ' + this.template +
+								'if (!_block.hasOwnProperty("' + name + '")) {' +
+									'_block["' + name + '"] = ' + this.template +
 								'}';
 							break;
 						case 'local':
 							this.template = ';' +
-								'__localBlock["' + name + '"] = ' + this.template;
+								'_localBlock["' + name + '"] = ' + this.template;
 							break;
 						case 'global':
 							this.template = ';' +
-								'__block["' + name + '"] = ' + this.template;
+								'_block["' + name + '"] = ' + this.template;
 							break;
 						default:
 							return new Error('Invalid value of attribute "type"');
@@ -238,8 +238,8 @@ this['each'] = {
 	API.render = {
 		start: function () {
 			return '' +
-				'var __block = TSN.hasOwnProperty("parent") ? TSN.parent.__block : {};' +
-				'var __localBlock = {};';
+				'var _block = TSN.hasOwnProperty("parent") ? TSN.parent._block : {};' +
+				'var _localBlock = {};';
 		},
 		parse: function (parser) {
 			var attributes = this.attributes;
@@ -259,12 +259,12 @@ this['each'] = {
 
 				this.template = ';' +
 					'TSN.parent = {' +
-						'__block: __block,' +
+						'_block: _block,' +
 						'_data: _data' +
 					'};' +
 
 					'__output += TSN' +
-						'.load("/*@file*/", /*@config*/)' +
+						'.compileFromFile("/*@file*/", /*@config*/)' +
 						'.call(/*!context*/, __stream);' +
 
 					'delete TSN.parent;';
@@ -274,9 +274,9 @@ this['each'] = {
 
 				this.template = ';' +
 					'__output += ' +
-					'(__localBlock.hasOwnProperty("' + blockName + '") ? ' +
-						'__localBlock["' + blockName + '"] : ' +
-						'__block["' + blockName + '"])' +
+					'(_localBlock.hasOwnProperty("' + blockName + '") ? ' +
+						'_localBlock["' + blockName + '"] : ' +
+						'_block["' + blockName + '"])' +
 							'.call(/*!context*/, "", "", __hasStream);';
 			} else {
 				return new Error('Attribute "block" or "file" is not defined.');
@@ -287,6 +287,10 @@ this['each'] = {
 
 this.script = {
 	parse: function () {
-		this.template = this.text;
-	}
+		this.template = '' +
+			'((function () {' +
+				this.text +
+			'}).call(/*!context*/) || "")';
+	},
+	inline: true
 };

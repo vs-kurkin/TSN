@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!-- Шаблон общих блоков для всех страниц -->
+<tsn:root xmlns:tsn="TSN" xmlns="http://www.w3.org/1999/xhtml">
+
+	<!-- Если блок контента не определён... -->
+	<tsn:if expr="!_block.hasOwnProperty('CONTENT')">
+		<!-- Очищаем код подключения статики -->
+		<tsn:data key="CSS" value="''" />
+		<tsn:data key="JS" value="''" />
+
+		<!-- Контент по-умолчанию - страница 404 -->
+		<tsn:block name="CONTENT">
+			<tsn:render file="/error/404.xml" />
+		</tsn:block>
+	</tsn:if>
+
+	<!-- Общие стили, вставляются перед остальными. Может быть переопределён выше -->
+	<tsn:block name="CSS" type="default">
+		<link rel="stylesheet" type="text/css" href="//common.css" />
+
+		<tsn:echo data="_data.CSS" />
+	</tsn:block>
+
+	<!-- Общие скрипты, вставляются перед остальными. Может быть переопределён выше -->
+	<tsn:block name="JS" type="default">
+		<script type="text/javascript" src="//common.js"> </script>
+
+		<tsn:echo data="_data.JS" />
+	</tsn:block>
+
+</tsn:root>

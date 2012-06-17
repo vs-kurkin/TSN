@@ -205,6 +205,7 @@ TSN.compile = function (source, config) {
 	source = '' +
 		'"use strict";' +
 
+		'var global;' +
 		'var __name = "' + config.name.replace(/('|"|(?:\r\n)|\r|\n|\\)/g, "\\$1") + '";' +
 		'var __output = "";' +
 		'var __text = "";' +
@@ -322,7 +323,7 @@ TSN.compileFromDir = function (pattern, path) {
 
 				if (data.isFile()) {
 					if (pattern.test(directory.currentFile)) {
-						TSN.load(LIB.path.relative(directory.root || directory.path, path));
+						TSN.compileFromFile(LIB.path.relative(directory.root || directory.path, path));
 					}
 				} else if (data.isDirectory()) {
 					var child = TSN.compileDir(pattern, path);
