@@ -362,7 +362,7 @@ TSN.compileFromDir = function (pattern, path) {
  * Синхронный рендеринг шаблона.
  * @param {function} template Скомпилированный шаблон.
  * @param {object} [context=undefined] Контекст шаблона.
- * @param {object} [stream=undefined] Экземпляр конструктора <a href="http://nodejs.org/docs/latest/api/stream.html">Stream</a>, в который будет записываться результат рендеринга.
+ * @param {object} [stream=undefined] <a href="http://nodejs.org/docs/latest/api/stream.html#stream_writable_stream">Поток с возможностью записи</a>, в который будет записываться результат рендеринга.
  * @return {text} Результат рендеринга.
  */
 TSN.render = function (template, context, stream) {
