@@ -254,7 +254,7 @@ this['each'] = {
 				}
 
 				if (!attributes.hasOwnProperty('config')) {
-					attributes.config = 'null';
+					attributes.config = parser.config.inheritConfig === true ? JSON.stringify(parser.config) : 'null';
 				}
 
 				this.template = ';' +
@@ -287,10 +287,23 @@ this['each'] = {
 
 this.script = {
 	parse: function () {
-		this.template = '' +
-			'((function () {' +
-				this.text +
-			'}).call(/*!context*/) || "")';
-	},
-	inline: true
+		var attributes = this.attributes;
+		if (!attributes.hasOwnProperty('type')) {
+			attributes.type = 'global';
+		}
+
+		switch (attributes.type) {
+			case 'global':
+				this.template = this.text;
+				this.inline = false;
+				break;
+			case 'local':
+				this.template = '' +
+					'((function () {' +
+						this.text +
+					'}).call(/*!context*/) || "")';
+				this.inline = true;
+				break;
+		}
+	}
 };

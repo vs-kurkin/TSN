@@ -7,5 +7,6 @@
 	"tabSize": 2,
 	"indent": 2,
 	"cache": true,
-	"removeXMLDeclaration": true
+	"removeXMLDeclaration": true,
+	"inheritConfig": true
 }

@@ -58,3 +58,7 @@
 	>
 
 <!ELEMENT tsn:script ANY>
+<!ATTLIST tsn:script
+	type (global|local) "global"
+	context CDATA "this"
+	>
