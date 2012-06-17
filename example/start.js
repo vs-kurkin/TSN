@@ -4,6 +4,7 @@ var queryString = require('querystring');
 var path = require('path');
 var TSN = require('TSN');
 
+/* Обработка ошибок */
 TSN.on('error', function (error) {
 	console.log(error);
 });
@@ -34,4 +35,8 @@ function listener(request, response) {
 		.call(data, response);
 
 	response.end();
+
+	/*
+	* Приложение выводит значение GET-параметра name. Результат рендеринга находится в result.html.
+	* */
 }

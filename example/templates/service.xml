@@ -4,12 +4,12 @@
 <tsn:root xmlns:tsn="TSN" xmlns="http://www.w3.org/1999/xhtml">
 	<!-- Скрипты, используемые в текущем разделе -->
 	<tsn:data key="JS" action="prepend">
-		<script type="text/javascript" src="service.js"> </script>
+		<script type="text/javascript" src="//service.js"> </script>
 	</tsn:data>
 
 	<!-- Стили для текущего раздела -->
 	<tsn:data key="CSS" action="prepend">
-		<link rel="stylesheet" type="text/css" href="service.css" />
+		<link rel="stylesheet" type="text/css" href="//service.css" />
 	</tsn:data>
 
 	<!-- Сохранение контента страницы в хранилище -->
