@@ -9,6 +9,11 @@ TSN.on('error', function (error) {
 	console.log(error);
 });
 
+/* Создание сервера после компилирования всех шаблонов */
+TSN.on('compileDirEnd', function () {
+	http.Server(listener).listen(80, '127.0.0.1');
+});
+
 /* Определение базовой директории шаблонов */
 TSN.config.templateRoot = path.join(__dirname, 'templates');
 
@@ -17,11 +22,6 @@ TSN.config.saveComments = false;
 
 /* Компиляция всех шаблонов в корневой папке */
 TSN.compileFromDir();
-
-/* Создание сервера после компилирования всех шаблонов */
-TSN.on('compileDirEnd', function () {
-	http.Server(listener).listen(80, '127.0.0.1');
-});
 
 function listener(request, response) {
 	/* Формирование данных для рендеринга */
