@@ -30,9 +30,7 @@ function listener(request, response) {
 	};
 
 	/* Рендеринг шаблона с записью результата в поток */
-	TSN
-		.cache[path.join(TSN.config.templateRoot, 'page.xml')]
-		.call(data, response);
+	TSN.render('page.xml', data, response);
 
 	response.end();
 

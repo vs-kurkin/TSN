@@ -229,6 +229,7 @@ TSN.compile = function (source, config) {
 
 	template.call = call;
 	template.apply = apply;
+	template.render = call;
 	template.source = source;
 
 	if (config.cache === true && typeof config.name === 'string' && config.name !== '') {
@@ -361,12 +362,36 @@ TSN.compileFromDir = function (pattern, path) {
 
 /**
  * Синхронный рендеринг шаблона.
- * @param {function} template Скомпилированный шаблон.
+ * @param {string|function} template Скомпилированный шаблон.
  * @param {object} [context=undefined] Контекст шаблона.
  * @param {object} [stream=undefined] <a href="http://nodejs.org/docs/latest/api/stream.html#stream_writable_stream">Поток с возможностью записи</a>, в который будет записываться результат рендеринга.
  * @return {text} Результат рендеринга.
  */
 TSN.render = function (template, context, stream) {
+	var path;
+
+	switch (typeof template) {
+		case 'string':
+			if (TSN.cache.hasOwnProperty(template)) {
+				template = TSN.cache[template];
+			} else if (TSN.cache.hasOwnProperty(path = LIB.path.join(TSN.templateRoot, template))) {
+				template = TSN.cache[path];
+			} else {
+				template = TSN.compileFromFile(template);
+			}
+			break;
+
+		case 'function':
+			break;
+
+		default:
+			var error = new Error('First argument "template" must be type string or function.');
+			error.TypeError = 'RenderError';
+
+			TSN.emit('error', error);
+			return '';
+	}
+
 	return Function.prototype.call.call(template, context, stream, TSN);
 };
 
