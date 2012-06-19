@@ -5,7 +5,7 @@
 		<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
 		<meta name="generator" content="JsDoc Toolkit" />
 		
-		<title>JsDoc Reference - Parser</title>
+		<title>JsDoc Reference - TSNTemplate</title>
 
 		<style type="text/css">
 			/* default.css */
@@ -193,11 +193,11 @@ ul.inheritsList
 	
 	<li><a href="../symbols/Parser.html">Parser</a></li>
 	
-	<li><a href="../symbols/template.html">template</a></li>
-	
 	<li><a href="../symbols/TSN.html">TSN</a></li>
 	
 	<li><a href="../symbols/TSN.config.html">TSN.config</a></li>
+	
+	<li><a href="../symbols/TSNTemplate.html">TSNTemplate</a></li>
 	
 </ul>
 <hr />
@@ -208,7 +208,7 @@ ul.inheritsList
 <!-- ============================== class title ============================ -->
 			<h1 class="classTitle">
 				
-				Class Parser
+				Namespace TSNTemplate
 			</h1>
 
 <!-- ============================== class summary ========================== -->			
@@ -216,17 +216,17 @@ ul.inheritsList
 				
 				
 			
+				Объект скомпилированного шаблона TSN.
 				
 				
-				
-					<br /><i>Defined in: </i> <a href="../symbols/src/C__Users_b-vladi_Desktop_AMXhost.ru_src_site_node_modules_TSN_Parser.js.html">Parser.js</a>.
+					<br /><i>Defined in: </i> <a href="../symbols/src/C__Users_b-vladi_Desktop_AMXhost.ru_src_site_node_modules_TSN_TSN.js.html">TSN.js</a>.
 				
 			</p>
 
 <!-- ============================== constructor summary ==================== -->			
 			
-			<table class="summaryTable" cellspacing="0" summary="A summary of the constructor documented in the class Parser.">
-				<caption>Class Summary</caption>
+			<table class="summaryTable" cellspacing="0" summary="A summary of the constructor documented in the class TSNTemplate.">
+				<caption>Namespace Summary</caption>
 				<thead>
 					<tr>
 						<th scope="col">Constructor Attributes</th>
@@ -238,9 +238,9 @@ ul.inheritsList
 						<td class="attributes">&nbsp;</td>
 						<td class="nameDescription" >
 							<div class="fixedFont">
-								<b><a href="../symbols/Parser.html#constructor">Parser</a></b>(source, config)
+								<b><a href="../symbols/TSNTemplate.html#constructor">TSNTemplate</a></b>
 							</div>
-							<div class="description">Парсер TSN-шаблона.</div>
+							<div class="description">Объект скомпилированного шаблона TSN.</div>
 						</td>
 					</tr>
 				</tbody>
@@ -251,7 +251,7 @@ ul.inheritsList
 			
 				
 				
-				<table class="summaryTable" cellspacing="0" summary="A summary of the fields documented in the class Parser.">
+				<table class="summaryTable" cellspacing="0" summary="A summary of the fields documented in the class TSNTemplate.">
 					<caption>Field Summary</caption>
 					<thead>
 						<tr>
@@ -262,62 +262,52 @@ ul.inheritsList
 					<tbody>
 					
 						<tr>
-							<td class="attributes">&nbsp;</td>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
 							<td class="nameDescription">
 								<div class="fixedFont">
-								<b><a href="../symbols/Parser.html#config">config</a></b>
+								TSNTemplate.<b><a href="../symbols/TSNTemplate.html#.apply">apply</a></b>
 								</div>
-								<div class="description">Объект конфигурации шаблона: <a href="../symbols/TSN.config.html">TSN.config</a>.</div>
+								<div class="description">Аналогично <a href="../symbols/TSNTemplate.html#.render">TSNTemplate.render</a>.</div>
 							</td>
 						</tr>
 					
 						<tr>
-							<td class="attributes">&nbsp;</td>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
 							<td class="nameDescription">
 								<div class="fixedFont">
-								<b><a href="../symbols/Parser.html#content">content</a></b>
+								TSNTemplate.<b><a href="../symbols/TSNTemplate.html#.cacheName">cacheName</a></b>
 								</div>
-								<div class="description">Код шаблона без XML-декларации.</div>
+								<div class="description">Имя, по которому этот шаблон находится в кеше <a href="../symbols/TSN.html#.cache">TSN.cache</a>.</div>
 							</td>
 						</tr>
 					
 						<tr>
-							<td class="attributes">&nbsp;</td>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
 							<td class="nameDescription">
 								<div class="fixedFont">
-								<b><a href="../symbols/Parser.html#current">current</a></b>
+								TSNTemplate.<b><a href="../symbols/TSNTemplate.html#.call">call</a></b>
 								</div>
-								<div class="description">Текущий объект тега.</div>
+								<div class="description">Аналогично <a href="../symbols/TSNTemplate.html#.render">TSNTemplate.render</a>.</div>
 							</td>
 						</tr>
 					
 						<tr>
-							<td class="attributes">&nbsp;</td>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
 							<td class="nameDescription">
 								<div class="fixedFont">
-								<b><a href="../symbols/Parser.html#depth">depth</a></b>
+								TSNTemplate.<b><a href="../symbols/TSNTemplate.html#.render">render</a></b>
 								</div>
-								<div class="description">Текущая глубина тегов.</div>
+								<div class="description">Рендеринг шаблона.</div>
 							</td>
 						</tr>
 					
 						<tr>
-							<td class="attributes">&nbsp;</td>
+							<td class="attributes">&lt;static&gt; &nbsp;</td>
 							<td class="nameDescription">
 								<div class="fixedFont">
-								<b><a href="../symbols/Parser.html#root">root</a></b>
+								TSNTemplate.<b><a href="../symbols/TSNTemplate.html#.source">source</a></b>
 								</div>
-								<div class="description">Объект корневого тега шаблона.</div>
-							</td>
-						</tr>
-					
-						<tr>
-							<td class="attributes">&nbsp;</td>
-							<td class="nameDescription">
-								<div class="fixedFont">
-								<b><a href="../symbols/Parser.html#xmlDeclaration">xmlDeclaration</a></b>
-								</div>
-								<div class="description">Код XML-декларации.</div>
+								<div class="description">Исходный код скомпилированного шаблона.</div>
 							</td>
 						</tr>
 					
@@ -337,38 +327,21 @@ ul.inheritsList
 			
 			<div class="details"><a name="constructor"> </a>
 				<div class="sectionTitle">
-					Class Detail
+					Namespace Detail
 				</div>
 				
 				<div class="fixedFont">
-						<b>Parser</b>(source, config)
+						<b>TSNTemplate</b>
 				</div>
 				
 				<div class="description">
-					Парсер TSN-шаблона.
+					Объект скомпилированного шаблона TSN.
 					
 				</div>
 				
 				
 				
 				
-					
-						<dl class="detailList">
-						<dt class="heading">Parameters:</dt>
-						
-							<dt>
-								<span class="light fixedFont">{string}</span>  <b>source</b>
-								
-							</dt>
-								<dd>Исходный код шаблона.</dd>
-						
-							<dt>
-								<span class="light fixedFont">{object}</span>  <b>config</b>
-								
-							</dt>
-								<dd>Объект конфигурации шаблона.</dd>
-						
-						</dl>
 					
 					
 					
@@ -386,15 +359,15 @@ ul.inheritsList
 					Field Detail
 				</div>
 				
-					<a name="config"> </a>
-					<div class="fixedFont">
+					<a name=".apply"> </a>
+					<div class="fixedFont">&lt;static&gt; 
 					
-					<span class="light">{object}</span>
-					<b>config</b>
+					<span class="light">{function}</span>
+					<span class="light">TSNTemplate.</span><b>apply</b>
 					
 					</div>
 					<div class="description">
-						Объект конфигурации шаблона: <a href="../symbols/TSN.config.html">TSN.config</a>.
+						Аналогично <a href="../symbols/TSNTemplate.html#.render">TSNTemplate.render</a>.
 						
 						
 					</div>
@@ -408,15 +381,15 @@ ul.inheritsList
 
 					<hr />
 				
-					<a name="content"> </a>
-					<div class="fixedFont">
+					<a name=".cacheName"> </a>
+					<div class="fixedFont">&lt;static&gt; 
 					
 					<span class="light">{string}</span>
-					<b>content</b>
+					<span class="light">TSNTemplate.</span><b>cacheName</b>
 					
 					</div>
 					<div class="description">
-						Код шаблона без XML-декларации.
+						Имя, по которому этот шаблон находится в кеше <a href="../symbols/TSN.html#.cache">TSN.cache</a>.
 						
 						
 					</div>
@@ -430,15 +403,15 @@ ul.inheritsList
 
 					<hr />
 				
-					<a name="current"> </a>
-					<div class="fixedFont">
+					<a name=".call"> </a>
+					<div class="fixedFont">&lt;static&gt; 
 					
-					<span class="light">{object}</span>
-					<b>current</b>
+					<span class="light">{function}</span>
+					<span class="light">TSNTemplate.</span><b>call</b>
 					
 					</div>
 					<div class="description">
-						Текущий объект тега.
+						Аналогично <a href="../symbols/TSNTemplate.html#.render">TSNTemplate.render</a>.
 						
 						
 					</div>
@@ -452,18 +425,24 @@ ul.inheritsList
 
 					<hr />
 				
-					<a name="depth"> </a>
-					<div class="fixedFont">
+					<a name=".render"> </a>
+					<div class="fixedFont">&lt;static&gt; 
 					
-					<span class="light">{number}</span>
-					<b>depth</b>
+					<span class="light">{function}</span>
+					<span class="light">TSNTemplate.</span><b>render</b>
 					
 					</div>
 					<div class="description">
-						Текущая глубина тегов.
+						Рендеринг шаблона.
 						
 						
 					</div>
+					
+					
+					
+					<pre class="code"><pre>
+  template.render({}, stream);
+</pre></pre>
 					
 					
 
@@ -474,37 +453,15 @@ ul.inheritsList
 
 					<hr />
 				
-					<a name="root"> </a>
-					<div class="fixedFont">
-					
-					<span class="light">{object}</span>
-					<b>root</b>
-					
-					</div>
-					<div class="description">
-						Объект корневого тега шаблона.
-						
-						
-					</div>
-					
-					
-
-						
-						
-						
-						
-
-					<hr />
-				
-					<a name="xmlDeclaration"> </a>
-					<div class="fixedFont">
+					<a name=".source"> </a>
+					<div class="fixedFont">&lt;static&gt; 
 					
 					<span class="light">{string}</span>
-					<b>xmlDeclaration</b>
+					<span class="light">TSNTemplate.</span><b>source</b>
 					
 					</div>
 					<div class="description">
-						Код XML-декларации.
+						Исходный код скомпилированного шаблона.
 						
 						
 					</div>
@@ -533,7 +490,7 @@ ul.inheritsList
 <!-- ============================== footer ================================= -->
 		<div class="fineprint" style="clear:both">
 			
-			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Tue Jun 19 2012 19:50:23 GMT+0400 (MSK)
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Tue Jun 19 2012 19:43:52 GMT+0400 (MSK)
 		</div>
 	</body>
 </html>

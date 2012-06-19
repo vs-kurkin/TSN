@@ -193,6 +193,8 @@ ul.inheritsList
 	
 	<li><a href="../symbols/Parser.html">Parser</a></li>
 	
+	<li><a href="../symbols/template.html">template</a></li>
+	
 	<li><a href="../symbols/TSN.html">TSN</a></li>
 	
 	<li><a href="../symbols/TSN.config.html">TSN.config</a></li>
@@ -217,7 +219,7 @@ ul.inheritsList
 				Templating System for NodeJS.
 				
 				
-					<br /><i>Defined in: </i> <a href="../symbols/src/E__Doc_Sources_amxhost.ru_src_site_node_modules_TSN_TSN.js.html">TSN.js</a>.
+					<br /><i>Defined in: </i> <a href="../symbols/src/C__Users_b-vladi_Desktop_AMXhost.ru_src_site_node_modules_TSN_TSN.js.html">TSN.js</a>.
 				
 			</p>
 
@@ -304,7 +306,7 @@ ul.inheritsList
 							<td class="nameDescription">
 								<div class="fixedFont">TSN.<b><a href="../symbols/TSN.html#.compileFromDir">compileFromDir</a></b>(pattern, path)
 								</div>
-								<div class="description">Асинхронная рекурсивная компиляция файлов.</div>
+								<div class="description">Асинхронная рекурсивная компиляция файлов, включая вложенные дирректории.</div>
 							</td>
 						</tr>
 					
@@ -495,7 +497,7 @@ ul.inheritsList
 							<dl class="detailList">
 							<dt class="heading">Returns:</dt>
 							
-								<dd><span class="light fixedFont">{function}</span> Скомпилированный шаблон.</dd>
+								<dd><span class="light fixedFont">{function}</span> Скомпилированный шаблон <a href="../symbols/template.html">template</a>.</dd>
 							
 							</dl>
 						
@@ -512,10 +514,23 @@ ul.inheritsList
 					
 					</div>
 					<div class="description">
-						Асинхронная рекурсивная компиляция файлов.
+						Асинхронная рекурсивная компиляция файлов, включая вложенные дирректории.
 						
 						
 					</div>
+					
+					
+					
+					<pre class="code"><pre>
+  // Компилировать только файлы с расширением .html.
+  TSN.compile('html');
+
+  // Аналогично предыдущему вызову.
+  TSN.compile(/.+?\.html$/);
+
+  // Компилировать все файлы в папке /home/user и подпапках.
+  TSN.compile(null, '/home/user');
+</pre></pre>
 					
 					
 					
@@ -524,10 +539,10 @@ ul.inheritsList
 							<dt class="heading">Parameters:</dt>
 							
 								<dt>
-									<span class="light fixedFont">{RegExp}</span> <b>pattern</b>
+									<span class="light fixedFont">{string|RegExp}</span> <b>pattern</b>
 									<i>Optional, Default: /.* /</i>
 								</dt>
-								<dd>Ругелярное выражение, которому должно соответствовать имя файла для компиляции.</dd>
+								<dd>Расширение файла (строка), либо ругелярное выражение, которому должно соответствовать полное имя файла для компиляции. После завершения компиляции вызывается событие <a href="../symbols/TSN.html#event:compileDirEnd">TSN#event:compileDirEnd</a>.</dd>
 							
 								<dt>
 									<span class="light fixedFont">{string}</span> <b>path</b>
@@ -561,6 +576,21 @@ ul.inheritsList
 					
 					
 					
+					<pre class="code"><pre>
+  // Компиляция файла /home/user/template.xml.
+  TSN.config.templateRoot = '/home/user';
+  TSN.compileFromFile('template.xml');
+
+  Компиляция с указанием кастомного конфига.
+  var template = TSN.compileFromFile('template.xml', {
+    name: 'CustomName',
+    removeXMLDeclaration: false
+  });
+  TSN.cache.CustomName === template // true
+</pre></pre>
+					
+					
+					
 						
 							<dl class="detailList">
 							<dt class="heading">Parameters:</dt>
@@ -586,7 +616,7 @@ ul.inheritsList
 							<dl class="detailList">
 							<dt class="heading">Returns:</dt>
 							
-								<dd><span class="light fixedFont">{function}</span> Скомпилированный шаблон.</dd>
+								<dd><span class="light fixedFont">{function}</span> Скомпилированный шаблон <a href="../symbols/template.html">template</a>.</dd>
 							
 							</dl>
 						
@@ -652,15 +682,37 @@ ul.inheritsList
 					
 					
 					
+					<pre class="code"><pre>
+  TSN.config.templateRoot = '/home/user';
+
+  // Рендеринг шаблона из /home/user/template.xml.
+  TSN.render('template.xml', context);
+
+  // Аналогично предыдущему вызову.
+  TSN.compileFromFile('template.xml');
+  TSN.render('template.xml', context);
+
+  // Аналогично предыдущему вызову.
+  TSN.render(TSN.compileFromFile('template.xml'), context);
+
+  // Компиляция с произвольным именем и рендеринг с записью результата в поток.
+  TSN.compileFromFile('template.xml', {
+    name: 'CustomName'
+  });
+  TSN.render('CustomName', context, stream);
+</pre></pre>
+					
+					
+					
 						
 							<dl class="detailList">
 							<dt class="heading">Parameters:</dt>
 							
 								<dt>
-									<span class="light fixedFont">{function}</span> <b>template</b>
+									<span class="light fixedFont">{string|function}</span> <b>template</b>
 									
 								</dt>
-								<dd>Скомпилированный шаблон.</dd>
+								<dd>Скомпилированный шаблон или строка, представляющая собой имя шаблона или путь, относительно <a href="../symbols/TSN.config.html#.templateRoot">TSN.config.templateRoot</a>. Если по относительному пути шаблон не был скомпилирован - он будет скомпилирован.</dd>
 							
 								<dt>
 									<span class="light fixedFont">{object}</span> <b>context</b>
@@ -863,7 +915,7 @@ ul.inheritsList
 <!-- ============================== footer ================================= -->
 		<div class="fineprint" style="clear:both">
 			
-			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Sun Jun 17 2012 14:22:12 GMT+0400 (MSD)
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Tue Jun 19 2012 19:50:23 GMT+0400 (MSK)
 		</div>
 	</body>
 </html>

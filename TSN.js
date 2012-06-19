@@ -191,7 +191,7 @@ TSN.config = JSON.parse(LIB.fileSystem.readFileSync(LIB.path.join(__dirname, 'co
  * Компиляция шаблона.
  * @param {string} source Исходный код шаблона.
  * @param {object} [config] Объект конфигурации шаблона: {@link TSN.config}.
- * @return {function} Скомпилированный шаблон.
+ * @return {function} Скомпилированный шаблон {@link template}.
  */
 TSN.compile = function (source, config) {
 	config = new Config(config);
@@ -246,7 +246,20 @@ TSN.compile = function (source, config) {
  * Синхронная компиляция шаблона из файла.
  * @param {string} path Путь к файлу шаблона относительно <i>TSN.config.templateRoot</i>.
  * @param {object} [config] Объект конфигурации шаблона: {@link TSN.config}.
- * @return {function} Скомпилированный шаблон.
+ * @return {function} Скомпилированный шаблон {@link template}.
+ * @example
+ * <pre>
+ *   // Компиляция файла /home/user/template.xml.
+ *   TSN.config.templateRoot = '/home/user';
+ *   TSN.compileFromFile('template.xml');
+ *
+ *   Компиляция с указанием кастомного конфига.
+ *   var template = TSN.compileFromFile('template.xml', {
+ *     name: 'CustomName',
+ *     removeXMLDeclaration: false
+ *   });
+ *   TSN.cache.CustomName === template // true
+ * </pre>
  */
 TSN.compileFromFile = function (path, config) {
 	config = new Config(config);
@@ -266,12 +279,25 @@ TSN.compileFromFile = function (path, config) {
 };
 
 /**
-* Асинхронная рекурсивная компиляция файлов.
-* @param {RegExp} [pattern=/.* /] Ругелярное выражение, которому должно соответствовать имя файла для компиляции.
-* @param {string} [path=TSN.config.templateRoot] Путь к дирректории, в которой необходимо компилировать файлы.
-*/
+ * Асинхронная рекурсивная компиляция файлов, включая вложенные дирректории.
+ * @param {string|RegExp} [pattern=/.* /] Расширение файла (строка), либо ругелярное выражение, которому должно соответствовать полное имя файла для компиляции. После завершения компиляции вызывается событие {@link TSN#event:compileDirEnd}.
+ * @param {string} [path=TSN.config.templateRoot] Путь к дирректории, в которой необходимо компилировать файлы.
+ * @example
+ * <pre>
+ *   // Компилировать только файлы с расширением .html.
+ *   TSN.compile('html');
+ *
+ *   // Аналогично предыдущему вызову.
+ *   TSN.compile(/.+?\.html$/);
+ *
+ *   // Компилировать все файлы в папке /home/user и подпапках.
+ *   TSN.compile(null, '/home/user');
+ * </pre>
+ */
 TSN.compileFromDir = function (pattern, path) {
-	if (!(pattern instanceof RegExp)) {
+	if (typeof pattern === 'string') {
+		pattern = new RegExp('.*?\\.' + pattern + '$');
+	} else if (!(pattern instanceof RegExp)) {
 		pattern = /.*/;
 	}
 
@@ -362,10 +388,30 @@ TSN.compileFromDir = function (pattern, path) {
 
 /**
  * Синхронный рендеринг шаблона.
- * @param {string|function} template Скомпилированный шаблон.
+ * @param {string|function} template Скомпилированный шаблон или строка, представляющая собой имя шаблона или путь, относительно {@link TSN.config.templateRoot}. Если по относительному пути шаблон не был скомпилирован - он будет скомпилирован.
  * @param {object} [context=undefined] Контекст шаблона.
  * @param {object} [stream=undefined] <a href="http://nodejs.org/docs/latest/api/stream.html#stream_writable_stream">Поток с возможностью записи</a>, в который будет записываться результат рендеринга.
  * @return {text} Результат рендеринга.
+ * @example
+ * <pre>
+ *   TSN.config.templateRoot = '/home/user';
+ *
+ *   // Рендеринг шаблона из /home/user/template.xml.
+ *   TSN.render('template.xml', context);
+ *
+ *   // Аналогично предыдущему вызову.
+ *   TSN.compileFromFile('template.xml');
+ *   TSN.render('template.xml', context);
+ *
+ *   // Аналогично предыдущему вызову.
+ *   TSN.render(TSN.compileFromFile('template.xml'), context);
+ *
+ *   // Компиляция с произвольным именем и рендеринг с записью результата в поток.
+ *   TSN.compileFromFile('template.xml', {
+ *     name: 'CustomName'
+ *   });
+ *   TSN.render('CustomName', context, stream);
+ * </pre>
  */
 TSN.render = function (template, context, stream) {
 	var path;
@@ -452,4 +498,48 @@ module.exports = TSN;
  * @name TSN#compileDirEnd
  * @description Завершение компиляции шаблонов из директории {@link TSN.compileFromDir}.
  * @param {string} path Путь к директории, в которой компилировались шаблоны.
+ */
+
+/**
+ * @name template
+ * @namespace Объект скомпилированного шаблона TSN.
+ * @type function
+ * @description Объект скомпилированного шаблона TSN.
+ */
+
+/**
+ * @name template.render
+ * @type function
+ * @description Рендеринг шаблона.
+ * @param {object} [context=undefined] Контекст шаблона.
+ * @param {object} [stream=undefined] <a href="http://nodejs.org/docs/latest/api/stream.html#stream_writable_stream">Поток с возможностью записи</a>, в который будет записываться результат рендеринга.
+ * @return {text} Результат рендеринга.
+ * @example
+ * <pre>
+ *   template.render({}, stream);
+ * </pre>
+ */
+
+/**
+ * @name template.call
+ * @type function
+ * @description Аналогично {@link template.render}.
+ */
+
+/**
+ * @name template.apply
+ * @type function
+ * @description Аналогично {@link template.render}.
+ */
+
+/**
+ * @name template.source
+ * @type string
+ * @description Исходный код скомпилированного шаблона.
+ */
+
+/**
+ * @name template.cacheName
+ * @type string
+ * @description Имя, по которому этот шаблон находится в кеше {@link TSN.cache}.
  */
