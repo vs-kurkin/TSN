@@ -254,6 +254,7 @@ this['each'] = {
 				}
 
 				if (!attributes.hasOwnProperty('config')) {
+					delete parser.config.cacheKey;
 					attributes.config = parser.config.inheritConfig === true ? JSON.stringify(parser.config) : 'null';
 				}
 

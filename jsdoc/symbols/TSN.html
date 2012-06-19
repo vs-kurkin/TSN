@@ -219,7 +219,7 @@ ul.inheritsList
 				Templating System for NodeJS.
 				
 				
-					<br /><i>Defined in: </i> <a href="../symbols/src/C__Users_b-vladi_Desktop_AMXhost.ru_src_site_node_modules_TSN_TSN.js.html">TSN.js</a>.
+					<br /><i>Defined in: </i> <a href="../symbols/src/E__Doc_Sources_amxhost.ru_src_site_node_modules_TSN_TSN.js.html">TSN.js</a>.
 				
 			</p>
 
@@ -297,7 +297,7 @@ ul.inheritsList
 							<td class="nameDescription">
 								<div class="fixedFont">TSN.<b><a href="../symbols/TSN.html#.compile">compile</a></b>(source, config)
 								</div>
-								<div class="description">Компиляция шаблона.</div>
+								<div class="description">Синхронная компиляция шаблона.</div>
 							</td>
 						</tr>
 					
@@ -371,7 +371,7 @@ ul.inheritsList
 							<td class="nameDescription">
 								<div class="fixedFont"><b><a href="../symbols/TSN.html#event:compileDirEnd">compileDirEnd</a></b>(path)
 								</div>
-								<div class="description">Завершение компиляции шаблонов из директории <a href="../symbols/TSN.html#.compileFromDir">TSN.compileFromDir</a>.</div>
+								<div class="description">Завершение компиляции шаблонов из директории методом <a href="../symbols/TSN.html#.compileFromDir">TSN.compileFromDir</a>.</div>
 							</td>
 						</tr>
 					
@@ -435,7 +435,7 @@ ul.inheritsList
 					
 					</div>
 					<div class="description">
-						Кеш скомпилированных шаблонов.
+						Кеш скомпилированных шаблонов. Имена ключей совпадают со значениями свойств <a href="../symbols/TSN.config.html#.cacheKey">TSN.config.cacheKey</a>, указанными при компиляции. Если шаблон компилируется из файла и параметр <a href="../symbols/TSN.config.html#.cacheKey">TSN.config.cacheKey</a> не был указан - знечением ключа будет являтся абсолютный путь к файлу шаблона. Пример использования в описании метода <a href="../symbols/TSN.html#.compileFromFile">TSN.compileFromFile</a>.
 						
 						
 					</div>
@@ -465,10 +465,14 @@ ul.inheritsList
 					
 					</div>
 					<div class="description">
-						Компиляция шаблона.
+						Синхронная компиляция шаблона.
 						
 						
 					</div>
+					
+					
+					
+					<pre class="code"><pre>// Компиляция из исходного кода шаблона.TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;");// Компиляция с использованием кастомного конфига.TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;", {  cacheKey: 'CustomName',  saveComments: true});</pre></pre>
 					
 					
 					
@@ -521,16 +525,7 @@ ul.inheritsList
 					
 					
 					
-					<pre class="code"><pre>
-  // Компилировать только файлы с расширением .html.
-  TSN.compile('html');
-
-  // Аналогично предыдущему вызову.
-  TSN.compile(/.+?\.html$/);
-
-  // Компилировать все файлы в папке /home/user и подпапках.
-  TSN.compile(null, '/home/user');
-</pre></pre>
+					<pre class="code"><pre>  // Компилировать только файлы с расширением .html.  TSN.compile('html');  // Аналогично предыдущему вызову.  TSN.compile(/.+?\.html$/);  // Компилировать все файлы в папке /home/user и подпапках.  TSN.compile(null, '/home/user');</pre></pre>
 					
 					
 					
@@ -576,18 +571,7 @@ ul.inheritsList
 					
 					
 					
-					<pre class="code"><pre>
-  // Компиляция файла /home/user/template.xml.
-  TSN.config.templateRoot = '/home/user';
-  TSN.compileFromFile('template.xml');
-
-  Компиляция с указанием кастомного конфига.
-  var template = TSN.compileFromFile('template.xml', {
-    name: 'CustomName',
-    removeXMLDeclaration: false
-  });
-  TSN.cache.CustomName === template // true
-</pre></pre>
+					<pre class="code"><pre>  // Компиляция файла /home/user/template.xml.  TSN.config.templateRoot = '/home/user';  TSN.compileFromFile('template.xml');  Компиляция с указанием кастомного конфига.  var template = TSN.compileFromFile('template.xml', {    cacheKey: 'CustomKey',    removeXMLDeclaration: false  });  TSN.cache.CustomKey === template // true</pre></pre>
 					
 					
 					
@@ -599,7 +583,7 @@ ul.inheritsList
 									<span class="light fixedFont">{string}</span> <b>path</b>
 									
 								</dt>
-								<dd>Путь к файлу шаблона относительно <i>TSN.config.templateRoot</i>.</dd>
+								<dd>Путь к файлу шаблона относительно <a href="../symbols/TSN.config.html#.templateRoot">TSN.config.templateRoot</a>.</dd>
 							
 								<dt>
 									<span class="light fixedFont">{object}</span> <b>config</b>
@@ -682,25 +666,7 @@ ul.inheritsList
 					
 					
 					
-					<pre class="code"><pre>
-  TSN.config.templateRoot = '/home/user';
-
-  // Рендеринг шаблона из /home/user/template.xml.
-  TSN.render('template.xml', context);
-
-  // Аналогично предыдущему вызову.
-  TSN.compileFromFile('template.xml');
-  TSN.render('template.xml', context);
-
-  // Аналогично предыдущему вызову.
-  TSN.render(TSN.compileFromFile('template.xml'), context);
-
-  // Компиляция с произвольным именем и рендеринг с записью результата в поток.
-  TSN.compileFromFile('template.xml', {
-    name: 'CustomName'
-  });
-  TSN.render('CustomName', context, stream);
-</pre></pre>
+					<pre class="code"><pre>  TSN.config.templateRoot = '/home/user';  // Рендеринг шаблона из /home/user/template.xml.  TSN.render('template.xml', context);  // Аналогично предыдущему вызову.  TSN.compileFromFile('template.xml');  TSN.render('template.xml', context);  // Аналогично предыдущему вызову.  TSN.render(TSN.compileFromFile('template.xml'), context);  // Компиляция с произвольным именем и рендеринг с записью результата в поток.  TSN.compileFromFile('template.xml', {    cacheKey: 'CustomKey'  });  TSN.render('CustomKey', context, stream);</pre></pre>
 					
 					
 					
@@ -712,7 +678,7 @@ ul.inheritsList
 									<span class="light fixedFont">{string|function}</span> <b>template</b>
 									
 								</dt>
-								<dd>Скомпилированный шаблон или строка, представляющая собой имя шаблона или путь, относительно <a href="../symbols/TSN.config.html#.templateRoot">TSN.config.templateRoot</a>. Если по относительному пути шаблон не был скомпилирован - он будет скомпилирован.</dd>
+								<dd>Скомпилированный шаблон <a href="../symbols/template.html">template</a> или строка, представляющая собой имя шаблона или путь, относительно <a href="../symbols/TSN.config.html#.templateRoot">TSN.config.templateRoot</a>. Если по относительному пути шаблон не был скомпилирован - он будет скомпилирован.</dd>
 							
 								<dt>
 									<span class="light fixedFont">{object}</span> <b>context</b>
@@ -775,7 +741,7 @@ ul.inheritsList
 									<span class="light fixedFont">{function}</span> <b>template</b>
 									
 								</dt>
-								<dd>Скомпилированный шаблон.</dd>
+								<dd>Скомпилированный шаблон <a href="../symbols/template.html">template</a>.</dd>
 							
 							</dl>
 						
@@ -796,7 +762,7 @@ ul.inheritsList
 					
 					</div>
 					<div class="description">
-						Завершение компиляции шаблонов из директории <a href="../symbols/TSN.html#.compileFromDir">TSN.compileFromDir</a>.
+						Завершение компиляции шаблонов из директории методом <a href="../symbols/TSN.html#.compileFromDir">TSN.compileFromDir</a>.
 						
 						
 					</div>
@@ -853,17 +819,7 @@ ul.inheritsList
 									<span class="light fixedFont">{string}</span> <b>error.TypeError</b>
 									
 								</dt>
-								<dd>Тип ошибки:
-<ul>
-  <li><i>CompileError</i> - Ошибка компиляции. Объект ошибки этого типа имеет дополнительные свойства: <b>message</b>, <b>nodeName</b>, <b>line</b>, <b>char</b>.<br /><br /></li>
-  <li><i>RenderError</i> - Ошибка рендеринга. Объект ошибки этого типа имеет дополнительное свойство <b>templateName</b>.<br /><br /></li>
-  <li><i>CompileDirError</i> - Ошибка компиляции из директории <a href="../symbols/TSN.html#.compileFromDir">TSN.compileFromDir</a>.</li>
-</ul>
-
-<div>
-  <b>Дополнительные свойства:</b>
-</div>
-<br /></dd>
+								<dd>Тип ошибки:<ul>  <li><i>CompileError</i> - Ошибка компиляции. Объект ошибки этого типа имеет дополнительные свойства: <b>message</b>, <b>nodeName</b>, <b>line</b>, <b>char</b>.<br /><br /></li>  <li><i>RenderError</i> - Ошибка рендеринга. Объект ошибки этого типа имеет дополнительное свойство <b>templateName</b>.<br /><br /></li>  <li><i>CompileDirError</i> - Ошибка компиляции из директории <a href="../symbols/TSN.html#.compileFromDir">TSN.compileFromDir</a>.</li></ul><div>  <b>Дополнительные свойства:</b></div><br /></dd>
 							
 								<dt>
 									<span class="light fixedFont">{string}</span> <b>error.message</b>
@@ -915,7 +871,7 @@ ul.inheritsList
 <!-- ============================== footer ================================= -->
 		<div class="fineprint" style="clear:both">
 			
-			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Tue Jun 19 2012 19:50:23 GMT+0400 (MSK)
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Tue Jun 19 2012 23:21:34 GMT+0400 (MSD)
 		</div>
 	</body>
 </html>

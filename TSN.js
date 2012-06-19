@@ -119,7 +119,7 @@ Parser.prototype.fixText = function (text) {
 		.replace(/\u2029/g, '\\u2029');
 };
 
-function compileNode (node, parser) {
+function compileNode(node, parser) {
 	var code = node.template.replace(/\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi, function (result, type, name) {
 		switch (type) {
 			case '!':
@@ -156,11 +156,11 @@ function compileNode (node, parser) {
 	return code;
 }
 
-function call (context, stream) {
+function call(context, stream) {
 	return Function.prototype.call.call(this, context, stream, TSN);
 }
 
-function apply (context, stream) {
+function apply(context, stream) {
 	return Function.prototype.apply.call(this, context, [stream, TSN]);
 }
 
@@ -173,7 +173,7 @@ function apply (context, stream) {
 var TSN = new LIB.event.EventEmitter();
 
 /**
- * Кеш скомпилированных шаблонов.
+ * Кеш скомпилированных шаблонов. Имена ключей совпадают со значениями свойств {@link TSN.config.cacheKey}, указанными при компиляции. Если шаблон компилируется из файла и параметр {@link TSN.config.cacheKey} не был указан - знечением ключа будет являтся абсолютный путь к файлу шаблона. Пример использования в описании метода {@link TSN.compileFromFile}.
  * @type object
  */
 TSN.cache = {};
@@ -188,16 +188,29 @@ TSN.cache = {};
 TSN.config = JSON.parse(LIB.fileSystem.readFileSync(LIB.path.join(__dirname, 'config.json'), 'utf-8'));
 
 /**
- * Компиляция шаблона.
+ * Синхронная компиляция шаблона.
  * @param {string} source Исходный код шаблона.
  * @param {object} [config] Объект конфигурации шаблона: {@link TSN.config}.
  * @return {function} Скомпилированный шаблон {@link template}.
+ * @example
+ * <pre>
+ * // Компиляция из исходного кода шаблона.
+ * TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;");
+ *
+ * // Компиляция с использованием кастомного конфига.
+ * TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;", {
+ *   cacheKey: 'CustomName',
+ *   saveComments: true
+ * });
+ * </pre>
  */
 TSN.compile = function (source, config) {
+	var cacheEnabled = config.cache === true;
+
 	config = new Config(config);
 
-	if (config.cache === true && config.hasOwnProperty('name') && TSN.cache.hasOwnProperty(config.name)) {
-		return TSN.cache[config.name];
+	if (cacheEnabled && TSN.cache.hasOwnProperty(config.cacheKey)) {
+		return TSN.cache[config.cacheKey];
 	}
 
 	var template = new Parser(source, config);
@@ -206,7 +219,7 @@ TSN.compile = function (source, config) {
 		'"use strict";' +
 
 		'var global;' +
-		'var __name = "' + config.name.replace(/('|"|(?:\r\n)|\r|\n|\\)/g, "\\$1") + '";' +
+		'var __cacheKey = "' + (config.hasOwnProperty('cacheKey') ? config.cacheKey.replace(/('|"|(?:\r\n)|\r|\n|\\)/g, "\\$1") : 'undefined') + '";' +
 		'var __output = "";' +
 		'var __text = "";' +
 		'var __hasStream = __stream !== void 0;' +
@@ -217,7 +230,7 @@ TSN.compile = function (source, config) {
 			'__output += __text;' +
 			'__hasStream && __text !== "" && __stream.write(__text, "' + config.encoding + '");' +
 		'} catch (error) {' +
-			'error.templateName = __name;' +
+			'error.cacheKey = __cacheKey;' +
 			'error.TypeError = "RenderError";' +
 
 			'TSN.emit("error", error);' +
@@ -232,9 +245,8 @@ TSN.compile = function (source, config) {
 	template.render = call;
 	template.source = source;
 
-	if (config.cache === true && typeof config.name === 'string' && config.name !== '') {
-		template.cacheName = config.name;
-		TSN.cache[config.name] = template;
+	if (cacheEnabled && typeof config.cacheKey === 'string' && config.cacheKey !== '') {
+		TSN.cache[config.cacheKey] = template;
 	}
 
 	TSN.emit('compile', template);
@@ -244,7 +256,7 @@ TSN.compile = function (source, config) {
 
 /**
  * Синхронная компиляция шаблона из файла.
- * @param {string} path Путь к файлу шаблона относительно <i>TSN.config.templateRoot</i>.
+ * @param {string} path Путь к файлу шаблона относительно {@link TSN.config.templateRoot}.
  * @param {object} [config] Объект конфигурации шаблона: {@link TSN.config}.
  * @return {function} Скомпилированный шаблон {@link template}.
  * @example
@@ -255,27 +267,34 @@ TSN.compile = function (source, config) {
  *
  *   Компиляция с указанием кастомного конфига.
  *   var template = TSN.compileFromFile('template.xml', {
- *     name: 'CustomName',
+ *     cacheKey: 'CustomKey',
  *     removeXMLDeclaration: false
  *   });
- *   TSN.cache.CustomName === template // true
+ *   TSN.cache.CustomKey === template // true
  * </pre>
  */
 TSN.compileFromFile = function (path, config) {
 	config = new Config(config);
 
 	var fullPath = LIB.path.join(config.templateRoot, path);
+	var template;
 
-	if (config.cache === true && TSN.cache.hasOwnProperty(fullPath)) {
-		return TSN.cache[fullPath];
-	}
+	if (config.cache === true) {
+		if (!config.hasOwnProperty('cacheKey')) {
+			config.cacheKey = fullPath;
+		}
 
-	if (!config.hasOwnProperty('name')) {
-		config.name = fullPath;
+		if (TSN.cache.hasOwnProperty(config.cacheKey)) {
+			return TSN.cache[config.cacheKey];
+		}
 	}
 
 	config.path = LIB.path.dirname(fullPath);
-	return TSN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), config);
+
+	template = TSN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), config);
+	template.path = fullPath;
+
+	return template;
 };
 
 /**
@@ -313,7 +332,7 @@ TSN.compileFromDir = function (pattern, path) {
 
 	LIB.fileSystem.stat(path, callback);
 
-	function callback (error, data) {
+	function callback(error, data) {
 		if (error) {
 			error.TypeError = 'CompileDirError';
 			TSN.emit('error', error);
@@ -388,7 +407,7 @@ TSN.compileFromDir = function (pattern, path) {
 
 /**
  * Синхронный рендеринг шаблона.
- * @param {string|function} template Скомпилированный шаблон или строка, представляющая собой имя шаблона или путь, относительно {@link TSN.config.templateRoot}. Если по относительному пути шаблон не был скомпилирован - он будет скомпилирован.
+ * @param {string|function} template Скомпилированный шаблон {@link template} или строка, представляющая собой имя шаблона или путь, относительно {@link TSN.config.templateRoot}. Если по относительному пути шаблон не был скомпилирован - он будет скомпилирован.
  * @param {object} [context=undefined] Контекст шаблона.
  * @param {object} [stream=undefined] <a href="http://nodejs.org/docs/latest/api/stream.html#stream_writable_stream">Поток с возможностью записи</a>, в который будет записываться результат рендеринга.
  * @return {text} Результат рендеринга.
@@ -408,9 +427,9 @@ TSN.compileFromDir = function (pattern, path) {
  *
  *   // Компиляция с произвольным именем и рендеринг с записью результата в поток.
  *   TSN.compileFromFile('template.xml', {
- *     name: 'CustomName'
+ *     cacheKey: 'CustomKey'
  *   });
- *   TSN.render('CustomName', context, stream);
+ *   TSN.render('CustomKey', context, stream);
  * </pre>
  */
 TSN.render = function (template, context, stream) {
@@ -420,7 +439,7 @@ TSN.render = function (template, context, stream) {
 		case 'string':
 			if (TSN.cache.hasOwnProperty(template)) {
 				template = TSN.cache[template];
-			} else if (TSN.cache.hasOwnProperty(path = LIB.path.join(TSN.templateRoot, template))) {
+			} else if (TSN.cache.hasOwnProperty(path = LIB.path.join(TSN.config.templateRoot, template))) {
 				template = TSN.cache[path];
 			} else {
 				template = TSN.compileFromFile(template);
@@ -450,7 +469,7 @@ TSN.extendDTD = function (name, API) {
 	nodeAPI[name] = API;
 };
 
-function Config (options) {
+function Config(options) {
 	for (var property in options) {
 		if (options.hasOwnProperty(property)) {
 			this[property] = options[property];
@@ -490,13 +509,13 @@ module.exports = TSN;
  * @event
  * @name TSN#compile
  * @description Завершение компиляции шаблона.
- * @param {function} template Скомпилированный шаблон.
+ * @param {function} template Скомпилированный шаблон {@link template}.
  */
 
 /**
  * @event
  * @name TSN#compileDirEnd
- * @description Завершение компиляции шаблонов из директории {@link TSN.compileFromDir}.
+ * @description Завершение компиляции шаблонов из директории методом {@link TSN.compileFromDir}.
  * @param {string} path Путь к директории, в которой компилировались шаблоны.
  */
 
@@ -535,11 +554,17 @@ module.exports = TSN;
 /**
  * @name template.source
  * @type string
- * @description Исходный код скомпилированного шаблона.
+ * @description Скомпилированный код шаблона.
  */
 
 /**
- * @name template.cacheName
+ * @name template.cacheKey
  * @type string
- * @description Имя, по которому этот шаблон находится в кеше {@link TSN.cache}.
+ * @description Имя ключа, по которому этот шаблон находится в кеше {@link TSN.cache}. Совпадает со значением, указанным в {@link TSN.config.cacheKey} при компиляции. Если имя ключа не было указано в конфиге, значение этого свойства будет совпадать с {@link template.path}.
+ */
+
+/**
+ * @name template.path
+ * @type string
+ * @description Абсолютный путь, по которому был скомпилирован шаблон, если он был скомпилирован из файла.
  */

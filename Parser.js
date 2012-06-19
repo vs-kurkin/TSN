@@ -293,9 +293,9 @@ module.exports = Parser;
  */
 
 /**
- * @name TSN.config.name
- * @description Имя шаблона, по которому он будет сохранен в кеше {@link TSN.cache}.
- * @default undefined
+ * @name TSN.config.cacheKey
+ * @description Имя ключа, по которому он будет сохранен в кеше {@link TSN.cache}.
+ * @default Абсолютный путь к файлу шаблона, по которому он был скомпилирован.
  * @type string
  */
 
