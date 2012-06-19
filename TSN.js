@@ -168,6 +168,7 @@ function apply(context, stream) {
  * @name TSN
  * @namespace Templating System for NodeJS.
  * @description Пространство имен API шаблонизатора, экземпляр <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
+ * @type EventEmitter
  */
 
 var TSN = new LIB.event.EventEmitter();
@@ -522,7 +523,6 @@ module.exports = TSN;
 /**
  * @name template
  * @namespace Объект скомпилированного шаблона TSN.
- * @type function
  * @description Объект скомпилированного шаблона TSN.
  */
 

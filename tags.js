@@ -1,7 +1,8 @@
 /**
- * @fileOverview Описание тегов шаблонизатора TSN.
+ * @fileOverview Реализация лигики тегов TSN.
  * @author <a href="mailto:b-vladi@cs-console.ru">Влад Куркин</a>
  */
+
 this.root = {
 	parse: function () {
 		if (this.attributes.hasOwnProperty('context')) {
@@ -301,7 +302,7 @@ this.script = {
 			case 'local':
 				this.template = '' +
 					'((function () {' +
-						this.text +
+					this.text +
 					'}).call(/*!context*/) || "")';
 				this.inline = true;
 				break;
