@@ -302,7 +302,7 @@ this.script = {
 			case 'local':
 				this.template = '' +
 					'((function () {' +
-					this.text +
+						this.text +
 					'}).call(/*!context*/) || "")';
 				this.inline = true;
 				break;
