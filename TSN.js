@@ -302,6 +302,7 @@ TSN.compileFromFile = function (path, config) {
  * Асинхронная рекурсивная компиляция файлов, включая вложенные дирректории.
  * @param {string|RegExp} [pattern=/.* /] Расширение файла (строка), либо ругелярное выражение, которому должно соответствовать полное имя файла для компиляции. После завершения компиляции вызывается событие {@link TSN#event:compileDirEnd}.
  * @param {string} [path=TSN.config.templateRoot] Путь к дирректории, в которой необходимо компилировать файлы.
+ * @param {object} [config] Объект конфигурации шаблона: {@link TSN.config}.
  * @example
  * <pre>
  *   // Компилировать только файлы с расширением .html.
@@ -314,7 +315,7 @@ TSN.compileFromFile = function (path, config) {
  *   TSN.compile(null, '/home/user');
  * </pre>
  */
-TSN.compileFromDir = function (pattern, path) {
+TSN.compileFromDir = function (pattern, path, config) {
 	if (typeof pattern === 'string') {
 		pattern = new RegExp('.*?\\.' + pattern + '$');
 	} else if (!(pattern instanceof RegExp)) {
@@ -370,10 +371,10 @@ TSN.compileFromDir = function (pattern, path) {
 
 				if (data.isFile()) {
 					if (pattern.test(directory.currentFile)) {
-						TSN.compileFromFile(LIB.path.relative(directory.root || directory.path, path));
+						TSN.compileFromFile(LIB.path.relative(directory.root || directory.path, path), config);
 					}
 				} else if (data.isDirectory()) {
-					var child = TSN.compileDir(pattern, path);
+					var child = TSN.compileFromDir(pattern, path, config);
 
 					child.root = directory.root || directory.path;
 					child.parent = directory;
