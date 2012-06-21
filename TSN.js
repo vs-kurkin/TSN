@@ -220,7 +220,7 @@ TSN.compile = function (source, config) {
 		'"use strict";' +
 
 		'var global;' +
-		'var __cacheKey = "' + (config.hasOwnProperty('cacheKey') ? config.cacheKey.replace(/('|"|(?:\r\n)|\r|\n|\\)/g, "\\$1") : 'undefined') + '";' +
+		'var __cacheKey = "' + (typeof config.cacheKey === 'string' ? config.cacheKey.replace(/('|"|(?:\r\n)|\r|\n|\\)/g, "\\$1") : 'undefined') + '";' +
 		'var __output = "";' +
 		'var __text = "";' +
 		'var __hasStream = __stream !== void 0;' +

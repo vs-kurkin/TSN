@@ -94,7 +94,7 @@ this['data'] = {
 		}
 
 		if (!attributes.hasOwnProperty('value')) {
-			this.template = ';' +
+			this.template = '' +
 				'(function (__output, __text, __hasStream) {' +
 					'/*!code*/' +
 					'return __output;' +
@@ -263,8 +263,12 @@ this['each'] = {
 				}
 
 				if (!attributes.hasOwnProperty('config')) {
+					var cacheKey = parser.config.cacheKey;
 					delete parser.config.cacheKey;
+
 					attributes.config = parser.config.inheritConfig === true ? JSON.stringify(parser.config) : 'null';
+
+					parser.config.cacheKey = cacheKey;
 				}
 
 				this.template = ';' +
@@ -275,7 +279,7 @@ this['each'] = {
 
 					'__output += TSN' +
 						'.compileFile("/*@file*/", /*@config*/)' +
-						'.call(/*!context*/, __stream);' +
+						'.render(/*!context*/, __stream);' +
 
 					'delete TSN.parent;';
 
@@ -298,26 +302,9 @@ this['each'] = {
 
 this.script = {
 	parse: function () {
-		var attributes = this.attributes;
-
-		if (!attributes.hasOwnProperty('type')) {
-			attributes.type = 'global';
-		}
-
-		switch (attributes.type) {
-			case 'global':
-				this.template = this.text;
-				this.inline = false;
-				break;
-			case 'local':
-				this.template = ';' +
-					'((function () {' +
-						this.text +
-					'}).call(/*!context*/) || "")';
-				this.inline = true;
-				break;
-		}
-	}
+		this.template = ';' + this.text + ';';
+	},
+	inline: false
 };
 
 this.header = {
@@ -332,11 +319,13 @@ this.header = {
 				'}).call(/*!context*/, "", "", false));';
 		}
 	},
-	template: ';__stream && __stream.setHeader("/*@name*/", /*@value*/)',
+	template: ';' +
+		'__stream && __stream.setHeader("/*@name*/", "/*@value*/");',
 	inline: false
 };
 
 this.status = {
-	template: ';__stream && __stream.statusCode = Number(/*@value*/);',
+	template: ';' +
+		'__stream && (__stream.statusCode = /*@code*/);',
 	inline: false
 };
