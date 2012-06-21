@@ -174,7 +174,7 @@ function apply(context, stream) {
 var TSN = new LIB.event.EventEmitter();
 
 /**
- * Кеш скомпилированных шаблонов. Имена ключей совпадают со значениями свойств {@link TSN.config.cacheKey}, указанными при компиляции. Если шаблон компилируется из файла и параметр {@link TSN.config.cacheKey} не был указан - знечением ключа будет являтся абсолютный путь к файлу шаблона. Пример использования в описании метода {@link TSN.compileFromFile}.
+ * Кеш скомпилированных шаблонов. Имена ключей совпадают со значениями свойств {@link TSN.config.cacheKey}, указанными при компиляции. Если шаблон компилируется из файла и параметр {@link TSN.config.cacheKey} не был указан - знечением ключа будет являтся абсолютный путь к файлу шаблона. Пример использования в описании метода {@link TSN.compileFile}.
  * @type object
  */
 TSN.cache = {};
@@ -264,17 +264,17 @@ TSN.compile = function (source, config) {
  * <pre>
  *   // Компиляция файла /home/user/template.xml.
  *   TSN.config.templateRoot = '/home/user';
- *   TSN.compileFromFile('template.xml');
+ *   TSN.compileFile('template.xml');
  *
  *   Компиляция с указанием кастомного конфига.
- *   var template = TSN.compileFromFile('template.xml', {
+ *   var template = TSN.compileFile('template.xml', {
  *     cacheKey: 'CustomKey',
  *     removeXMLDeclaration: false
  *   });
  *   TSN.cache.CustomKey === template // true
  * </pre>
  */
-TSN.compileFromFile = function (path, config) {
+TSN.compileFile = function (path, config) {
 	config = new Config(config);
 
 	var fullPath = LIB.path.join(config.templateRoot, path);
@@ -305,18 +305,18 @@ TSN.compileFromFile = function (path, config) {
  * @example
  * <pre>
  *   // Компилировать только файлы с расширением .html.
- *   TSN.compileFromDir('html');
+ *   TSN.compileDir('html');
  *
  *   // Аналогично предыдущему вызову.
- *   TSN.compileFromDir(/.+?\.html$/);
+ *   TSN.compileDir(/.+?\.html$/);
  *
  *   // Компилировать все файлы в папке /home/user и подпапках.
- *   TSN.compileFromDir(null, {
+ *   TSN.compileDir(null, {
  *     templateRoot: '/home/user'
  *   });
  * </pre>
  */
-TSN.compileFromDir = function (pattern, config) {
+TSN.compileDir = function (pattern, config) {
 	if (typeof pattern === 'string') {
 		pattern = new RegExp('.*?\\.' + pattern + '$');
 	} else if (!(pattern instanceof RegExp)) {
@@ -370,10 +370,10 @@ TSN.compileFromDir = function (pattern, config) {
 
 				if (data.isFile()) {
 					if (pattern.test(directory.currentFile)) {
-						TSN.compileFromFile(LIB.path.relative(directory.root || directory.path, path), config);
+						TSN.compileFile(LIB.path.relative(directory.root || directory.path, path), config);
 					}
 				} else if (data.isDirectory()) {
-					var child = TSN.compileFromDir(pattern, path, config);
+					var child = TSN.compileDir(pattern, path, config);
 
 					child.root = directory.root || directory.path;
 					child.parent = directory;
@@ -420,14 +420,14 @@ TSN.compileFromDir = function (pattern, config) {
  *   TSN.render('template.xml', context);
  *
  *   // Аналогично предыдущему вызову.
- *   TSN.compileFromFile('template.xml');
+ *   TSN.compileFile('template.xml');
  *   TSN.render('template.xml', context);
  *
  *   // Аналогично предыдущему вызову.
- *   TSN.render(TSN.compileFromFile('template.xml'), context);
+ *   TSN.render(TSN.compileFile('template.xml'), context);
  *
  *   // Компиляция с произвольным именем и рендеринг с записью результата в поток.
- *   TSN.compileFromFile('template.xml', {
+ *   TSN.compileFile('template.xml', {
  *     cacheKey: 'CustomKey'
  *   });
  *   TSN.render('CustomKey', context, stream);
@@ -443,7 +443,7 @@ TSN.render = function (template, context, stream) {
 			} else if (TSN.cache.hasOwnProperty(path = LIB.path.join(TSN.config.templateRoot, template))) {
 				template = TSN.cache[path];
 			} else {
-				template = TSN.compileFromFile(template);
+				template = TSN.compileFile(template);
 			}
 			break;
 
@@ -492,7 +492,7 @@ module.exports = TSN;
  * <ul>
  *   <li><i>CompileError</i> - Ошибка компиляции. Объект ошибки этого типа имеет дополнительные свойства: <b>message</b>, <b>nodeName</b>, <b>line</b>, <b>char</b>.<br /><br /></li>
  *   <li><i>RenderError</i> - Ошибка рендеринга. Объект ошибки этого типа имеет дополнительное свойство <b>templateName</b>.<br /><br /></li>
- *   <li><i>CompileDirError</i> - Ошибка компиляции из директории {@link TSN.compileFromDir}.</li>
+ *   <li><i>CompileDirError</i> - Ошибка компиляции из директории {@link TSN.compileDir}.</li>
  * </ul>
  *
  * <div>
@@ -516,7 +516,7 @@ module.exports = TSN;
 /**
  * @event
  * @name TSN#compileDirEnd
- * @description Завершение компиляции шаблонов из директории методом {@link TSN.compileFromDir}.
+ * @description Завершение компиляции шаблонов из директории методом {@link TSN.compileDir}.
  * @param {string} path Путь к директории, в которой компилировались шаблоны.
  */
 

@@ -266,7 +266,7 @@ this['each'] = {
 					'};' +
 
 					'__output += TSN' +
-						'.compileFromFile("/*@file*/", /*@config*/)' +
+						'.compileFile("/*@file*/", /*@config*/)' +
 						'.call(/*!context*/, __stream);' +
 
 					'delete TSN.parent;';
