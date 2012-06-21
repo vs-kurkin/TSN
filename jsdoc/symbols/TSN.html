@@ -219,7 +219,7 @@ ul.inheritsList
 				Templating System for NodeJS.
 				
 				
-					<br /><i>Defined in: </i> <a href="../symbols/src/C__Users_b-vladi_Desktop_AMXhost.ru_src_site_node_modules_TSN_TSN.js.html">TSN.js</a>.
+					<br /><i>Defined in: </i> <a href="../symbols/src/E__Doc_Sources_amxhost.ru_src_site_node_modules_TSN_TSN.js.html">TSN.js</a>.
 				
 			</p>
 
@@ -481,16 +481,7 @@ ul.inheritsList
 					
 					
 					
-					<pre class="code"><pre>
-// Компиляция из исходного кода шаблона.
-TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;");
-
-// Компиляция с использованием кастомного конфига.
-TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;", {
-  cacheKey: 'CustomName',
-  saveComments: true
-});
-</pre></pre>
+					<pre class="code"><pre>// Компиляция из исходного кода шаблона.TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;");// Компиляция с использованием кастомного конфига.TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;", {  cacheKey: 'CustomName',  saveComments: true});</pre></pre>
 					
 					
 					
@@ -543,18 +534,7 @@ TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;", {
 					
 					
 					
-					<pre class="code"><pre>
-  // Компилировать только файлы с расширением .html.
-  TSN.compileDir('html');
-
-  // Аналогично предыдущему вызову.
-  TSN.compileDir(/.+?\.html$/);
-
-  // Компилировать все файлы в папке /home/user и подпапках.
-  TSN.compileDir(null, {
-    templateRoot: '/home/user'
-  });
-</pre></pre>
+					<pre class="code"><pre>  // Компилировать только файлы с расширением .html.  TSN.compileDir('html');  // Аналогично предыдущему вызову.  TSN.compileDir(/.+?\.html$/);  // Компилировать все файлы в папке /home/user и подпапках.  TSN.compileDir(null, {    templateRoot: '/home/user'  });</pre></pre>
 					
 					
 					
@@ -600,18 +580,7 @@ TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;", {
 					
 					
 					
-					<pre class="code"><pre>
-  // Компиляция файла /home/user/template.xml.
-  TSN.config.templateRoot = '/home/user';
-  TSN.compileFile('template.xml');
-
-  Компиляция с указанием кастомного конфига.
-  var template = TSN.compileFile('template.xml', {
-    cacheKey: 'CustomKey',
-    removeXMLDeclaration: false
-  });
-  TSN.cache.CustomKey === template // true
-</pre></pre>
+					<pre class="code"><pre>  // Компиляция файла /home/user/template.xml.  TSN.config.templateRoot = '/home/user';  TSN.compileFile('template.xml');  Компиляция с указанием кастомного конфига.  var template = TSN.compileFile('template.xml', {    cacheKey: 'CustomKey',    removeXMLDeclaration: false  });  TSN.cache.CustomKey === template // true</pre></pre>
 					
 					
 					
@@ -706,25 +675,7 @@ TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;", {
 					
 					
 					
-					<pre class="code"><pre>
-  TSN.config.templateRoot = '/home/user';
-
-  // Рендеринг шаблона из /home/user/template.xml.
-  TSN.render('template.xml', context);
-
-  // Аналогично предыдущему вызову.
-  TSN.compileFile('template.xml');
-  TSN.render('template.xml', context);
-
-  // Аналогично предыдущему вызову.
-  TSN.render(TSN.compileFile('template.xml'), context);
-
-  // Компиляция с произвольным именем и рендеринг с записью результата в поток.
-  TSN.compileFile('template.xml', {
-    cacheKey: 'CustomKey'
-  });
-  TSN.render('CustomKey', context, stream);
-</pre></pre>
+					<pre class="code"><pre>  TSN.config.templateRoot = '/home/user';  // Рендеринг шаблона из /home/user/template.xml.  TSN.render('template.xml', context);  // Аналогично предыдущему вызову.  TSN.compileFile('template.xml');  TSN.render('template.xml', context);  // Аналогично предыдущему вызову.  TSN.render(TSN.compileFile('template.xml'), context);  // Компиляция с произвольным именем и рендеринг с записью результата в поток.  TSN.compileFile('template.xml', {    cacheKey: 'CustomKey'  });  TSN.render('CustomKey', context, stream);</pre></pre>
 					
 					
 					
@@ -913,17 +864,7 @@ TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;", {
 									<span class="light fixedFont">{string}</span> <b>error.TypeError</b>
 									
 								</dt>
-								<dd>Тип ошибки:
-<ul>
-  <li><i>CompileError</i> - Ошибка компиляции. Объект ошибки этого типа имеет дополнительные свойства: <b>message</b>, <b>nodeName</b>, <b>line</b>, <b>char</b>.<br /><br /></li>
-  <li><i>RenderError</i> - Ошибка рендеринга. Объект ошибки этого типа имеет дополнительное свойство <b>templateName</b>.<br /><br /></li>
-  <li><i>CompileDirError</i> - Ошибка компиляции из директории <a href="../symbols/TSN.html#.compileDir">TSN.compileDir</a>.</li>
-</ul>
-
-<div>
-  <b>Дополнительные свойства:</b>
-</div>
-<br /></dd>
+								<dd>Тип ошибки:<ul>  <li><i>CompileError</i> - Ошибка компиляции. Объект ошибки этого типа имеет дополнительные свойства: <b>message</b>, <b>nodeName</b>, <b>line</b>, <b>char</b>.<br /><br /></li>  <li><i>RenderError</i> - Ошибка рендеринга. Объект ошибки этого типа имеет дополнительное свойство <b>templateName</b>.<br /><br /></li>  <li><i>CompileDirError</i> - Ошибка компиляции из директории <a href="../symbols/TSN.html#.compileDir">TSN.compileDir</a>.</li></ul><div>  <b>Дополнительные свойства:</b></div><br /></dd>
 							
 								<dt>
 									<span class="light fixedFont">{string}</span> <b>error.message</b>
@@ -975,7 +916,7 @@ TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;", {
 <!-- ============================== footer ================================= -->
 		<div class="fineprint" style="clear:both">
 			
-			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Thu Jun 21 2012 12:52:31 GMT+0400 (MSK)
+			Documentation generated by <a href="http://code.google.com/p/jsdoc-toolkit/" target="_blank">JsDoc Toolkit</a> 2.4.0 on Fri Jun 22 2012 00:11:53 GMT+0400 (MSD)
 		</div>
 	</body>
 </html>
