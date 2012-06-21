@@ -13,6 +13,9 @@
 		</head>
 		<body>
 			<div class="wrapper">
+				<!-- Заголовок типа контента по-умолчанию -->
+				<tsn:header name="Content-Type" value="text/html" />
+
 				<!-- Результирующий код страницы -->
 				<tsn:render block="CONTENT" />
 			</div>

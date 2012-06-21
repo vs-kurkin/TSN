@@ -6,17 +6,19 @@
 this.root = {
 	parse: function () {
 		if (this.attributes.hasOwnProperty('context')) {
-			this.template = '' +
+			this.template = ';' +
 				'(function () {' +
 					'/*!code*/' +
 				'}).call(/*!context*/);';
 		}
 	},
-	template: '/*!code*/'
+	template: '/*!code*/',
+	inline: false
 };
 
 this['comment'] = {
-	template: ''
+	template: '',
+	inline: false
 };
 
 this.context = {
@@ -25,10 +27,11 @@ this.context = {
 			this.template = '/*!code*/';
 		}
 	},
-	template: '' +
+	template: ';' +
 		'(function () {' +
 			'/*!code*/' +
-		'}).call(/*@object*/);'
+		'}).call(/*@object*/);',
+	inline: false
 };
 
 this.echo = (function () {
@@ -91,7 +94,7 @@ this['data'] = {
 		}
 
 		if (!attributes.hasOwnProperty('value')) {
-			this.template = '' +
+			this.template = ';' +
 				'(function (__output, __text, __hasStream) {' +
 					'/*!code*/' +
 					'return __output;' +
@@ -113,7 +116,8 @@ this['data'] = {
 
 		this.template = '_data["/*@key*/"] = ' + this.template + ';';
 	},
-	template: 'String(/*@value*/)'
+	template: 'String(/*@value*/)',
+	inline: false
 };
 
 this['if'] = {
@@ -122,10 +126,11 @@ this['if'] = {
 			this.attributes.test = 'this';
 		}
 	},
-	template: '' +
+	template: ';' +
 		'if (/*@expr*/) {' +
 			'/*!code*/' +
-		'}'
+		'}',
+	inline: false
 };
 
 this['else'] = {
@@ -150,7 +155,8 @@ this['else'] = {
 			return new Error('Tag else should be a single');
 		}
 	},
-	template: '} else {/*!code*/'
+	template: '} else {/*!code*/',
+	inline: false
 };
 
 this['each'] = {
@@ -159,7 +165,7 @@ this['each'] = {
 		var hasItem = attributes.hasOwnProperty('item');
 
 		if (attributes.hasOwnProperty('array')) {
-			this.template = '' +
+			this.template = ';' +
 				'(function (_array) {' +
 					'var _length = _array.length;' +
 					'var _index = 0;' +
@@ -182,7 +188,8 @@ this['each'] = {
 		} else {
 			return new Error('Attribute "array" or "object" is not defined.');
 		}
-	}
+	},
+	inline: false
 };
 
 (function (API) {
@@ -233,7 +240,8 @@ this['each'] = {
 			'function (__output, __text, __hasStream) {' +
 				'/*!code*/;' +
 				'return __output;' +
-			'};'
+			'};',
+		inline: false
 	};
 
 	API.render = {
@@ -283,13 +291,15 @@ this['each'] = {
 			} else {
 				return new Error('Attribute "block" or "file" is not defined.');
 			}
-		}
+		},
+		inline: false
 	};
 })(this);
 
 this.script = {
 	parse: function () {
 		var attributes = this.attributes;
+
 		if (!attributes.hasOwnProperty('type')) {
 			attributes.type = 'global';
 		}
@@ -300,7 +310,7 @@ this.script = {
 				this.inline = false;
 				break;
 			case 'local':
-				this.template = '' +
+				this.template = ';' +
 					'((function () {' +
 						this.text +
 					'}).call(/*!context*/) || "")';
@@ -308,4 +318,25 @@ this.script = {
 				break;
 		}
 	}
+};
+
+this.header = {
+	parse: function () {
+		var attributes = this.attributes;
+
+		if (!attributes.hasOwnProperty('value')) {
+			this.template = ';' +
+				'__stream && __stream.setHeader("/*@name*/", (function (__output, __text, __hasStream) {' +
+					'/*!code*/' +
+					'return __output;' +
+				'}).call(/*!context*/, "", "", false));';
+		}
+	},
+	template: ';__stream && __stream.setHeader("/*@name*/", /*@value*/)',
+	inline: false
+};
+
+this.status = {
+	template: ';__stream && __stream.statusCode = Number(/*@value*/);',
+	inline: false
 };

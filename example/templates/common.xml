@@ -11,6 +11,7 @@
 
 		<!-- Контент по-умолчанию - страница 404 -->
 		<tsn:block name="CONTENT">
+			<tsn:status code="404" />
 			<tsn:render file="/error/404.xml" />
 		</tsn:block>
 	</tsn:if>
