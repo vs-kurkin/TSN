@@ -247,10 +247,11 @@ TSN.compile = function (source, config) {
 	template.source = source;
 
 	if (cacheEnabled && typeof config.cacheKey === 'string' && config.cacheKey !== '') {
+		template.cacheKey = config.cacheKey;
 		TSN.cache[config.cacheKey] = template;
 	}
 
-	TSN.emit('compile', template);
+	TSN.emit('compileEnd', template);
 
 	return template;
 };
@@ -294,6 +295,8 @@ TSN.compileFile = function (path, config) {
 
 	template = TSN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), config);
 	template.path = fullPath;
+
+	TSN.emit('compileFileEnd', template);
 
 	return template;
 };
@@ -370,10 +373,11 @@ TSN.compileDir = function (pattern, config) {
 
 				if (data.isFile()) {
 					if (pattern.test(directory.currentFile)) {
-						TSN.compileFile(LIB.path.relative(directory.root || directory.path, path), config);
+						TSN.compileFile(LIB.path.relative(directory.path, path), config);
 					}
 				} else if (data.isDirectory()) {
-					var child = TSN.compileDir(pattern, path, config);
+					config.templateRoot = path;
+					var child = TSN.compileDir(pattern, config);
 
 					child.root = directory.root || directory.path;
 					child.parent = directory;
@@ -508,8 +512,15 @@ module.exports = TSN;
 
 /**
  * @event
- * @name TSN#compile
- * @description Завершение компиляции шаблона.
+ * @name TSN#compileEnd
+ * @description Завершение компиляции шаблона методом {@link TSN.compile}.
+ * @param {function} template Скомпилированный шаблон {@link template}.
+ */
+
+/**
+ * @event
+ * @name TSN#compileFileEnd
+ * @description Завершение компиляции шаблона методом {@link TSN.compileFile}. Перед этим событием гинерируется событие {@link TSN#event:compileEnd}.
  * @param {function} template Скомпилированный шаблон {@link template}.
  */
 
@@ -566,5 +577,5 @@ module.exports = TSN;
 /**
  * @name template.path
  * @type string
- * @description Абсолютный путь, по которому был скомпилирован шаблон, если он был скомпилирован из файла.
+ * @description Абсолютный путь, по которому был скомпилирован шаблон, если он был скомпилирован из файла. Это свойство доступно после наступления события {@link TSN#event:compileEnd}.
  */
