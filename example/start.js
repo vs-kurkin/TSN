@@ -17,11 +17,10 @@ TSN.on('compileDirEnd', function () {
 /* Определение базовой директории шаблонов */
 TSN.config.templateRoot = path.join(__dirname, 'templates');
 
-/* Удаление HTML-комментариев из шаблонов */
-TSN.config.saveComments = false;
-
-/* Компиляция всех шаблонов в корневой папке */
-TSN.compileFromDir();
+/* Компиляция всех шаблонов в корневой папке. */
+TSN.compileDir(null, {
+	saveComments: false
+});
 
 function listener(request, response) {
 	/* Формирование данных для рендеринга */
