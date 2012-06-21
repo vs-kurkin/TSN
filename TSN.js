@@ -301,38 +301,37 @@ TSN.compileFromFile = function (path, config) {
 /**
  * Асинхронная рекурсивная компиляция файлов, включая вложенные дирректории.
  * @param {string|RegExp} [pattern=/.* /] Расширение файла (строка), либо ругелярное выражение, которому должно соответствовать полное имя файла для компиляции. После завершения компиляции вызывается событие {@link TSN#event:compileDirEnd}.
- * @param {string} [path=TSN.config.templateRoot] Путь к дирректории, в которой необходимо компилировать файлы.
  * @param {object} [config] Объект конфигурации шаблона: {@link TSN.config}.
  * @example
  * <pre>
  *   // Компилировать только файлы с расширением .html.
- *   TSN.compile('html');
+ *   TSN.compileFromDir('html');
  *
  *   // Аналогично предыдущему вызову.
- *   TSN.compile(/.+?\.html$/);
+ *   TSN.compileFromDir(/.+?\.html$/);
  *
  *   // Компилировать все файлы в папке /home/user и подпапках.
- *   TSN.compile(null, '/home/user');
+ *   TSN.compileFromDir(null, {
+ *     templateRoot: '/home/user'
+ *   });
  * </pre>
  */
-TSN.compileFromDir = function (pattern, path, config) {
+TSN.compileFromDir = function (pattern, config) {
 	if (typeof pattern === 'string') {
 		pattern = new RegExp('.*?\\.' + pattern + '$');
 	} else if (!(pattern instanceof RegExp)) {
 		pattern = /.*/;
 	}
 
-	if (typeof path !== 'string') {
-		path = TSN.config.templateRoot;
-	}
+	config = new Config(config);
 
 	var directory = {
 		state: 'start',
-		path: path,
+		path: config.templateRoot,
 		dirsLength: 0
 	};
 
-	LIB.fileSystem.stat(path, callback);
+	LIB.fileSystem.stat(config.templateRoot, callback);
 
 	function callback(error, data) {
 		if (error) {
