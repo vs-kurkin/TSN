@@ -2,6 +2,10 @@
 <!-- Шаблон основного каркаса разметки -->
 
 <tsn:root xmlns:tsn="TSN" xmlns="http://www.w3.org/1999/xhtml">
+	<!-- Заголовок типа контента и статус по-умолчанию -->
+	<tsn:status code="200" />
+	<tsn:header name="Content-Type" value="text/html" />
+
 	<!-- Подключение общих блоков -->
 	<tsn:render file="common.xml" />
 
@@ -13,9 +17,6 @@
 		</head>
 		<body>
 			<div class="wrapper">
-				<!-- Заголовок типа контента по-умолчанию -->
-				<tsn:header name="Content-Type" value="text/html" />
-
 				<!-- Результирующий код страницы -->
 				<tsn:render block="CONTENT" />
 			</div>

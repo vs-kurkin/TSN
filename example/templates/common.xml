@@ -9,9 +9,11 @@
 		<tsn:data key="CSS" value="''" />
 		<tsn:data key="JS" value="''" />
 
+		<!-- Установка корректного статуса перед выводом тела ответа -->
+		<tsn:status code="404" />
+
 		<!-- Контент по-умолчанию - страница 404 -->
 		<tsn:block name="CONTENT">
-			<tsn:status code="404" />
 			<tsn:render file="/error/404.xml" />
 		</tsn:block>
 	</tsn:if>
