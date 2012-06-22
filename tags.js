@@ -301,8 +301,29 @@ this['each'] = {
 })(this);
 
 this.script = {
-	parse: function () {
-		this.template = ';' + this.text + ';';
+	parse: function (parser) {
+		var attributes = this.attributes;
+
+		if (!attributes.hasOwnProperty('type')) {
+			attributes.type = 'global';
+		}
+
+		switch (attributes.type) {
+			case 'global':
+				this.template = ';' + this.text + ';';
+				break;
+			case 'local':
+				parser.inline = false;
+
+				this.inline = true;
+				this.template = '' +
+					'((function () {' +
+						this.text +
+					'}).call(/*!context*/) || "")';
+				break;
+			default:
+				return new Error('')
+		}
 	},
 	inline: false
 };
