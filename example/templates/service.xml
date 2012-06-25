@@ -12,15 +12,10 @@
 		<link rel="stylesheet" type="text/css" href="//service.css" />
 	</tsn:data>
 
-	<!-- Сохранение контента страницы в хранилище -->
-	<tsn:data key="pageContent">
-		<tsn:render block="CONTENT" />
-	</tsn:data>
-
 	<!-- Переопределение блока контента, что бы обернуть его в общую разметку раздела -->
-	<tsn:block name="CONTENT">
+	<tsn:block name="CONTENT" type="wrapper">
 		<div class="service">
-			<tsn:echo data="_data.pageContent" />
+			<tsn:render block="CONTENT" />
 		</div>
 	</tsn:block>
 

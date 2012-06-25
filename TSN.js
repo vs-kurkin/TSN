@@ -120,16 +120,18 @@ Parser.prototype.fixText = function (text) {
 };
 
 function compileNode(node, parser) {
+	var codeOutput = ';' +
+		'__output += __text;' +
+		'__hasStream && __text !== "" && __stream.write(__text, "' + parser.config.encoding + '");' +
+		'__text = "";';
+
 	var code = node.template.replace(/\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi, function (result, type, name) {
 		switch (type) {
 			case '!':
 				switch (name) {
 					case 'code':
 						if (node.inline !== true) {
-							node.code += ';' +
-								'__output += __text;' +
-								'__hasStream && __text !== "" && __stream.write(__text, "' + parser.config.encoding + '");' +
-								'__text = "";';
+							node.code += codeOutput;
 						}
 
 						return node.code;
@@ -145,10 +147,7 @@ function compileNode(node, parser) {
 	if (node.inline === true) {
 		code = parser.inline === true ? ' + ' + code : '__text = ' + code;
 	} else {
-		code = ';' +
-			'__output += __text;' +
-			'__hasStream && __text !== "" && __stream.write(__text, "' + parser.config.encoding + '");' +
-			'__text = "";' + code;
+		code = codeOutput + code;
 	}
 
 	parser.inline = node.inline;

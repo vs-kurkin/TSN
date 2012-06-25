@@ -220,6 +220,11 @@ this['each'] = {
 									'_block["' + name + '"] = ' + this.template +
 								'}';
 							break;
+						case 'wrapper':
+							this.template = ';' +
+								'_localBlock["' + name + '"] = _block["' + name + '"];' +
+								'_block["' + name + '"] = ' + this.template;
+							break;
 						case 'local':
 							this.template = ';' +
 								'_localBlock["' + name + '"] = ' + this.template;

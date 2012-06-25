@@ -46,7 +46,7 @@
 <!ELEMENT tsn:block ANY>
 <!ATTLIST tsn:block
 	name CDATA #REQUIRED
-	type (global|default|local) "global"
+	type (global|local|default|wrapper) "global"
 	>
 
 <!ELEMENT tsn:render EMPTY>
