@@ -3,17 +3,66 @@
 <!-- Шаблон страницы, входная точка для данных -->
 <tsn:root xmlns:tsn="TSN" xmlns="http://www.w3.org/1999/xhtml">
 	<!-- Подключение скриптов, используемых на этой странице -->
-	<tsn:data key="JS" action="append">
+    <tsn:data key="JS" action="append">
 		<script type="text/javascript" src="//page.js"> </script>
 	</tsn:data>
 
-	<!-- Контент страницы -->
-	<tsn:block name="CONTENT">
+    <tsn:block name="first">
+        Before
+        <tsn:query method="this.getList" params="'filter', 100, this.getData()" arguments="error, data">
+            <tsn:echo data="data" />
+        </tsn:query>
+        After
+    </tsn:block>
+
+    <tsn:block name="second" args="error, data">
+        <tsn:query method="this.getList">
+            <tsn:render block="end" />
+        </tsn:query>
+    </tsn:block>
+
+    <tsn:block name="end" args="error, data">
+
+    </tsn:block>
+
+    <tsn:render block="first" />
+
+    <tsn:data key="data">
+
+    </tsn:data>
+
+    <!-- Контент страницы -->
+    <tsn:block name="CONTENT">
+
+
+
+    <tsn:query
+      method="this.getData"
+      params="[]"
+      arguments="error, data">
+
+        <tsn:echo data="data" />
+    </tsn:query>
+
+    <tsn:script>
+        <![CDATA[
+        (function (__stack) {
+            __stack.on('end', function (result) {
+                __stream.setHeader('/*@name*/' ,result);
+            });
+
+            /*!code*/
+
+            __stack.end();
+        }).call(this/*!context*/, new __Stack());
+        ]]>
+    </tsn:script>
+
 		<div>
 			Hello, <tsn:echo data="this.userName" escape="html" />.
 		</div>
 	</tsn:block>
 
-	<!-- Рендеринг шаблона раздела -->
-	<tsn:render file="service.xml" />
+    <!-- Рендеринг шаблона раздела -->
+    <tsn:render file="service.xml" />
 </tsn:root>

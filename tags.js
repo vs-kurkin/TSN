@@ -95,10 +95,15 @@ this['data'] = {
 
 		if (!attributes.hasOwnProperty('value')) {
 			this.template = '' +
-				'(function (__output, __text, __hasStream) {' +
+				'(function (__stack) {' +
+					'__stack.on("end", function (result) {' +
+						'__data["/*@key*/"] = result;' +
+					'});' +
+
 					'/*!code*/' +
-					'return __output;' +
-				'}).call(/*!context*/, "", "", false)';
+
+					'__stack.end();' +
+				'}).call(/*!context*/, new __Stack())';
 		}
 
 		switch (attributes.action) {
@@ -242,9 +247,8 @@ this['each'] = {
 			}
 		},
 		template: '' +
-			'function (__output, __text, __hasStream) {' +
+			'function (__stack) {' +
 				'/*!code*/;' +
-				'return __output;' +
 			'};',
 		inline: false
 	};
@@ -296,7 +300,7 @@ this['each'] = {
 					'(_localBlock.hasOwnProperty("' + blockName + '") ? ' +
 						'_localBlock["' + blockName + '"] : ' +
 						'_block["' + blockName + '"])' +
-							'.call(/*!context*/, "", "", __hasStream);';
+							'.call(/*!context*/, __stack);';
 			} else {
 				return new Error('Attribute "block" or "file" is not defined.');
 			}
@@ -308,6 +312,7 @@ this['each'] = {
 this.script = {
 	parse: function (parser) {
 		var attributes = this.attributes;
+		var text = this.text.replace(/^<!\[CDATA\[([\s\S]*?)\]\]>$/i, '$1');
 
 		if (!attributes.hasOwnProperty('type')) {
 			attributes.type = 'global';
@@ -315,7 +320,7 @@ this.script = {
 
 		switch (attributes.type) {
 			case 'global':
-				this.template = ';' + this.text + ';';
+				this.template = ';' + text + ';';
 				break;
 			case 'local':
 				parser.inline = false;
@@ -323,7 +328,7 @@ this.script = {
 				this.inline = true;
 				this.template = '' +
 					'((function () {' +
-						this.text +
+						text +
 					'}).call(/*!context*/) || "")';
 				break;
 			default:
@@ -339,19 +344,50 @@ this.header = {
 
 		if (!attributes.hasOwnProperty('value')) {
 			this.template = ';' +
-				'__stream && __stream.setHeader("/*@name*/", (function (__output, __text, __hasStream) {' +
+				'(function (__stack) {' +
+					'__stack.on("end", function (result) {' +
+						'__stream.setHeader("/*@name*/", result);' +
+					'});' +
+
 					'/*!code*/' +
-					'return __output;' +
-				'}).call(/*!context*/, "", "", false));';
+
+					'__stack.end();' +
+				'}).call(/*!context*/, new __Stack())';
 		}
 	},
 	template: ';' +
-		'__stream && __stream.setHeader("/*@name*/", "/*@value*/");',
+		'__stream.setHeader("/*@name*/", "/*@value*/");',
 	inline: false
 };
 
 this.status = {
 	template: ';' +
-		'__stream && (__stream.statusCode = /*@code*/);',
+		'__stream.statusCode = Number(/*@code*/);',
+	inline: false
+};
+
+this.query = {
+	parse: function () {
+		var attributes = this.attributes;
+
+		if (!attributes.hasOwnProperty('method')) {
+			return new Error('Attribute "method" is not defined.');
+		}
+
+		if (attributes.hasOwnProperty('param')) {
+			attributes.param += ',';
+		}
+
+		if (!attributes.hasOwnProperty('context')) {
+			attributes.context = 'null';
+		}
+
+		this.template = attributes.method + '(' + attributes.param + '(function (__stack) {' +
+			'return function (' + attributes.arguments + ') {' +
+				'/*!code*/' +
+				'__stack.end();' +
+			'};' +
+		'})(new __Stack(__stack))));';
+	},
 	inline: false
 };

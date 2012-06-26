@@ -45,7 +45,7 @@ Parser.prototype.onEnd = function () {
 };
 
 Parser.prototype.onText = function (text, node) {
-	node.text += text.replace(/^<!\[CDATA\[([\s\S]*?)\]\]>$/i, '$1');
+	node.text += text;
 	node.code += (this.inline === true ? ' + ' : '__text = ') + '"' + this.fixText(text) + '"';
 
 	this.inline = true;
@@ -145,7 +145,7 @@ function compileNode(node, parser) {
 	});
 
 	if (node.inline === true) {
-		code = parser.inline === true ? ' + ' + code : '__text = ' + code;
+		code = parser.inline === true ? ',' + code : '__stack.write(' + code;
 	} else {
 		code = codeOutput + code;
 	}
@@ -155,19 +155,72 @@ function compileNode(node, parser) {
 	return code;
 }
 
+function Stack (stack, stream, template) {
+	this.stream = stream || stack.stream;
+	this.parent = stack;
+	this.template = template;
+	this.queue = [];
+	this.wait = 0;
+
+	if (stack) {
+		this.index = stack.queue.length;
+		stack.queue.length++;
+		stack.wait++;
+	} else {
+		this.index = 0;
+	}
+}
+
+Stack.prototype = LIB.events.EventEmitter();
+
+Stack.prototype.write = function () {
+	if (this.wait) {
+
+	} else {
+
+	}
+
+	this.queue.push(Array.prototype.slice.call(arguments));
+};
+
+Stack.prototype.end = function () {
+	var parent = this.parent;
+	var result;
+
+	if (!this.wait) {
+		result = this.queue.join('');
+
+		this.emit('end', result);
+
+		if (parent) {
+
+			parent.wait--;
+			parent.queue[this.index] = result;
+			parent.end();
+
+			delete this.parent;
+			delete this.queue;
+		} else {
+			TSN.emit('renderEnd', result, this.template);
+
+			return result;
+		}
+	}
+};
+
 function call(context, stream) {
-	return Function.prototype.call.call(this, context, stream, TSN);
+	return Function.prototype.call.call(this, context, stream, null, this, Stack, TSN);
 }
 
 function apply(context, stream) {
-	return Function.prototype.apply.call(this, context, [stream, TSN]);
+	return Function.prototype.apply.call(this, context, [stream, this, TSN]);
 }
 
 /**
  * @name TSN
  * @namespace Templating System for NodeJS.
  * @description Пространство имен API шаблонизатора, экземпляр <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
- * @type EventEmitter
+ * @type function
  */
 
 var TSN = new LIB.event.EventEmitter();
@@ -218,27 +271,23 @@ TSN.compile = function (source, config) {
 	source = '' +
 		'"use strict";' +
 
-		'var global;' +
-		'var __cacheKey = "' + (typeof config.cacheKey === 'string' ? config.cacheKey.replace(/('|"|(?:\r\n)|\r|\n|\\)/g, "\\$1") : 'undefined') + '";' +
-		'var __output = "";' +
-		'var __text = "";' +
-		'var __hasStream = __stream !== void 0;' +
-
 		'try {' +
+			'var __context = this;' +
+			'var __cacheKey = "' + (typeof config.cacheKey === 'string' ? config.cacheKey.replace(/('|"|(?:\r\n)|\r|\n|\\)/g, "\\$1") : 'undefined') + '";' +
+
+			'__stack = new __Stack(__stack, __stream, __template);' +
+
 			template.root.code +
 			';' +
-			'__output += __text;' +
-			'__hasStream && __text !== "" && __stream.write(__text, "' + config.encoding + '");' +
+			'__stack.end();' +
 		'} catch (error) {' +
 			'error.cacheKey = __cacheKey;' +
 			'error.TypeError = "RenderError";' +
 
-			'TSN.emit("error", error);' +
-		'}' +
+			'TSN.emit("error", error, __template);' +
+		'}';
 
-		'return __output;';
-
-	template = new Function('__stream', 'TSN', source);
+	template = new Function('__stream', '__stack', '__template', '__Stack', 'TSN', source);
 
 	template.call = call;
 	template.apply = apply;
