@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- Шаблон общей страницы раздела -->
-<tsn:root xmlns:tsn="TSN" xmlns="http://www.w3.org/1999/xhtml">
+<ten:root xmlns:ten="TEN" xmlns="http://www.w3.org/1999/xhtml">
 	<!-- Скрипты, используемые в текущем разделе -->
-	<tsn:data key="JS" action="prepend">
+	<ten:data key="JS" action="prepend">
 		<script type="text/javascript" src="//service.js"> </script>
-	</tsn:data>
+	</ten:data>
 
 	<!-- Стили для текущего раздела -->
-	<tsn:data key="CSS" action="prepend">
+	<ten:data key="CSS" action="prepend">
 		<link rel="stylesheet" type="text/css" href="//service.css" />
-	</tsn:data>
+	</ten:data>
 
 	<!-- Переопределение блока контента, что бы обернуть его в общую разметку раздела -->
-	<tsn:block name="CONTENT" type="wrapper">
+	<ten:block name="CONTENT" type="wrapper">
 		<div class="service">
-			<tsn:render block="CONTENT" />
+			<ten:render block="CONTENT" />
 		</div>
-	</tsn:block>
+	</ten:block>
 
 	<!-- Далее рендерим базовую разметку страницы -->
-	<tsn:render file="base.xml" />
-</tsn:root>
+	<ten:render file="base.xml" />
+</ten:root>

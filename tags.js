@@ -1,5 +1,5 @@
 /**
- * @fileOverview Реализация лигики тегов TSN.
+ * @fileOverview Реализация лигики тегов TEN.
  * @author <a href="mailto:b-vladi@cs-console.ru">Влад Куркин</a>
  */
 
@@ -80,7 +80,7 @@ this.echo = (function () {
 
 this['data'] = {
 	start: function () {
-		return 'var _data = TSN.hasOwnProperty("parent") ? TSN.parent._data : {};';
+		return 'var _data = TEN.hasOwnProperty("parent") ? TEN.parent._data : {};';
 	},
 	parse: function () {
 		var attributes = this.attributes;
@@ -258,7 +258,7 @@ this['each'] = {
 	API.render = {
 		start: function () {
 			return '' +
-				'var _block = TSN.hasOwnProperty("parent") ? TSN.parent._block : {};' +
+				'var _block = TEN.hasOwnProperty("parent") ? TEN.parent._block : {};' +
 				'var _localBlock = {};';
 		},
 		parse: function (parser) {
@@ -283,16 +283,16 @@ this['each'] = {
 				}
 
 				this.template = '' +
-					'TSN.parent = {' +
+					'TEN.parent = {' +
 						'_block: _block,' +
 						'_data: _data' +
 					'};' +
 
-					'TSN' +
+					'TEN' +
 						'.compileFile("/*@file*/", /*@config*/)' +
 						'.render(/*!context*/, __stack);' +
 
-					'delete TSN.parent;';
+					'delete TEN.parent;';
 
 			} else if (attributes.hasOwnProperty('block')) {
 				var blockName = escape(attributes.block);

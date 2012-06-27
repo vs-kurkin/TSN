@@ -1,28 +1,28 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!-- Шаблон основного каркаса разметки -->
 
-<tsn:root xmlns:tsn="TSN" xmlns="http://www.w3.org/1999/xhtml">
+<ten:root xmlns:ten="TEN" xmlns="http://www.w3.org/1999/xhtml">
 	<!-- Заголовок типа контента и статус по-умолчанию -->
-	<tsn:status code="200" />
-	<tsn:header name="Content-Type" value="text/html" />
+	<ten:status code="200" />
+	<ten:header name="Content-Type" value="text/html" />
 
 	<!-- Подключение общих блоков -->
-	<tsn:render file="common.xml" />
+	<ten:render file="common.xml" />
 
 	<!DOCTYPE html>
 	<html>
 		<head>
 			<!-- Результирующий код подключения стилей -->
-			<tsn:render block="CSS" />
+			<ten:render block="CSS" />
 		</head>
 		<body>
 			<div class="wrapper">
 				<!-- Результирующий код страницы -->
-				<tsn:render block="CONTENT" />
+				<ten:render block="CONTENT" />
 			</div>
 
 			<!-- Результирующий код подключения скриптов -->
-			<tsn:render block="JS" />
+			<ten:render block="JS" />
 		</body>
 	</html>
-</tsn:root>
+</ten:root>

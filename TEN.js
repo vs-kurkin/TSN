@@ -21,7 +21,7 @@ Parser.prototype.onStart = function () {
 
 	for (var nodeName in nodeAPI) {
 		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('start')) {
-			code = nodeAPI[nodeName].start(this, TSN);
+			code = nodeAPI[nodeName].start(this, TEN);
 
 			if (typeof code == 'string') {
 				this.current.code += code;
@@ -35,7 +35,7 @@ Parser.prototype.onEnd = function () {
 
 	for (var nodeName in nodeAPI) {
 		if (nodeAPI.hasOwnProperty(nodeName) && nodeAPI[nodeName].hasOwnProperty('end')) {
-			code = nodeAPI[nodeName].end(this, TSN);
+			code = nodeAPI[nodeName].end(this, TEN);
 
 			if (typeof code == 'string') {
 				this.current.code += code;
@@ -57,7 +57,7 @@ Parser.prototype.onEntity = function (node) {
 };
 
 Parser.prototype.onError = function (error) {
-	TSN.emit('error', error);
+	TEN.emit('error', error);
 };
 
 Parser.prototype.onOpen = function (node) {
@@ -75,7 +75,7 @@ Parser.prototype.onOpen = function (node) {
 		}
 
 		if (node.isEmpty) {
-			var parseResult = typeof node.parse === 'function' ? node.parse(this, TSN) : true;
+			var parseResult = typeof node.parse === 'function' ? node.parse(this, TEN) : true;
 
 			if (parseResult && parseResult.constructor === Error) {
 				this._error(parseResult.message, node);
@@ -93,7 +93,7 @@ Parser.prototype.onOpen = function (node) {
 
 Parser.prototype.onClose = function (node) {
 	if (nodeAPI.hasOwnProperty(this.current.name)) {
-		var parseResult = typeof this.current.parse === 'function' ? this.current.parse(this, TSN) : true;
+		var parseResult = typeof this.current.parse === 'function' ? this.current.parse(this, TEN) : true;
 
 		if (parseResult && parseResult.constructor === Error) {
 			this._error(parseResult.message, this.current);
@@ -200,7 +200,7 @@ Stack.prototype.end = function () {
 			delete this.parent;
 			delete this.queue;
 		} else {
-			TSN.emit('renderEnd', result, this.template);
+			TEN.emit('renderEnd', result, this.template);
 
 			return result;
 		}
@@ -208,61 +208,61 @@ Stack.prototype.end = function () {
 };
 
 function call(context, stream) {
-	return Function.prototype.call.call(this, context, stream, null, this, Stack, TSN);
+	return Function.prototype.call.call(this, context, stream, null, this, Stack, TEN);
 }
 
 function apply(context, stream) {
-	return Function.prototype.apply.call(this, context, [stream, this, TSN]);
+	return Function.prototype.apply.call(this, context, [stream, this, TEN]);
 }
 
 /**
- * @name TSN
+ * @name TEN
  * @namespace Templating System for NodeJS.
  * @description Пространство имен API шаблонизатора, экземпляр <a href="http://nodejs.org/api/events.html#events_class_events_eventemitter">events.EventEmitter</a>.
  * @type function
  */
 
-var TSN = new LIB.event.EventEmitter();
+var TEN = new LIB.event.EventEmitter();
 
 /**
- * Кеш скомпилированных шаблонов. Имена ключей совпадают со значениями свойств {@link TSN.config.cacheKey}, указанными при компиляции. Если шаблон компилируется из файла и параметр {@link TSN.config.cacheKey} не был указан - знечением ключа будет являтся абсолютный путь к файлу шаблона. Пример использования в описании метода {@link TSN.compileFile}.
+ * Кеш скомпилированных шаблонов. Имена ключей совпадают со значениями свойств {@link TEN.config.cacheKey}, указанными при компиляции. Если шаблон компилируется из файла и параметр {@link TEN.config.cacheKey} не был указан - знечением ключа будет являтся абсолютный путь к файлу шаблона. Пример использования в описании метода {@link TEN.compileFile}.
  * @type object
  */
-TSN.cache = {};
+TEN.cache = {};
 
 /**
- * @name TSN.config
- * @namespace Объект конфигурации {@link TSN}.
- * @description Объект конфигурации {@link TSN}. Значения по-умолчанию берутся из config.json.
+ * @name TEN.config
+ * @namespace Объект конфигурации {@link TEN}.
+ * @description Объект конфигурации {@link TEN}. Значения по-умолчанию берутся из config.json.
  * @static
  * @type object
  */
-TSN.config = JSON.parse(LIB.fileSystem.readFileSync(LIB.path.join(__dirname, 'config.json'), 'utf-8'));
+TEN.config = JSON.parse(LIB.fileSystem.readFileSync(LIB.path.join(__dirname, 'config.json'), 'utf-8'));
 
 /**
  * Синхронная компиляция шаблона.
  * @param {string} source Исходный код шаблона.
- * @param {object} [config] Объект конфигурации шаблона: {@link TSN.config}.
+ * @param {object} [config] Объект конфигурации шаблона: {@link TEN.config}.
  * @return {function} Скомпилированный шаблон {@link template}.
  * @example
  * <pre>
  * // Компиляция из исходного кода шаблона.
- * TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;");
+ * TEN.compile("&lt;ten:root xmlns:ten="TEN"&gt;Text&lt;/ten:root&gt;");
  *
  * // Компиляция с использованием кастомного конфига.
- * TSN.compile("&lt;tsn:root xmlns:tsn="TSN"&gt;Text&lt;/tsn:root&gt;", {
+ * TEN.compile("&lt;ten:root xmlns:ten="TEN"&gt;Text&lt;/ten:root&gt;", {
  *   cacheKey: 'CustomName',
  *   saveComments: true
  * });
  * </pre>
  */
-TSN.compile = function (source, config) {
+TEN.compile = function (source, config) {
 	var cacheEnabled = config.cache === true;
 
 	config = new Config(config);
 
-	if (cacheEnabled && TSN.cache.hasOwnProperty(config.cacheKey)) {
-		return TSN.cache[config.cacheKey];
+	if (cacheEnabled && TEN.cache.hasOwnProperty(config.cacheKey)) {
+		return TEN.cache[config.cacheKey];
 	}
 
 	var template = new Parser(source, config);
@@ -283,10 +283,10 @@ TSN.compile = function (source, config) {
 			'error.cacheKey = __cacheKey;' +
 			'error.TypeError = "RenderError";' +
 
-			'TSN.emit("error", error, __template);' +
+			'TEN.emit("error", error, __template);' +
 		'}';
 
-	template = new Function('__stream', '__stack', '__template', '__Stack', 'TSN', source);
+	template = new Function('__stream', '__stack', '__template', '__Stack', 'TEN', source);
 
 	template.call = call;
 	template.apply = apply;
@@ -295,34 +295,34 @@ TSN.compile = function (source, config) {
 
 	if (cacheEnabled && typeof config.cacheKey === 'string' && config.cacheKey !== '') {
 		template.cacheKey = config.cacheKey;
-		TSN.cache[config.cacheKey] = template;
+		TEN.cache[config.cacheKey] = template;
 	}
 
-	TSN.emit('compileEnd', template);
+	TEN.emit('compileEnd', template);
 
 	return template;
 };
 
 /**
  * Синхронная компиляция шаблона из файла.
- * @param {string} path Путь к файлу шаблона относительно {@link TSN.config.templateRoot}.
- * @param {object} [config] Объект конфигурации шаблона: {@link TSN.config}.
+ * @param {string} path Путь к файлу шаблона относительно {@link TEN.config.templateRoot}.
+ * @param {object} [config] Объект конфигурации шаблона: {@link TEN.config}.
  * @return {function} Скомпилированный шаблон {@link template}.
  * @example
  * <pre>
  *   // Компиляция файла /home/user/template.xml.
- *   TSN.config.templateRoot = '/home/user';
- *   TSN.compileFile('template.xml');
+ *   TEN.config.templateRoot = '/home/user';
+ *   TEN.compileFile('template.xml');
  *
  *   Компиляция с указанием кастомного конфига.
- *   var template = TSN.compileFile('template.xml', {
+ *   var template = TEN.compileFile('template.xml', {
  *     cacheKey: 'CustomKey',
  *     removeXMLDeclaration: false
  *   });
- *   TSN.cache.CustomKey === template // true
+ *   TEN.cache.CustomKey === template // true
  * </pre>
  */
-TSN.compileFile = function (path, config) {
+TEN.compileFile = function (path, config) {
 	config = new Config(config);
 
 	var fullPath = LIB.path.join(config.templateRoot, path);
@@ -333,40 +333,40 @@ TSN.compileFile = function (path, config) {
 			config.cacheKey = fullPath;
 		}
 
-		if (TSN.cache.hasOwnProperty(config.cacheKey)) {
-			return TSN.cache[config.cacheKey];
+		if (TEN.cache.hasOwnProperty(config.cacheKey)) {
+			return TEN.cache[config.cacheKey];
 		}
 	}
 
 	config.path = LIB.path.dirname(fullPath);
 
-	template = TSN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), config);
+	template = TEN.compile(LIB.fileSystem.readFileSync(fullPath, config.encoding), config);
 	template.path = fullPath;
 
-	TSN.emit('compileFileEnd', template);
+	TEN.emit('compileFileEnd', template);
 
 	return template;
 };
 
 /**
  * Асинхронная рекурсивная компиляция файлов, включая вложенные дирректории.
- * @param {string|RegExp} [pattern=/.* /] Расширение файла (строка), либо ругелярное выражение, которому должно соответствовать полное имя файла для компиляции. После завершения компиляции вызывается событие {@link TSN#event:compileDirEnd}.
- * @param {object} [config] Объект конфигурации шаблона: {@link TSN.config}.
+ * @param {string|RegExp} [pattern=/.* /] Расширение файла (строка), либо ругелярное выражение, которому должно соответствовать полное имя файла для компиляции. После завершения компиляции вызывается событие {@link TEN#event:compileDirEnd}.
+ * @param {object} [config] Объект конфигурации шаблона: {@link TEN.config}.
  * @example
  * <pre>
  *   // Компилировать только файлы с расширением .html.
- *   TSN.compileDir('html');
+ *   TEN.compileDir('html');
  *
  *   // Аналогично предыдущему вызову.
- *   TSN.compileDir(/.+?\.html$/);
+ *   TEN.compileDir(/.+?\.html$/);
  *
  *   // Компилировать все файлы в папке /home/user и подпапках.
- *   TSN.compileDir(null, {
+ *   TEN.compileDir(null, {
  *     templateRoot: '/home/user'
  *   });
  * </pre>
  */
-TSN.compileDir = function (pattern, config) {
+TEN.compileDir = function (pattern, config) {
 	if (typeof pattern === 'string') {
 		pattern = new RegExp('.*?\\.' + pattern + '$');
 	} else if (!(pattern instanceof RegExp)) {
@@ -386,7 +386,7 @@ TSN.compileDir = function (pattern, config) {
 	function callback(error, data) {
 		if (error) {
 			error.TypeError = 'CompileDirError';
-			TSN.emit('error', error);
+			TEN.emit('error', error);
 			return;
 		}
 
@@ -400,7 +400,7 @@ TSN.compileDir = function (pattern, config) {
 					error = new Error('Path ' + directory.path + ' is not a directory.');
 					error.TypeError = 'CompileDirError';
 
-					TSN.emit('error', error);
+					TEN.emit('error', error);
 				}
 				break;
 			case 'read':
@@ -420,11 +420,11 @@ TSN.compileDir = function (pattern, config) {
 
 				if (data.isFile()) {
 					if (pattern.test(directory.currentFile)) {
-						TSN.compileFile(LIB.path.relative(directory.path, path), config);
+						TEN.compileFile(LIB.path.relative(directory.path, path), config);
 					}
 				} else if (data.isDirectory()) {
 					config.templateRoot = path;
-					var child = TSN.compileDir(pattern, config);
+					var child = TEN.compileDir(pattern, config);
 
 					child.root = directory.root || directory.path;
 					child.parent = directory;
@@ -444,7 +444,7 @@ TSN.compileDir = function (pattern, config) {
 							dir = dir.parent;
 							dir.dirsLength--;
 						} else if (dir.state === 'end') {
-							TSN.emit('compileDirEnd', dir.root || dir.path);
+							TEN.emit('compileDirEnd', dir.root || dir.path);
 							break;
 						}
 					}
@@ -459,42 +459,42 @@ TSN.compileDir = function (pattern, config) {
 
 /**
  * Синхронный рендеринг шаблона.
- * @param {string|function} template Скомпилированный шаблон {@link template} или строка, представляющая собой имя шаблона или путь, относительно {@link TSN.config.templateRoot}. Если по относительному пути шаблон не был скомпилирован - он будет скомпилирован.
+ * @param {string|function} template Скомпилированный шаблон {@link template} или строка, представляющая собой имя шаблона или путь, относительно {@link TEN.config.templateRoot}. Если по относительному пути шаблон не был скомпилирован - он будет скомпилирован.
  * @param {object} [context=undefined] Контекст шаблона.
  * @param {object} [stream=undefined] <a href="http://nodejs.org/docs/latest/api/stream.html#stream_writable_stream">Поток с возможностью записи</a>, в который будет записываться результат рендеринга.
  * @return {text} Результат рендеринга.
  * @example
  * <pre>
- *   TSN.config.templateRoot = '/home/user';
+ *   TEN.config.templateRoot = '/home/user';
  *
  *   // Рендеринг шаблона из /home/user/template.xml.
- *   TSN.render('template.xml', context);
+ *   TEN.render('template.xml', context);
  *
  *   // Аналогично предыдущему вызову.
- *   TSN.compileFile('template.xml');
- *   TSN.render('template.xml', context);
+ *   TEN.compileFile('template.xml');
+ *   TEN.render('template.xml', context);
  *
  *   // Аналогично предыдущему вызову.
- *   TSN.render(TSN.compileFile('template.xml'), context);
+ *   TEN.render(TEN.compileFile('template.xml'), context);
  *
  *   // Компиляция с произвольным именем и рендеринг с записью результата в поток.
- *   TSN.compileFile('template.xml', {
+ *   TEN.compileFile('template.xml', {
  *     cacheKey: 'CustomKey'
  *   });
- *   TSN.render('CustomKey', context, stream);
+ *   TEN.render('CustomKey', context, stream);
  * </pre>
  */
-TSN.render = function (template, context, stream) {
+TEN.render = function (template, context, stream) {
 	var path;
 
 	switch (typeof template) {
 		case 'string':
-			if (TSN.cache.hasOwnProperty(template)) {
-				template = TSN.cache[template];
-			} else if (TSN.cache.hasOwnProperty(path = LIB.path.join(TSN.config.templateRoot, template))) {
-				template = TSN.cache[path];
+			if (TEN.cache.hasOwnProperty(template)) {
+				template = TEN.cache[template];
+			} else if (TEN.cache.hasOwnProperty(path = LIB.path.join(TEN.config.templateRoot, template))) {
+				template = TEN.cache[path];
 			} else {
-				template = TSN.compileFile(template);
+				template = TEN.compileFile(template);
 			}
 			break;
 
@@ -505,19 +505,19 @@ TSN.render = function (template, context, stream) {
 			var error = new Error('First argument "template" must be type string or function.');
 			error.TypeError = 'RenderError';
 
-			TSN.emit('error', error);
+			TEN.emit('error', error);
 			return '';
 	}
 
-	return Function.prototype.call.call(template, context, stream, TSN);
+	return Function.prototype.call.call(template, context, stream, TEN);
 };
 
 /**
- * Добавляет поддержку нового TSN-тега.
+ * Добавляет поддержку нового TEN-тега.
  * @param {string} name Имя тега.
  * @param {object} API Объект API тега.
  */
-TSN.extendDTD = function (name, API) {
+TEN.extendDTD = function (name, API) {
 	nodeAPI[name] = API;
 };
 
@@ -529,21 +529,21 @@ function Config(options) {
 	}
 }
 
-Config.prototype = TSN.config;
+Config.prototype = TEN.config;
 Config.prototype.constructor = Config;
 
-module.exports = TSN;
+module.exports = TEN;
 
 /**
  * @event
- * @name TSN#error
+ * @name TEN#error
  * @description Ошибка.
  * @param {error} error Объект ошибки.
  * @param {string} error.TypeError Тип ошибки:
  * <ul>
  *   <li><i>CompileError</i> - Ошибка компиляции. Объект ошибки этого типа имеет дополнительные свойства: <b>message</b>, <b>nodeName</b>, <b>line</b>, <b>char</b>.<br /><br /></li>
  *   <li><i>RenderError</i> - Ошибка рендеринга. Объект ошибки этого типа имеет дополнительное свойство <b>templateName</b>.<br /><br /></li>
- *   <li><i>CompileDirError</i> - Ошибка компиляции из директории {@link TSN.compileDir}.</li>
+ *   <li><i>CompileDirError</i> - Ошибка компиляции из директории {@link TEN.compileDir}.</li>
  * </ul>
  *
  * <div>
@@ -559,29 +559,29 @@ module.exports = TSN;
 
 /**
  * @event
- * @name TSN#compileEnd
- * @description Завершение компиляции шаблона методом {@link TSN.compile}.
+ * @name TEN#compileEnd
+ * @description Завершение компиляции шаблона методом {@link TEN.compile}.
  * @param {function} template Скомпилированный шаблон {@link template}.
  */
 
 /**
  * @event
- * @name TSN#compileFileEnd
- * @description Завершение компиляции шаблона методом {@link TSN.compileFile}. Перед этим событием гинерируется событие {@link TSN#event:compileEnd}.
+ * @name TEN#compileFileEnd
+ * @description Завершение компиляции шаблона методом {@link TEN.compileFile}. Перед этим событием гинерируется событие {@link TEN#event:compileEnd}.
  * @param {function} template Скомпилированный шаблон {@link template}.
  */
 
 /**
  * @event
- * @name TSN#compileDirEnd
- * @description Завершение компиляции шаблонов из директории методом {@link TSN.compileDir}.
+ * @name TEN#compileDirEnd
+ * @description Завершение компиляции шаблонов из директории методом {@link TEN.compileDir}.
  * @param {string} path Путь к директории, в которой компилировались шаблоны.
  */
 
 /**
  * @name template
- * @namespace Объект скомпилированного шаблона TSN.
- * @description Объект скомпилированного шаблона TSN.
+ * @namespace Объект скомпилированного шаблона TEN.
+ * @description Объект скомпилированного шаблона TEN.
  */
 
 /**
@@ -618,11 +618,11 @@ module.exports = TSN;
 /**
  * @name template.cacheKey
  * @type string
- * @description Имя ключа, по которому этот шаблон находится в кеше {@link TSN.cache}. Совпадает со значением, указанным в {@link TSN.config.cacheKey} при компиляции. Если имя ключа не было указано в конфиге, значение этого свойства будет совпадать с {@link template.path}.
+ * @description Имя ключа, по которому этот шаблон находится в кеше {@link TEN.cache}. Совпадает со значением, указанным в {@link TEN.config.cacheKey} при компиляции. Если имя ключа не было указано в конфиге, значение этого свойства будет совпадать с {@link template.path}.
  */
 
 /**
  * @name template.path
  * @type string
- * @description Абсолютный путь, по которому был скомпилирован шаблон, если он был скомпилирован из файла. Это свойство доступно после наступления события {@link TSN#event:compileEnd}.
+ * @description Абсолютный путь, по которому был скомпилирован шаблон, если он был скомпилирован из файла. Это свойство доступно после наступления события {@link TEN#event:compileEnd}.
  */

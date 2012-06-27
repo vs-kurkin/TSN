@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!-- Шаблон страницы, входная точка для данных -->
-<tsn:root xmlns:tsn="TSN" xmlns="http://www.w3.org/1999/xhtml">
+<ten:root xmlns:ten="TEN" xmlns="http://www.w3.org/1999/xhtml">
 	<!-- Подключение скриптов, используемых на этой странице -->
-		<tsn:data key="JS" action="append">
+		<ten:data key="JS" action="append">
 			<script type="text/javascript" src="//page.js"> </script>
-		</tsn:data>
+		</ten:data>
 
-		<tsn:data key="name" value="this" action="prepend" />
+		<ten:data key="name" value="this" action="prepend" />
 
-		<tsn:block name="first">
+		<ten:block name="first">
 				Before
-				<tsn:query method="this.getList" arguments="'filter', 100, this.getData()" params="error, data">
-						<tsn:echo data="data" />
-						<tsn:echo data="data" />
-				</tsn:query>
+				<ten:query method="this.getList" arguments="'filter', 100, this.getData()" params="error, data">
+						<ten:echo data="data" />
+						<ten:echo data="data" />
+				</ten:query>
 				After
-		</tsn:block>
+		</ten:block>
 
-		<tsn:block name="second" params="error, data">
-				<tsn:query method="this.getList">
-						<tsn:render block="end" />
-				</tsn:query>
-		</tsn:block>
+		<ten:block name="second" params="error, data">
+				<ten:query method="this.getList">
+						<ten:render block="end" />
+				</ten:query>
+		</ten:block>
 
 		<!-- Рендеринг шаблона раздела -->
-		<tsn:render file="service.xml" />
-</tsn:root>
+		<ten:render file="service.xml" />
+</ten:root>

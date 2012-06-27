@@ -1,77 +1,77 @@
-<!ELEMENT tsn:root ANY>
-<!ATTLIST tsn:root
-	xmlns:tsn CDATA #FIXED 'TSN'
+<!ELEMENT ten:root ANY>
+<!ATTLIST ten:root
+	xmlns:ten CDATA #FIXED 'TEN'
 	context CDATA "this"
 	>
 
-<!ELEMENT tsn:comment ANY>
+<!ELEMENT ten:comment ANY>
 
-<!ELEMENT tsn:context ANY>
-<!ATTLIST tsn:context
+<!ELEMENT ten:context ANY>
+<!ATTLIST ten:context
 	object CDATA "this"
 	>
 
-<!ELEMENT tsn:echo EMPTY>
-<!ATTLIST tsn:echo
+<!ELEMENT ten:echo EMPTY>
+<!ATTLIST ten:echo
 	data CDATA "this"
 	escape (js|html|htmlDec|htmlHex|url) #IMPLIED
 	>
 
-<!ELEMENT tsn:data ANY>
-<!ATTLIST tsn:data
+<!ELEMENT ten:data ANY>
+<!ATTLIST ten:data
 	key CDATA #REQUIRED
 	value CDATA #IMPLIED
 	action (append|prepend|replace) "replace"
 	context CDATA "this"
 	>
 
-<!ELEMENT tsn:if ANY>
-<!ATTLIST tsn:if
+<!ELEMENT ten:if ANY>
+<!ATTLIST ten:if
 	expr CDATA "this"
 	>
 
-<!ELEMENT tsn:else ANY>
-<!ATTLIST tsn:else
+<!ELEMENT ten:else ANY>
+<!ATTLIST ten:else
 	if CDATA #IMPLIED
 	>
 
-<!ELEMENT tsn:each ANY>
-<!ATTLIST tsn:each
+<!ELEMENT ten:each ANY>
+<!ATTLIST ten:each
 	array CDATA #IMPLIED
 	object CDATA #IMPLIED
 	context CDATA "this"
 	item CDATA #IMPLIED
 	>
 
-<!ELEMENT tsn:block ANY>
-<!ATTLIST tsn:block
+<!ELEMENT ten:block ANY>
+<!ATTLIST ten:block
 	name CDATA #REQUIRED
 	type (global|local|default|wrapper) "global"
 	>
 
-<!ELEMENT tsn:render EMPTY>
-<!ATTLIST tsn:render
+<!ELEMENT ten:render EMPTY>
+<!ATTLIST ten:render
 	file CDATA #IMPLIED
 	config CDATA "null"
 	block CDATA #IMPLIED
 	context CDATA "this"
 	>
 
-<!ELEMENT tsn:script ANY>
-<!ATTLIST tsn:script
+<!ELEMENT ten:script ANY>
+<!ATTLIST ten:script
 	type (global|local) "global"
 	context CDATA "this"
 	>
 
-<!ELEMENT tsn:header ANY>
+<!ELEMENT ten:header ANY>
 
-<!ELEMENT tsn:status ANY>
-<!ATTLIST tsn:status
+<!ELEMENT ten:status ANY>
+<!ATTLIST ten:status
 	code CDATA #REQUIRED
 	>
 
-<!ELEMENT tsn:query ANY>
-<!ATTLIST tsn:query
+<!ELEMENT ten:query ANY>
+<!ATTLIST ten:query
 	method CDATA #REQUIRED
 	arguments CDATA ""
 	params CDATA #IMPLIED
