@@ -6,19 +6,19 @@
 this.root = {
 	parse: function () {
 		if (this.attributes.hasOwnProperty('context')) {
-			this.template = ';' +
+			this.template = '' +
 				'(function () {' +
 					'/*!code*/' +
 				'}).call(/*!context*/);';
 		}
 	},
 	template: '/*!code*/',
-	inline: false
+	isEcho: false
 };
 
 this['comment'] = {
 	template: '',
-	inline: false
+	isEcho: false
 };
 
 this.context = {
@@ -27,11 +27,11 @@ this.context = {
 			this.template = '/*!code*/';
 		}
 	},
-	template: ';' +
+	template: '' +
 		'(function () {' +
 			'/*!code*/' +
 		'}).call(/*@object*/);',
-	inline: false
+	isEcho: false
 };
 
 this.echo = (function () {
@@ -74,7 +74,7 @@ this.echo = (function () {
 
 			this.template = template;
 		},
-		inline: true
+		isEcho: true
 	};
 })();
 
@@ -93,36 +93,38 @@ this['data'] = {
 			attributes.action = 'replace';
 		}
 
-		if (!attributes.hasOwnProperty('value')) {
-			this.template = '' +
-				'(function (__stack) {' +
-					'__stack.on("end", function (result) {' +
-						'__data["/*@key*/"] = result;' +
-					'});' +
-
-					'/*!code*/' +
-
-					'__stack.end();' +
-				'}).call(/*!context*/, new __Stack())';
-		}
+		this.template = attributes.hasOwnProperty('value') ? 'String(/*@value*/)' : 'result';
 
 		switch (attributes.action) {
 			case 'append':
-				this.template = '(_data["/*@key*/"] || "") + ' + this.template;
+				this.template = '(_data["/*@key*/"] || "") + ' + this.template + ';';
 				break;
 			case 'prepend':
-				this.template = this.template + ' + (_data["/*@key*/"] || "")';
+				this.template = this.template + ' + (_data["/*@key*/"] || "");';
 				break;
 			case 'replace':
+				this.template = this.template + ';';
 				break;
 			default:
 				return new Error('Invalid value of attribute "action"');
 		}
 
-		this.template = '_data["/*@key*/"] = ' + this.template + ';';
+		if (attributes.hasOwnProperty('value')) {
+			this.template = '_data["/*@key*/"] = ' + this.template;
+		} else {
+			this.template = '' +
+				'(function (__stack) {' +
+					'__stack.on("end", function (result) {' +
+						'_data["/*@key*/"] = ' + this.template +
+					'});' +
+
+					'/*!code*/' +
+
+					'__stack.end();' +
+				'}).call(/*!context*/, new __Stack());';
+		}
 	},
-	template: 'String(/*@value*/)',
-	inline: false
+	isEcho: false
 };
 
 this['if'] = {
@@ -131,11 +133,11 @@ this['if'] = {
 			this.attributes.test = 'this';
 		}
 	},
-	template: ';' +
+	template: '' +
 		'if (/*@expr*/) {' +
 			'/*!code*/' +
 		'}',
-	inline: false
+	isEcho: false
 };
 
 this['else'] = {
@@ -161,7 +163,7 @@ this['else'] = {
 		}
 	},
 	template: '} else {/*!code*/',
-	inline: false
+	isEcho: false
 };
 
 this['each'] = {
@@ -170,7 +172,7 @@ this['each'] = {
 		var hasItem = attributes.hasOwnProperty('item');
 
 		if (attributes.hasOwnProperty('array')) {
-			this.template = ';' +
+			this.template = '' +
 				'(function (_array) {' +
 					'var _length = _array.length;' +
 					'var _index = 0;' +
@@ -194,7 +196,7 @@ this['each'] = {
 			return new Error('Attribute "array" or "object" is not defined.');
 		}
 	},
-	inline: false
+	isEcho: false
 };
 
 (function (API) {
@@ -220,22 +222,22 @@ this['each'] = {
 
 					switch (attributes.type) {
 						case 'default':
-							this.template = ';' +
+							this.template = '' +
 								'if (!_block.hasOwnProperty("' + name + '")) {' +
 									'_block["' + name + '"] = ' + this.template +
 								'}';
 							break;
 						case 'wrapper':
-							this.template = ';' +
+							this.template = '' +
 								'_localBlock["' + name + '"] = _block["' + name + '"];' +
 								'_block["' + name + '"] = ' + this.template;
 							break;
 						case 'local':
-							this.template = ';' +
+							this.template = '' +
 								'_localBlock["' + name + '"] = ' + this.template;
 							break;
 						case 'global':
-							this.template = ';' +
+							this.template = '' +
 								'_block["' + name + '"] = ' + this.template;
 							break;
 						default:
@@ -248,9 +250,9 @@ this['each'] = {
 		},
 		template: '' +
 			'function (__stack) {' +
-				'/*!code*/;' +
+				'/*!code*/' +
 			'};',
-		inline: false
+		isEcho: false
 	};
 
 	API.render = {
@@ -280,23 +282,22 @@ this['each'] = {
 					parser.config.cacheKey = cacheKey;
 				}
 
-				this.template = ';' +
+				this.template = '' +
 					'TSN.parent = {' +
 						'_block: _block,' +
 						'_data: _data' +
 					'};' +
 
-					'__output += TSN' +
+					'TSN' +
 						'.compileFile("/*@file*/", /*@config*/)' +
-						'.render(/*!context*/, __stream);' +
+						'.render(/*!context*/, __stack);' +
 
 					'delete TSN.parent;';
 
 			} else if (attributes.hasOwnProperty('block')) {
 				var blockName = escape(attributes.block);
 
-				this.template = ';' +
-					'__output += ' +
+				this.template = '' +
 					'(_localBlock.hasOwnProperty("' + blockName + '") ? ' +
 						'_localBlock["' + blockName + '"] : ' +
 						'_block["' + blockName + '"])' +
@@ -305,7 +306,7 @@ this['each'] = {
 				return new Error('Attribute "block" or "file" is not defined.');
 			}
 		},
-		inline: false
+		isEcho: false
 	};
 })(this);
 
@@ -320,12 +321,12 @@ this.script = {
 
 		switch (attributes.type) {
 			case 'global':
-				this.template = ';' + text + ';';
+				this.template = '' + text + '';
 				break;
 			case 'local':
-				parser.inline = false;
+				parser.isEcho = false;
 
-				this.inline = true;
+				this.isEcho = true;
 				this.template = '' +
 					'((function () {' +
 						text +
@@ -335,7 +336,7 @@ this.script = {
 				return new Error('')
 		}
 	},
-	inline: false
+	isEcho: false
 };
 
 this.header = {
@@ -343,7 +344,7 @@ this.header = {
 		var attributes = this.attributes;
 
 		if (!attributes.hasOwnProperty('value')) {
-			this.template = ';' +
+			this.template = '' +
 				'(function (__stack) {' +
 					'__stack.on("end", function (result) {' +
 						'__stream.setHeader("/*@name*/", result);' +
@@ -355,15 +356,15 @@ this.header = {
 				'}).call(/*!context*/, new __Stack())';
 		}
 	},
-	template: ';' +
+	template: '' +
 		'__stream.setHeader("/*@name*/", "/*@value*/");',
-	inline: false
+	isEcho: false
 };
 
 this.status = {
-	template: ';' +
+	template: '' +
 		'__stream.statusCode = Number(/*@code*/);',
-	inline: false
+	isEcho: false
 };
 
 this.query = {
@@ -374,20 +375,26 @@ this.query = {
 			return new Error('Attribute "method" is not defined.');
 		}
 
-		if (attributes.hasOwnProperty('param')) {
-			attributes.param += ',';
+		if (attributes.hasOwnProperty('arguments')) {
+			attributes.arguments += ',';
+		} else {
+			attributes.arguments = '';
+		}
+
+		if (!attributes.hasOwnProperty('params')) {
+			attributes.params = '';
 		}
 
 		if (!attributes.hasOwnProperty('context')) {
 			attributes.context = 'null';
 		}
 
-		this.template = attributes.method + '(' + attributes.param + '(function (__stack) {' +
-			'return function (' + attributes.arguments + ') {' +
+		this.template = attributes.method + '(' + attributes.arguments + '(function (__stack) {' +
+			'return function (' + attributes.params + ') {' +
 				'/*!code*/' +
 				'__stack.end();' +
 			'};' +
-		'})(new __Stack(__stack))));';
+		'})(new __Stack(__stack)));';
 	},
-	inline: false
+	isEcho: false
 };

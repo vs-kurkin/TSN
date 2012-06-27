@@ -73,7 +73,7 @@
 <!ELEMENT tsn:query ANY>
 <!ATTLIST tsn:query
 	method CDATA #REQUIRED
-	params CDATA "[]"
-	arguments CDATA #IMPLIED
+	arguments CDATA ""
+	params CDATA #IMPLIED
 	context CDATA "null"
 	>

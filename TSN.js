@@ -46,14 +46,14 @@ Parser.prototype.onEnd = function () {
 
 Parser.prototype.onText = function (text, node) {
 	node.text += text;
-	node.code += (this.inline === true ? ' + ' : '__text = ') + '"' + this.fixText(text) + '"';
+	node.code += (this.isEcho === true ? ', ' : '__stack.write(') + '"' + this.fixText(text) + '"';
 
-	this.inline = true;
+	this.isEcho = true;
 };
 
 Parser.prototype.onEntity = function (node) {
-	node.parent.code += (this.inline === true ? ' + ' : '__text = ') + node.name;
-	this.inline = true;
+	node.parent.code += (this.isEcho === true ? ', ' : '__stack.write(') + node.name;
+	this.isEcho = true;
 };
 
 Parser.prototype.onError = function (error) {
@@ -66,9 +66,13 @@ Parser.prototype.onOpen = function (node) {
 
 		node.template = API.template;
 		node.parse = API.parse;
-		node.inline = API.inline;
-		node.code = ';';
+		node.isEcho = API.isEcho;
+		node.code = '';
 		node.text = '';
+
+		if (this.isEcho === true && node.isEcho !== true) {
+			node.parent.code += ');';
+		}
 
 		if (node.isEmpty) {
 			var parseResult = typeof node.parse === 'function' ? node.parse(this, TSN) : true;
@@ -79,7 +83,8 @@ Parser.prototype.onOpen = function (node) {
 				node.parent.code += compileNode(node, this);
 			}
 		} else {
-			this.inline = false;
+
+			this.isEcho = false;
 		}
 	} else {
 		this._error(node.isEmpty ? 'Unknown empty tag.' : 'Unknown tag opening.', node);
@@ -120,18 +125,19 @@ Parser.prototype.fixText = function (text) {
 };
 
 function compileNode(node, parser) {
-	var codeOutput = ';' +
-		'__output += __text;' +
-		'__hasStream && __text !== "" && __stream.write(__text, "' + parser.config.encoding + '");' +
-		'__text = "";';
+	var code = '';
 
-	var code = node.template.replace(/\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi, function (result, type, name) {
+	if (node.isEcho === true) {
+		code = parser.isEcho === true ? ',' : '__stack.write(';
+	}
+
+	code += node.template.replace(/\/\*(?:(!|@)([a-z\-_]+)?)\*\//gi, function (result, type, name) {
 		switch (type) {
 			case '!':
 				switch (name) {
 					case 'code':
-						if (node.inline !== true) {
-							node.code += codeOutput;
+						if (parser.isEcho === true && node.isEcho !== true) {
+							node.code += ');';
 						}
 
 						return node.code;
@@ -144,13 +150,7 @@ function compileNode(node, parser) {
 		}
 	});
 
-	if (node.inline === true) {
-		code = parser.inline === true ? ',' + code : '__stack.write(' + code;
-	} else {
-		code = codeOutput + code;
-	}
-
-	parser.inline = node.inline;
+	parser.isEcho = node.isEcho;
 
 	return code;
 }
@@ -171,7 +171,7 @@ function Stack (stack, stream, template) {
 	}
 }
 
-Stack.prototype = LIB.events.EventEmitter();
+Stack.prototype = new LIB.event.EventEmitter();
 
 Stack.prototype.write = function () {
 	if (this.wait) {
@@ -180,7 +180,7 @@ Stack.prototype.write = function () {
 
 	}
 
-	this.queue.push(Array.prototype.slice.call(arguments));
+	this.queue.push(Array.prototype.slice.call(arguments).join(''));
 };
 
 Stack.prototype.end = function () {
@@ -193,7 +193,6 @@ Stack.prototype.end = function () {
 		this.emit('end', result);
 
 		if (parent) {
-
 			parent.wait--;
 			parent.queue[this.index] = result;
 			parent.end();
@@ -278,7 +277,7 @@ TSN.compile = function (source, config) {
 			'__stack = new __Stack(__stack, __stream, __template);' +
 
 			template.root.code +
-			';' +
+			'' +
 			'__stack.end();' +
 		'} catch (error) {' +
 			'error.cacheKey = __cacheKey;' +

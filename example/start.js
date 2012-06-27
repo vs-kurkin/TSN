@@ -18,9 +18,10 @@ TSN.on('compileDirEnd', function () {
 TSN.config.templateRoot = path.join(__dirname, 'templates');
 
 /* Компиляция всех шаблонов в корневой папке. */
-TSN.compileDir(null, {
+TSN.compileFile('page.xml');
+/*TSN.compileDir(null, {
 	saveComments: false
-});
+});*/
 
 function listener(request, response) {
 	/* Формирование данных для рендеринга */
