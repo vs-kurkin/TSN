@@ -1,4 +1,4 @@
-# TEN 2.4.0 #
+# TEN 1.0 #
 https://github.com/B-Vladi/TEN/
 
 Template Engine for NodeJS.

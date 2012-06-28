@@ -1,7 +1,7 @@
 {
 	"name": "TEN",
-	"description": "Templating System for NodeJS",
-	"version" : "2.4.0",
+	"description": "Template Engine for NodeJS",
+	"version" : "1.0",
 	"homepage": "https://github.com/B-Vladi/TEN",
 	"author" : "Влад Куркин, Email: b-vladi@cs-console.ru",
 	"main" : "lib/ten.js"
