@@ -7,7 +7,7 @@ Template Engine for NodeJS.
 MIT: https://github.com/appendto/amplify/blob/master/MIT-LICENSE.txt
 
 ## Описание
-TEN - синхронный шаблонизатор, реализован в виде <a href="http://nodejs.org/api/modules.html">модуля</a> для NodeJS.
+TEN - шаблонизатор, реализован в виде <a href="http://nodejs.org/api/modules.html">модуля</a> для NodeJS.
 
 <b>Зависимости:</b>
 * <a href="http://nodejs.org/docs/latest/api/path.html">Path</a>
