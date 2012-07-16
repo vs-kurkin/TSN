@@ -2,11 +2,13 @@
 	"namespace": "ten",
 	"templateRoot": "",
 	"encoding": "utf-8",
+	"debug": false,
 	"saveComments": true,
 	"parseCDATA": false,
 	"tabSize": 2,
 	"indent": 2,
 	"cache": true,
 	"removeXMLDeclaration": true,
-	"inheritConfig": true
+	"inheritConfig": true,
+	"API": {}
 }
