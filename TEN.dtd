@@ -49,11 +49,12 @@
 	type (global|local|default|wrapper) "global"
 	>
 
-<!ELEMENT ten:render EMPTY>
+<!ELEMENT ten:render (ten:block*)>
 <!ATTLIST ten:render
 	file CDATA #IMPLIED
-	config CDATA "null"
 	block CDATA #IMPLIED
+	resource CDATA #IMPLIED
+	config CDATA "null"
 	context CDATA "this"
 	>
 
