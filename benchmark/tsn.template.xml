@@ -67,10 +67,10 @@
                                    width="100%">
                                 <tbody>
                                     <tsn:each array="this.sections" item="item">
-                                        <tsn:var name="bgColor"
+                                        <tsn:data name="bgColor"
                                                  value="_index % 2 ? '#dddddd' : '#eeeeee'" />
                                         <tr>
-                                            <td bgcolor="&TSN._var.bgColor;">
+                                            <td bgcolor="&TSN._data.bgColor;">
                                                 <font color="#ffffff">
                                                     <b>
                                                         <a href="http://lb/section.html?id=&TSN.item.id;">

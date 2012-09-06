@@ -140,7 +140,7 @@ var data = {
 
 (function () {
     var time, max = 10000, x = max;
-    var TSN = require('TSN');
+    var TSN = require('TEN');
     var template = TSN.load('tsn.template.xml', null, {
         indent: 4,
         templateRoot: __dirname
@@ -159,7 +159,7 @@ var data = {
 (function () {
     var time = new Date(), max = 10000, x = max;
     var fest = require('fest');
-    var compiled = fest.compile(__dirname + 'fest.template.xml', {beatify: false});
+    var compiled = fest.compile(__dirname + '/fest.template.xml', {beatify: false});
     var template = (new Function('return ' + compiled))();
 
     while (x--) {
