@@ -78,3 +78,9 @@
 	params CDATA #IMPLIED
 	context CDATA "null"
 	>
+
+<!ELEMENT ten:attribute EMPTY>
+<!ATTLIST ten:attribute
+	name CDATA #REQUIRED
+	value CDATA #IMPLIED
+	>
