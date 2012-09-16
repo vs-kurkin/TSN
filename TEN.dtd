@@ -79,7 +79,7 @@
 	context CDATA "null"
 	>
 
-<!ELEMENT ten:attribute EMPTY>
+<!ELEMENT ten:attribute ANY>
 <!ATTLIST ten:attribute
 	name CDATA #REQUIRED
 	value CDATA #IMPLIED
