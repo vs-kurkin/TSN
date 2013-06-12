@@ -33,24 +33,24 @@ var TEN = require('TEN');
 Компиляция из файла:
 
 ```js
-TEN.compileFile('path/to/template.xml'); // относительно TEN.config.templateRoot
+TEN.compileFromFile('path/to/template.xml'); // относительно TEN.config.pathRoot
 ```
 
 Компиляция всех файлов в папке и подпапках:
 
 ```js
 TEN.on('compileDirEnd', function (path) {
-	console.log(this.config.templateRoot === path) // true
+	console.log(this.config.pathRoot === path) // true
 });
 
-TEN.compileDir(/.*?\.xml$/); // компилировать только XML-файлы
+TEN.compileFromDir(/.*?\.xml$/); // компилировать только XML-файлы
 ```
 
 Компиляция шаблона с использованием кастомных настроек. Параметры, которые не были указаны в этом объекте, будут унаследованы от `TEN.config`.
 
 ```js
-var template = TEN.compileFile('path/to/template.xml', {
-	templateRoot: 'path/to/new/template/root',
+var template = TEN.compileFromFile('path/to/template.xml', {
+	pathRoot: 'path/to/new/template/root',
 	name: 'My name'
 });
 
@@ -61,7 +61,7 @@ console.log(TEN.cache['My name'] === template); // true
 Компиляция шаблона из данных:
 
 ```js
-TEN.compile('<ten:root xmlns:ten="TEN">Text data</ten:root>');
+TEN.compileFromSource('<ten:root xmlns:ten="TEN">Text data</ten:root>');
 ```
 
 ###Примеры рендеринга шаблона.

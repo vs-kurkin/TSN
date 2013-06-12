@@ -21,7 +21,7 @@ TEN.on('renderEnd', function (result, template) {
 TEN.config.debug = true;
 
 /* Определение базовой директории шаблонов */
-TEN.config.templateRoot = path.join(__dirname, 'templates');
+TEN.config.pathRoot = path.join(__dirname, 'templates');
 
 TEN.config.API = {
 	getData: function (value, callback) {
@@ -32,8 +32,8 @@ TEN.config.API = {
 };
 
 /* Компиляция всех шаблонов в корневой папке. */
-//TEN.compileFile('page.xml');
-TEN.compileDir(null, {
+//TEN.compileFromFile('page.xml');
+TEN.compileFromDir(null, {
 	saveComments: false
 });
 
