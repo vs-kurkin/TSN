@@ -4,26 +4,28 @@ var queryString = require('querystring');
 var path = require('path');
 var TEN = require('TEN');
 
+var ten = new TEN();
+
 /* Обработка ошибок */
-TEN.on('error', function (error, template) {
+ten.on('error', function (error, template) {
 	console.log(error);
 });
 
 /* Создание сервера после компилирования всех шаблонов */
-TEN.on('compileDirEnd', function () {
+ten.on('compileDirEnd', function () {
 	http.Server(listener).listen(80, '127.0.0.1');
 });
 
-TEN.on('renderEnd', function (result, template) {
+ten.on('renderEnd', function (result, template) {
 	console.log(result);
 });
 
-TEN.config.debug = true;
+ten.options.debug = true;
 
 /* Определение базовой директории шаблонов */
-TEN.config.pathRoot = path.join(__dirname, 'templates');
+ten.options.pathRoot = path.join(__dirname, 'templates');
 
-TEN.config.API = {
+ten.options.API = {
 	getData: function (value, callback) {
 		process.nextTick(function () {
 			callback(null, 'Data.');
@@ -33,7 +35,7 @@ TEN.config.API = {
 
 /* Компиляция всех шаблонов в корневой папке. */
 //TEN.compileFromFile('page.xml');
-TEN.compileFromDir(null, {
+ten.compileFromDir(null, {
 	saveComments: false
 });
 
@@ -45,7 +47,7 @@ function listener(request, response) {
 
 	/* Рендеринг шаблона с записью результата в поток */
 	response.setHeader('Content-type', 'text/html');
-	console.log(TEN.render('page.xml', data, response));
+	console.log(ten.render('page.xml', data, response));
 
 	/*
 	* Приложение выводит значение GET-параметра name. Результат рендеринга находится в result.html.
